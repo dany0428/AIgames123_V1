@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Games Arcade</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0f0a1a;
+      color: #f0f0f0;
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background-color: #1a1025;
+      border-bottom: 2px solid #8b5cf6;
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #a78bfa;
+      text-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+    }
+
+    .search-container {
+      flex: 1;
+      max-width: 400px;
+      margin: 0 2rem;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 2px solid #3b2d5a;
+      background-color: #1a1025;
+      color: #f0f0f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .search-input:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+    }
+
+    .upload-btn {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .upload-btn:hover {
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.7);
+      transform: translateY(-2px);
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+      color: #a78bfa;
+      text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+    }
+
+    /* Game Grid */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .game-card {
+      background-color: #1a1025;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #3b2d5a;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .game-card:hover {
+      transform: translateY(-5px);
+      border-color: #8b5cf6;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    }
+
+    .game-thumbnail {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, #2d1f4a, #1a1025);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .game-thumbnail svg {
+      width: 60px;
+      height: 60px;
+      opacity: 0.6;
+    }
+
+    .ai-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: #7c3aed;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .game-info {
+      padding: 1rem;
+    }
+
+    .game-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e0e0e0;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background-color: #1a1025;
+      border-radius: 16px;
+      border: 2px solid #8b5cf6;
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #3b2d5a;
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #a78bfa;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .close-btn:hover {
+      color: #f0f0f0;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #c0c0c0;
+      font-weight: 500;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 2px solid #3b2d5a;
+      background-color: #0f0a1a;
+      color: #f0f0f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .form-input:focus {
+      border-color: #8b5cf6;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      border: 2px dashed #3b2d5a;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+
+    .file-input-wrapper:hover {
+      border-color: #8b5cf6;
+      background-color: rgba(139, 92, 246, 0.05);
+    }
+
+    .file-input-wrapper input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .file-input-text {
+      color: #888;
+    }
+
+    .file-name {
+      color: #a78bfa;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.7);
+    }
+
+    /* Game Player Modal */
+    .player-modal {
+      width: 95%;
+      max-width: 1200px;
+      height: 90vh;
+    }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #3b2d5a;
+    }
+
+    .player-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #a78bfa;
+    }
+
+    .game-frame-container {
+      flex: 1;
+      background-color: #0a0510;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(90vh - 60px);
+    }
+
+    .game-placeholder {
+      text-align: center;
+      color: #666;
+    }
+
+    .game-placeholder svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+      }
+
+      .search-container {
+        margin: 0;
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+      }
+
+      .game-thumbnail {
+        height: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">AI Games Arcade</div>
+    <div class="search-container">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search games...">
+    </div>
+    <button class="upload-btn" id="uploadBtn">Upload Game</button>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <h2 class="section-title">Popular Games</h2>
+    <div class="game-grid" id="gameGrid">
+      <!-- Games will be inserted here by JavaScript -->
+    </div>
+  </main>
+
+  <!-- Upload Modal -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload Your Game</h3>
+        <button class="close-btn" id="closeUpload">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Game Name</label>
+          <input type="text" class="form-input" id="gameName" placeholder="Enter game name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Thumbnail Image</label>
+          <div class="file-input-wrapper">
+            <input type="file" id="thumbnailInput" accept="image/*">
+            <div class="file-input-text">Click or drag to upload image</div>
+            <div class="file-name" id="thumbnailName"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Game File (.zip or .html)</label>
+          <div class="file-input-wrapper">
+            <input type="file" id="gameFileInput" accept=".zip,.html">
+            <div class="file-input-text">Click or drag to upload game</div>
+            <div class="file-name" id="gameFileName"></div>
+          </div>
+        </div>
+        <button class="submit-btn" id="submitGame">Upload Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Player Modal -->
+  <div class="modal-overlay" id="playerModal">
+    <div class="modal player-modal">
+      <div class="player-header">
+        <h3 class="player-title" id="playerTitle">Game Title</h3>
+        <button class="close-btn" id="closePlayer">&times;</button>
+      </div>
+      <div class="game-frame-container">
+        <div class="game-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <circle cx="8" cy="12" r="2"/>
+            <path d="M15 9v6M12 12h6"/>
+          </svg>
+          <p>Game would load here</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample games data
+    const games = [
+      { id: 1, name: "Neon Runner", category: "Arcade" },
+      { id: 2, name: "Puzzle Quest", category: "Puzzle" },
+      { id: 3, name: "Space Blaster", category: "Shooter" },
+      { id: 4, name: "Math Challenge", category: "Educational" },
+      { id: 5, name: "Tower Defense", category: "Strategy" },
+      { id: 6, name: "Cyber Jump", category: "Platformer" },
+      { id: 7, name: "Word Wizard", category: "Word" },
+      { id: 8, name: "Racing Fury", category: "Racing" }
+    ];
+
+    // DOM Elements
+    const gameGrid = document.getElementById('gameGrid');
+    const searchInput = document.getElementById('searchInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadModal = document.getElementById('uploadModal');
+    const playerModal = document.getElementById('playerModal');
+    const closeUpload = document.getElementById('closeUpload');
+    const closePlayer = document.getElementById('closePlayer');
+    const thumbnailInput = document.getElementById('thumbnailInput');
+    const gameFileInput = document.getElementById('gameFileInput');
+    const thumbnailName = document.getElementById('thumbnailName');
+    const gameFileName = document.getElementById('gameFileName');
+    const submitGame = document.getElementById('submitGame');
+    const gameName = document.getElementById('gameName');
+    const playerTitle = document.getElementById('playerTitle');
+
+    // Render games
+    function renderGames(gameList) {
+      gameGrid.innerHTML = gameList.map(game => `
+        <div class="game-card" data-id="${game.id}" data-name="${game.name}">
+          <div class="game-thumbnail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <circle cx="8" cy="12" r="2"/>
+              <path d="M15 9v6M12 12h6"/>
+            </svg>
+            <span class="ai-badge">Made by AI</span>
+          </div>
+          <div class="game-info">
+            <h3 class="game-title">${game.name}</h3>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click listeners to game cards
+      document.querySelectorAll('.game-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const name = card.dataset.name;
+          playerTitle.textContent = name;
+          playerModal.classList.add('active');
+        });
+      });
+    }
+
+    // Initial render
+    renderGames(games);
+
+    // Search functionality
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = games.filter(game => 
+        game.name.toLowerCase().includes(query)
+      );
+      renderGames(filtered);
+    });
+
+    // Upload modal
+    uploadBtn.addEventListener('click', () => {
+      uploadModal.classList.add('active');
+    });
+
+    closeUpload.addEventListener('click', () => {
+      uploadModal.classList.remove('active');
+    });
+
+    closePlayer.addEventListener('click', () => {
+      playerModal.classList.remove('active');
+    });
+
+    // Close modals when clicking outside
+    uploadModal.addEventListener('click', (e) => {
+      if (e.target === uploadModal) {
+        uploadModal.classList.remove('active');
+      }
+    });
+
+    playerModal.addEventListener('click', (e) => {
+      if (e.target === playerModal) {
+        playerModal.classList.remove('active');
+      }
+    });
+
+    // File input display
+    thumbnailInput.addEventListener('change', (e) => {
+      thumbnailName.textContent = e.target.files[0]?.name || '';
+    });
+
+    gameFileInput.addEventListener('change', (e) => {
+      gameFileName.textContent = e.target.files[0]?.name || '';
+    });
+
+    // Submit game
+    submitGame.addEventListener('click', () => {
+      const name = gameName.value.trim();
+      if (name) {
+        games.unshift({ id: Date.now(), name, category: 'User Upload' });
+        renderGames(games);
+        uploadModal.classList.remove('active');
+        gameName.value = '';
+        thumbnailInput.value = '';
+        gameFileInput.value = '';
+        thumbnailName.textContent = '';
+        gameFileName.textContent = '';
+      }
+    });
+
+    // Escape key to close modals
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        uploadModal.classList.remove('active');
+        playerModal.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>
