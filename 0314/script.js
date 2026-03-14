@@ -71,39 +71,52 @@ if (submitGameBtn) {
         submitGameBtn.disabled = true;
 
         try {
-            // [중요] 파일을 HTML 타입으로 명시적으로 재생성 (인코딩 문제 해결)
-            const newFile = new File([file], file.name, { type: 'text/html' });
-            const fileName = `${Date.now()}_${file.name}`;
+            // [해결책] 파일을 읽어서 'UTF-8' 바이너리 데이터(Blob)로 재생성합니다.
+            // 이렇게 하면 한글 깨짐과 MIME 타입 문제를 동시에 잡을 수 있습니다.
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                const blob = new Blob([text], { type: 'text/html; charset=utf-8' });
+                const fileName = `${Date.now()}_${file.name}`;
 
-            // A. Storage 업로드
-            const { error: uploadError } = await supabaseClient.storage
-                .from('game-files')
-                .upload(fileName, newFile, {
-                    contentType: 'text/html; charset=utf-8', // MIME 타입과 인코딩 강제 지정
-                    upsert: true
-                });
+                // A. Storage 업로드 (Blob 데이터 전송)
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('game-files')
+                    .upload(fileName, blob, {
+                        contentType: 'text/html; charset=utf-8',
+                        upsert: true
+                    });
 
-            if (uploadError) throw uploadError;
+                if (uploadError) throw uploadError;
 
-            // B. 공개 URL 가져오기
-            const { data: { publicUrl } } = supabaseClient.storage
-                .from('game-files')
-                .getPublicUrl(fileName);
+                // B. URL 가져오기
+                const { data: { publicUrl } } = supabaseClient.storage
+                    .from('game-files')
+                    .getPublicUrl(fileName);
 
-            // C. Database 저장
-            const { error: dbError } = await supabaseClient
-                .from('games')
-                .insert([{ 
-                    id: Date.now(), 
-                    name: name, 
-                    file_url: publicUrl 
-                }]);
+                // C. Database 저장
+                const { error: dbError } = await supabaseClient
+                    .from('games')
+                    .insert([{ 
+                        id: Date.now(), 
+                        name: name, 
+                        file_url: publicUrl 
+                    }]);
 
-            if (dbError) throw dbError;
+                if (dbError) throw dbError;
 
-            alert("업로드 성공! 이제 리스트에서 게임을 클릭해보세요.");
-            uploadModal.classList.remove('active');
-            fetchGames(); 
+                alert("업로드 성공! 이제 게임을 즐기세요.");
+                uploadModal.classList.remove('active');
+                gameNameInput.value = '';
+                gameFileInput.value = '';
+                gameFileName.textContent = '';
+                fetchGames(); 
+            };
+
+            // 파일을 텍스트로 읽기 시작
+            reader.readAsText(file, "UTF-8");
+
         } catch (error) {
             alert("오류 발생: " + error.message);
         } finally {
