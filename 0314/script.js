@@ -71,11 +71,12 @@ if (submitGameBtn) {
             try {
                 // A. Storage 업로드
                 const fileName = `${Date.now()}_${file.name}`;
-                const { error: uploadError } = await supabaseClient.storage
-                    .from('game-files')
-                    .upload(fileName, file, {
-        contentType: 'text/html', // ★ 이 부분을 추가해야 브라우저가 HTML로 인식합니다!
-        upsert: true              // (선택) 동일한 이름의 파일이 있을 경우 덮어쓰기
+               const { data: uploadData, error: uploadError } = await supabaseClient.storage
+    .from('game-files')
+    .upload(fileName, file, {
+        contentType: 'text/html; charset=utf-8', // ★ 인코딩 설정을 추가합니다!
+        upsert: true
+    });
     });
 
                 if (uploadError) throw uploadError;
