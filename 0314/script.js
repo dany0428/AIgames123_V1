@@ -56,56 +56,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. 업로드 버튼 이벤트
+// --- script.js 내 submitGameBtn.onclick 함수 내부 수정 ---
+
 if (submitGameBtn) {
-        submitGameBtn.onclick = async () => {
-            const name = gameNameInput.value.trim();
-            const file = gameFileInput.files[0];
+    submitGameBtn.onclick = async () => {
+        const name = gameNameInput.value.trim();
+        const file = gameFileInput.files[0];
 
-            if (!name || !file) {
-                return alert("게임 이름과 HTML 파일을 모두 입력해주세요!");
-            }
+        if (!name || !file) {
+            return alert("게임 이름과 HTML 파일을 모두 입력해주세요!");
+        }
 
-            submitGameBtn.innerText = "업로드 중...";
-            submitGameBtn.disabled = true;
+        submitGameBtn.innerText = "업로드 중...";
+        submitGameBtn.disabled = true;
 
-            try {
-                // A. Storage 업로드
-                const fileName = `${Date.now()}_${file.name}`;
-               const { data: uploadData, error: uploadError } = await supabaseClient.storage
-    .from('game-files')
-    .upload(fileName, file, {
-        contentType: 'text/html; charset=utf-8', // ★ 인코딩 설정을 추가합니다!
-        upsert: true
-    });
+        try {
+            // [중요] 파일을 HTML 타입으로 명시적으로 재생성 (인코딩 문제 해결)
+            const newFile = new File([file], file.name, { type: 'text/html' });
+            const fileName = `${Date.now()}_${file.name}`;
 
-                if (uploadError) throw uploadError;
+            // A. Storage 업로드
+            const { error: uploadError } = await supabaseClient.storage
+                .from('game-files')
+                .upload(fileName, newFile, {
+                    contentType: 'text/html; charset=utf-8', // MIME 타입과 인코딩 강제 지정
+                    upsert: true
+                });
 
-                // B. 공개 URL 가져오기
-                const { data: { publicUrl } } = supabaseClient.storage
-                    .from('game-files')
-                    .getPublicUrl(fileName);
+            if (uploadError) throw uploadError;
 
-                // C. Database 저장 (★이 부분이 수정된 곳입니다★)
-                const { error: dbError } = await supabaseClient
-                    .from('games')
-                    .insert([{ 
-                        id: Date.now(), // 고유 ID 부여
-                        name: name, 
-                        file_url: publicUrl 
-                    }]);
+            // B. 공개 URL 가져오기
+            const { data: { publicUrl } } = supabaseClient.storage
+                .from('game-files')
+                .getPublicUrl(fileName);
 
-                if (dbError) throw dbError;
+            // C. Database 저장
+            const { error: dbError } = await supabaseClient
+                .from('games')
+                .insert([{ 
+                    id: Date.now(), 
+                    name: name, 
+                    file_url: publicUrl 
+                }]);
 
-                alert("업로드 성공!");
-                // ... (이후 초기화 로직)
-            } catch (error) {
-                alert("오류 발생: " + error.message);
-            } finally {
-                submitGameBtn.innerText = "Launch Game";
-                submitGameBtn.disabled = false;
-            }
-        };
-    }
+            if (dbError) throw dbError;
+
+            alert("업로드 성공! 이제 리스트에서 게임을 클릭해보세요.");
+            uploadModal.classList.remove('active');
+            fetchGames(); 
+        } catch (error) {
+            alert("오류 발생: " + error.message);
+        } finally {
+            submitGameBtn.innerText = "Launch Game";
+            submitGameBtn.disabled = false;
+        }
+    };
+}
 
     // 5. 게임 플레이 함수 (글로벌 등록)
     window.openGame = (url, name) => {
