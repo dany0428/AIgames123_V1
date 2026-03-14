@@ -1,11 +1,11 @@
 // 1. Supabase 설정 (본인의 정보로 교체하세요)
 const SUPABASE_URL = 'https://bpaqjmwzdxdgitlwmamp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYXFqbXd6ZHhkZ2l0bHdtYW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyOTczMDMsImV4cCI6MjA4ODg3MzMwM30.7MVzlcoc3p46_b5jEn1aUr5LE2kF3EWlF89fqBH1MSM';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 여기서 'supabase' 대신 'supabaseClient'라는 이름을 사용합니다.
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // DOM 요소들 가져오기
+    // DOM 요소들
     const gameGrid = document.getElementById('gameGrid');
     const gameFrame = document.getElementById('gameFrame');
     const placeholder = document.getElementById('placeholder');
@@ -19,8 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameFileInput = document.getElementById('gameFileInput');
     const gameFileName = document.getElementById('gameFileName');
     const submitGameBtn = document.getElementById('submitGame');
+    const gameNameInput = document.getElementById('gameName');
 
-    // --- [기능 1: 게임 목록 가져오기] ---
+    // 2. 게임 목록 가져오기
     async function fetchGames() {
         try {
             const { data, error } = await supabaseClient
@@ -35,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- [기능 2: 화면에 게임 리스트 렌더링] ---
+    // 3. 목록 렌더링
     function renderGames(gameList) {
         if (!gameGrid) return;
         gameGrid.innerHTML = gameList.map(game => `
@@ -53,11 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    // --- [기능 3: 게임 업로드 로직] ---
+    // 4. 업로드 버튼 이벤트
     if (submitGameBtn) {
-        submitGameBtn.addEventListener('click', async () => {
-            const nameInput = document.getElementById('gameName');
-            const name = nameInput.value.trim();
+        submitGameBtn.onclick = async () => {
+            const name = gameNameInput.value.trim();
             const file = gameFileInput.files[0];
 
             if (!name || !file) {
@@ -68,31 +68,26 @@ document.addEventListener('DOMContentLoaded', () => {
             submitGameBtn.disabled = true;
 
             try {
-                // A. Storage 업로드
                 const fileName = `${Date.now()}_${file.name}`;
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                const { error: uploadError } = await supabaseClient.storage
                     .from('game-files')
                     .upload(fileName, file);
 
                 if (uploadError) throw uploadError;
 
-                // B. 공개 URL 가져오기
                 const { data: { publicUrl } } = supabaseClient.storage
                     .from('game-files')
                     .getPublicUrl(fileName);
 
-                // C. Database 저장
                 const { error: dbError } = await supabaseClient
                     .from('games')
                     .insert([{ name: name, file_url: publicUrl }]);
 
                 if (dbError) throw dbError;
 
-                alert("성공적으로 업로드되었습니다!");
+                alert("업로드 성공!");
                 uploadModal.classList.remove('active');
-                
-                // 초기화
-                nameInput.value = '';
+                gameNameInput.value = '';
                 gameFileInput.value = '';
                 gameFileName.textContent = '';
                 fetchGames(); 
@@ -102,47 +97,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitGameBtn.innerText = "Launch Game";
                 submitGameBtn.disabled = false;
             }
-        });
+        };
     }
 
-    // --- [기능 4: 게임 모달 제어] ---
+    // 5. 게임 플레이 함수 (글로벌 등록)
     window.openGame = (url, name) => {
-        const playerTitle = document.getElementById('playerTitle');
-        if (playerTitle) playerTitle.textContent = name;
-        
+        document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
         gameFrame.src = url;
         gameFrame.style.display = 'block';
         placeholder.style.display = 'none';
     };
 
-    // 파일 선택 시 이름 업데이트
-    if (gameFileInput) {
-        gameFileInput.addEventListener('change', (e) => {
-            gameFileName.textContent = e.target.files[0]?.name || '';
-        });
-    }
+    // 모달 제어 이벤트
+    uploadBtn.onclick = () => uploadModal.classList.add('active');
+    closeUpload.onclick = () => uploadModal.classList.remove('active');
+    closePlayer.onclick = () => {
+        playerModal.classList.remove('active');
+        gameFrame.src = ""; 
+    };
 
-    // 버튼 클릭 이벤트 바인딩 (안전하게 처리)
-    if (uploadBtn) {
-        uploadBtn.addEventListener('click', () => {
-            uploadModal.classList.add('active');
-        });
-    }
+    gameFileInput.onchange = (e) => {
+        gameFileName.textContent = e.target.files[0]?.name || '';
+    };
 
-    if (closeUpload) {
-        closeUpload.addEventListener('click', () => {
-            uploadModal.classList.remove('active');
-        });
-    }
-
-    if (closePlayer) {
-        closePlayer.addEventListener('click', () => {
-            playerModal.classList.remove('active');
-            gameFrame.src = ""; // 게임 중단
-        });
-    }
-
-    // 초기 데이터 로드 호출
     fetchGames();
 });
