@@ -33,14 +33,10 @@
           <input type="text" class="form-input" id="gameName" placeholder="Enter game name">
         </div>
         <div class="form-group">
-          <label class="form-label">Game File (.html only for now)</label>
-          <div class="file-input-wrapper">
-            <input type="file" id="gameFileInput" accept=".html">
-            <div class="file-input-text">Click to upload HTML game</div>
-            <div class="file-name" id="gameFileName"></div>
-          </div>
+          <label class="form-label">Game Folder Name (Vercel)</label>
+          <input type="text" class="form-input" id="gameFolder" placeholder="예: mygame">
         </div>
-        <button class="submit-btn" id="submitGame">Launch Game</button>
+        <button class="submit-btn" id="submitGame">Save Game</button>
       </div>
     </div>
   </div>
@@ -52,12 +48,11 @@
         <button class="close-btn" id="closePlayer">&times;</button>
       </div>
       <div class="game-frame-container">
-<iframe id="gameFrame" style="display:none; width:100%; height:100%; border:none; background: #fff;"></iframe>
-  
-  <div id="placeholder" class="game-placeholder">
-    <p>Loading game...</p>
-  </div>
-</div>
+        <iframe id="gameFrame" style="display:none; width:100%; height:100%; border:none; background: #fff;"></iframe>
+        <div id="placeholder" class="game-placeholder">
+          <p>Loading game...</p>
+        </div>
+      </div>
     </div>
   </div>
 
