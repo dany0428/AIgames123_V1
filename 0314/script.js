@@ -114,13 +114,16 @@ if (submitGameBtn) {
 }
 
     // 5. 게임 플레이 함수 (글로벌 등록)
-    window.openGame = (url, name) => {
-        document.getElementById('playerTitle').textContent = name;
-        playerModal.classList.add('active');
-        gameFrame.src = url;
-        gameFrame.style.display = 'block';
-        placeholder.style.display = 'none';
-    };
+// script.js 내 openGame 함수 수정
+window.openGame = (url, name) => {
+    document.getElementById('playerTitle').textContent = name;
+    playerModal.classList.add('active');
+    
+    // 주소를 바로 넣지 않고, 브라우저가 HTML로 해석하도록 유도
+    gameFrame.src = url; 
+    gameFrame.style.display = 'block';
+    placeholder.style.display = 'none';
+};
 
     // 모달 제어 이벤트
     uploadBtn.onclick = () => uploadModal.classList.add('active');
