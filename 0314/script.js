@@ -1,10 +1,10 @@
 // Supabase 설정 (본인의 프로젝트 URL과 anon key로 교체하세요)
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://bpaqjmwzdxdgitlwmamp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYXFqbXd6ZHhkZ2l0bHdtYW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyOTczMDMsImV4cCI6MjA4ODg3MzMwM30.7MVzlcoc3p46_b5jEn1aUr5LE2kF3EWlF89fqBH1MSM';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Vercel 배포 URL (본인의 Vercel 프로젝트 주소로 교체)
-const VERCEL_BASE_URL = 'https://your-vercel-app.vercel.app';
+const VERCEL_BASE_URL = 'https://a-igames123-v1.vercel.app/';
 
 document.addEventListener('DOMContentLoaded', () => {
     const gameGrid = document.getElementById('gameGrid');
