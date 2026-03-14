@@ -3,13 +3,7 @@ const SUPABASE_URL = 'https://bpaqjmwzdxdgitlwmamp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYXFqbXd6ZHhkZ2l0bHdtYW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyOTczMDMsImV4cCI6MjA4ODg3MzMwM30.7MVzlcoc3p46_b5jEn1aUr5LE2kF3EWlF89fqBH1MSM';
 // 여기서 'supabase' 대신 'supabaseClient'라는 이름을 사용합니다.
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const { error: dbError } = await supabaseClient
-    .from('games')
-    .insert([{ 
-        id: Date.now(), // 우리가 직접 ID를 생성해서 전달
-        name: name, 
-        file_url: publicUrl 
-    }]);
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM 요소들
@@ -62,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. 업로드 버튼 이벤트
-    if (submitGameBtn) {
+if (submitGameBtn) {
         submitGameBtn.onclick = async () => {
             const name = gameNameInput.value.trim();
             const file = gameFileInput.files[0];
@@ -75,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitGameBtn.disabled = true;
 
             try {
+                // A. Storage 업로드
                 const fileName = `${Date.now()}_${file.name}`;
                 const { error: uploadError } = await supabaseClient.storage
                     .from('game-files')
@@ -82,22 +77,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (uploadError) throw uploadError;
 
+                // B. 공개 URL 가져오기
                 const { data: { publicUrl } } = supabaseClient.storage
                     .from('game-files')
                     .getPublicUrl(fileName);
 
+                // C. Database 저장 (★이 부분이 수정된 곳입니다★)
                 const { error: dbError } = await supabaseClient
                     .from('games')
-                    .insert([{ name: name, file_url: publicUrl }]);
+                    .insert([{ 
+                        id: Date.now(), // 고유 ID 부여
+                        name: name, 
+                        file_url: publicUrl 
+                    }]);
 
                 if (dbError) throw dbError;
 
                 alert("업로드 성공!");
-                uploadModal.classList.remove('active');
-                gameNameInput.value = '';
-                gameFileInput.value = '';
-                gameFileName.textContent = '';
-                fetchGames(); 
+                // ... (이후 초기화 로직)
             } catch (error) {
                 alert("오류 발생: " + error.message);
             } finally {
