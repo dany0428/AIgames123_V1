@@ -56,28 +56,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. 업로드 버튼 이벤트
-// --- script.js 내 submitGameBtn.onclick 함수 내부 수정 ---
+    if (submitGameBtn) {
+        submitGameBtn.onclick = async () => {
+            const name = gameNameInput.value.trim();
+            const file = gameFileInput.files[0];
 
-if (submitGameBtn) {
-    submitGameBtn.onclick = async () => {
-        const name = gameNameInput.value.trim();
-        const file = gameFileInput.files[0];
+            if (!name || !file) {
+                return alert("게임 이름과 HTML 파일을 모두 입력해주세요!");
+            }
 
-        if (!name || !file) {
-            return alert("게임 이름과 HTML 파일을 모두 입력해주세요!");
-        }
+            submitGameBtn.innerText = "업로드 중...";
+            submitGameBtn.disabled = true;
 
-        submitGameBtn.innerText = "업로드 중...";
-        submitGameBtn.disabled = true;
+            try {
+                // FileReader를 Promise로 감싸서 파일 읽기가 끝날 때까지 대기합니다.
+                const htmlText = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(new Error("파일 읽기 실패"));
+                    reader.readAsText(file, "UTF-8");
+                });
 
-        try {
-            // [해결책] 파일을 읽어서 'UTF-8' 바이너리 데이터(Blob)로 재생성합니다.
-            // 이렇게 하면 한글 깨짐과 MIME 타입 문제를 동시에 잡을 수 있습니다.
-            const reader = new FileReader();
-            
-            reader.onload = async (e) => {
-                const text = e.target.result;
-                const blob = new Blob([text], { type: 'text/html; charset=utf-8' });
+                const blob = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
                 const fileName = `${Date.now()}_${file.name}`;
 
                 // A. Storage 업로드 (Blob 데이터 전송)
@@ -110,45 +110,62 @@ if (submitGameBtn) {
                 uploadModal.classList.remove('active');
                 gameNameInput.value = '';
                 gameFileInput.value = '';
-                gameFileName.textContent = '';
+                if (gameFileName) gameFileName.textContent = '';
                 fetchGames(); 
-            };
-
-            // 파일을 텍스트로 읽기 시작
-            reader.readAsText(file, "UTF-8");
-
-        } catch (error) {
-            alert("오류 발생: " + error.message);
-        } finally {
-            submitGameBtn.innerText = "Launch Game";
-            submitGameBtn.disabled = false;
-        }
-    };
-}
+            } catch (error) {
+                alert("오류 발생: " + error.message);
+            } finally {
+                submitGameBtn.innerText = "Launch Game";
+                submitGameBtn.disabled = false;
+            }
+        };
+    }
 
     // 5. 게임 플레이 함수 (글로벌 등록)
-// script.js 내 openGame 함수 수정
-window.openGame = (url, name) => {
-    document.getElementById('playerTitle').textContent = name;
-    playerModal.classList.add('active');
+    window.openGame = async (url, name) => {
+        document.getElementById('playerTitle').textContent = name;
+        playerModal.classList.add('active');
+        
+        // 로딩 중 UI 표시
+        gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:white;">게임을 불러오는 중입니다...</div>';
+        gameFrame.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
+
+        try {
+            // URL 주소를 바로 넣지 않고, HTML 코드를 텍스트로 가져와서 주입
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
+            
+            const htmlContent = await response.text();
+            
+            // src 대신 srcdoc에 HTML 텍스트를 직접 삽입하여 브라우저가 렌더링하도록 유도
+            gameFrame.srcdoc = htmlContent;
+        } catch (error) {
+            console.error('게임 로드 실패:', error);
+            gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; color:red;">게임을 실행하는 데 문제가 발생했습니다.</div>';
+        }
+    };
+
+    // 6. 모달 제어 및 기타 이벤트
+    if (uploadBtn) uploadBtn.onclick = () => uploadModal.classList.add('active');
+    if (closeUpload) closeUpload.onclick = () => uploadModal.classList.remove('active');
     
-    // 주소를 바로 넣지 않고, 브라우저가 HTML로 해석하도록 유도
-    gameFrame.src = url; 
-    gameFrame.style.display = 'block';
-    placeholder.style.display = 'none';
-};
+    if (closePlayer) {
+        closePlayer.onclick = () => {
+            playerModal.classList.remove('active');
+            gameFrame.src = ""; 
+            gameFrame.srcdoc = ""; // 메모리 정리를 위해 srcdoc도 함께 비워줍니다.
+        };
+    }
 
-    // 모달 제어 이벤트
-    uploadBtn.onclick = () => uploadModal.classList.add('active');
-    closeUpload.onclick = () => uploadModal.classList.remove('active');
-    closePlayer.onclick = () => {
-        playerModal.classList.remove('active');
-        gameFrame.src = ""; 
-    };
+    if (gameFileInput) {
+        gameFileInput.onchange = (e) => {
+            if (gameFileName) {
+                gameFileName.textContent = e.target.files[0]?.name || '';
+            }
+        };
+    }
 
-    gameFileInput.onchange = (e) => {
-        gameFileName.textContent = e.target.files[0]?.name || '';
-    };
-
+    // 앱 시작 시 게임 목록 불러오기
     fetchGames();
 });
