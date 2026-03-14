@@ -77,7 +77,6 @@ if (submitGameBtn) {
         contentType: 'text/html; charset=utf-8', // ★ 인코딩 설정을 추가합니다!
         upsert: true
     });
-    });
 
                 if (uploadError) throw uploadError;
 
