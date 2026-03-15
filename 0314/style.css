@@ -1,3 +1,5 @@
+/* 기존 CSS 내용 유지 후, 아래 내용들을 수정/추가 해주세요 */
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: system-ui, sans-serif;
@@ -60,7 +62,7 @@ body {
 }
 .modal-overlay.active { display: flex; }
 .modal { background: #1a1025; border: 2px solid #8b5cf6; border-radius: 16px; width: 90%; max-width: 500px; }
-.modal-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; }
+.modal-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
 .close-btn { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
 
 .modal-body { padding: 1.5rem; }
@@ -73,7 +75,33 @@ body {
 .submit-btn { width: 100%; padding: 1rem; background: #7c3aed; border: none; color: white; border-radius: 8px; cursor: pointer; }
 
 /* Player Modal */
-.player-modal { max-width: 1200px; height: 90vh; display: flex; flex-direction: column; }
-.game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
+.player-modal { max-width: 1200px; height: 90vh; display: flex; flex-direction: column; width: 90%; }
+.player-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
+.header-actions { display: flex; align-items: center; gap: 1rem; }
+
+/* 전체화면 버튼 스타일 추가 */
+.fullscreen-btn {
+  padding: 0.5rem 1rem;
+  background-color: #3b2d5a;
+  color: white;
+  border: 1px solid #8b5cf6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+.fullscreen-btn:hover { background-color: #8b5cf6; }
+
+.game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+/* iframe 크기가 컨테이너에 꽉 차도록 수정 */
+#gameFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: none; /* 로딩 전엔 숨김 */
+  background-color: white; /* 투명한 게임을 위한 기본 흰 배경 (필요에 따라 변경) */
+}
+
 .game-placeholder { color: #666; text-align: center; }
 .game-placeholder svg { width: 60px; opacity: 0.5; }
