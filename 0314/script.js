@@ -167,6 +167,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // DOM 요소 가져오기 (파일 상단에 추가)
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+// 7. 전체화면 기능 이벤트
+if (fullscreenBtn) {
+    fullscreenBtn.onclick = () => {
+        // 게임 iframe 요소를 전체화면으로 만듭니다.
+        if (gameFrame.requestFullscreen) {
+            gameFrame.requestFullscreen();
+        } else if (gameFrame.webkitRequestFullscreen) { /* Safari 지원 */
+            gameFrame.webkitRequestFullscreen();
+        } else if (gameFrame.msRequestFullscreen) { /* IE11 지원 */
+            gameFrame.msRequestFullscreen();
+        }
+    };
+}
+
     // 앱 시작 시 게임 목록 불러오기
     fetchGames();
 });
