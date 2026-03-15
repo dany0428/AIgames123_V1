@@ -117,51 +117,32 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 5. 게임 플레이 함수 (글로벌 등록)
+    // 5. 게임 플레이 함수 (글로벌 등록 - srcdoc 방식 유지)
     window.openGame = async (url, name) => {
         document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
         
-        // iframe 표시 및 URL 바로 연결
+        // iframe 화면 활성화 및 로딩 UI
         gameFrame.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
-        
-        // srcdoc 대신 src에 URL을 직접 넣어서 브라우저가 게임을 제대로 실행하게 만듦
-        gameFrame.src = url; 
+        gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:black;">게임을 불러오는 중입니다...</div>';
+
+        try {
+            // URL 주소를 바로 넣지 않고, HTML 코드를 텍스트로 가져와서 주입 (기존 방식)
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
+            
+            const htmlContent = await response.text();
+            
+            // src 대신 srcdoc에 HTML 텍스트를 직접 삽입하여 브라우저가 렌더링하도록 유도
+            gameFrame.srcdoc = htmlContent;
+        } catch (error) {
+            console.error('게임 로드 실패:', error);
+            gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; color:red;">게임을 실행하는 데 문제가 발생했습니다.</div>';
+        }
     };
 
     // 전체화면 기능 이벤트
     if (fullscreenBtn) {
         fullscreenBtn.onclick = () => {
-            if (gameFrame.requestFullscreen) {
-                gameFrame.requestFullscreen();
-            } else if (gameFrame.webkitRequestFullscreen) { /* Safari */
-                gameFrame.webkitRequestFullscreen();
-            } else if (gameFrame.msRequestFullscreen) { /* IE11 */
-                gameFrame.msRequestFullscreen();
-            }
-        };
-    }
-
-    // 6. 모달 제어 및 기타 이벤트
-    if (uploadBtn) uploadBtn.onclick = () => uploadModal.classList.add('active');
-    if (closeUpload) closeUpload.onclick = () => uploadModal.classList.remove('active');
-    
-    if (closePlayer) {
-        closePlayer.onclick = () => {
-            playerModal.classList.remove('active');
-            gameFrame.src = ""; // 창을 닫을 때 게임 종료
-        };
-    }
-
-    if (gameFileInput) {
-        gameFileInput.onchange = (e) => {
-            if (gameFileName) {
-                gameFileName.textContent = e.target.files[0]?.name || '';
-            }
-        };
-    }
-
-    // 앱 시작 시 게임 목록 불러오기
-    fetchGames();
-});
+            if (gameFrame
