@@ -1,9 +1,7 @@
 // 1. Supabase 설정 (본인의 정보로 교체하세요)
 const SUPABASE_URL = 'https://bpaqjmwzdxdgitlwmamp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYXFqbXd6ZHhkZ2l0bHdtYW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyOTczMDMsImV4cCI6MjA4ODg3MzMwM30.7MVzlcoc3p46_b5jEn1aUr5LE2kF3EWlF89fqBH1MSM';
-// 여기서 'supabase' 대신 'supabaseClient'라는 이름을 사용합니다.
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM 요소들
@@ -16,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('uploadBtn');
     const closeUpload = document.getElementById('closeUpload');
     const closePlayer = document.getElementById('closePlayer');
+    const fullscreenBtn = document.getElementById('fullscreenBtn'); // 전체화면 버튼
     
     const gameFileInput = document.getElementById('gameFileInput');
     const gameFileName = document.getElementById('gameFileName');
@@ -31,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .order('created_at', { ascending: false })
                 .range(0, 19);
             
-
             if (error) throw error;
             renderGames(data);
         } catch (error) {
@@ -71,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitGameBtn.disabled = true;
 
             try {
-                // FileReader를 Promise로 감싸서 파일 읽기가 끝날 때까지 대기합니다.
                 const htmlText = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target.result);
@@ -82,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const blob = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
                 const fileName = `${Date.now()}_${file.name}`;
 
-                // A. Storage 업로드 (Blob 데이터 전송)
                 const { error: uploadError } = await supabaseClient.storage
                     .from('game-files')
                     .upload(fileName, blob, {
@@ -92,12 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (uploadError) throw uploadError;
 
-                // B. URL 가져오기
                 const { data: { publicUrl } } = supabaseClient.storage
                     .from('game-files')
                     .getPublicUrl(fileName);
 
-                // C. Database 저장
                 const { error: dbError } = await supabaseClient
                     .from('games')
                     .insert([{ 
@@ -128,25 +122,26 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
         
-        // 로딩 중 UI 표시
-        gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:white;">게임을 불러오는 중입니다...</div>';
+        // iframe 표시 및 URL 바로 연결
         gameFrame.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
-
-        try {
-            // URL 주소를 바로 넣지 않고, HTML 코드를 텍스트로 가져와서 주입
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
-            
-            const htmlContent = await response.text();
-            
-            // src 대신 srcdoc에 HTML 텍스트를 직접 삽입하여 브라우저가 렌더링하도록 유도
-            gameFrame.srcdoc = htmlContent;
-        } catch (error) {
-            console.error('게임 로드 실패:', error);
-            gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; color:red;">게임을 실행하는 데 문제가 발생했습니다.</div>';
-        }
+        
+        // srcdoc 대신 src에 URL을 직접 넣어서 브라우저가 게임을 제대로 실행하게 만듦
+        gameFrame.src = url; 
     };
+
+    // 전체화면 기능 이벤트
+    if (fullscreenBtn) {
+        fullscreenBtn.onclick = () => {
+            if (gameFrame.requestFullscreen) {
+                gameFrame.requestFullscreen();
+            } else if (gameFrame.webkitRequestFullscreen) { /* Safari */
+                gameFrame.webkitRequestFullscreen();
+            } else if (gameFrame.msRequestFullscreen) { /* IE11 */
+                gameFrame.msRequestFullscreen();
+            }
+        };
+    }
 
     // 6. 모달 제어 및 기타 이벤트
     if (uploadBtn) uploadBtn.onclick = () => uploadModal.classList.add('active');
@@ -155,8 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closePlayer) {
         closePlayer.onclick = () => {
             playerModal.classList.remove('active');
-            gameFrame.src = ""; 
-            gameFrame.srcdoc = ""; // 메모리 정리를 위해 srcdoc도 함께 비워줍니다.
+            gameFrame.src = ""; // 창을 닫을 때 게임 종료
         };
     }
 
