@@ -145,4 +145,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // 전체화면 기능 이벤트
     if (fullscreenBtn) {
         fullscreenBtn.onclick = () => {
-            if (gameFrame
+            if (gameFrame.requestFullscreen) {
+                gameFrame.requestFullscreen();
+            } else if (gameFrame.webkitRequestFullscreen) { /* Safari */
+                gameFrame.webkitRequestFullscreen();
+            } else if (gameFrame.msRequestFullscreen) { /* IE11 */
+                gameFrame.msRequestFullscreen();
+            }
+        };
+    }
+
+    // 6. 모달 제어 및 기타 이벤트
+    if (uploadBtn) uploadBtn.onclick = () => uploadModal.classList.add('active');
+    if (closeUpload) closeUpload.onclick = () => uploadModal.classList.remove('active');
+    
+    if (closePlayer) {
+        closePlayer.onclick = () => {
+            playerModal.classList.remove('active');
+            gameFrame.srcdoc = ""; // 창을 닫을 때 게임 종료 및 메모리 정리
+        };
+    }
+
+    if (gameFileInput) {
+        gameFileInput.onchange = (e) => {
+            if (gameFileName) {
+                gameFileName.textContent = e.target.files[0]?.name || '';
+            }
+        };
+    }
+
+    // 앱 시작 시 게임 목록 불러오기
+    fetchGames();
+});
