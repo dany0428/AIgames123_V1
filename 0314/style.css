@@ -77,9 +77,3 @@ body {
 .game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
 .game-placeholder { color: #666; text-align: center; }
 .game-placeholder svg { width: 60px; opacity: 0.5; }
-
-#gameFrame {
-    width: 100%;
-    min-height: 60vh; /* 화면 높이의 60% 정도 차지하게 설정 */
-    border: none;
-}
