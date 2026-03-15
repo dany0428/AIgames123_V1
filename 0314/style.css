@@ -77,3 +77,36 @@ body {
 .game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
 .game-placeholder { color: #666; text-align: center; }
 .game-placeholder svg { width: 60px; opacity: 0.5; }
+
+/* 플레이어 모달 크기 대폭 확대 */
+.player-content {
+    width: 90vw; /* 브라우저 너비의 90% */
+    height: 90vh; /* 브라우저 높이의 90% */
+    max-width: 1400px; /* 너무 커지는 것 방지 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 헤더 버튼 정렬 */
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* iframe을 감싸는 컨테이너가 남은 공간을 모두 차지하도록 설정 */
+.iframe-container {
+    flex: 1; 
+    width: 100%;
+    height: 100%;
+    background-color: #000; /* 게임 로딩 전 깔끔한 검은 배경 */
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+/* iframe 자체가 영역을 100% 채우도록 강제 */
+#gameFrame {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: none;
+}
