@@ -45,25 +45,23 @@
     </div>
   </div>
 
-<div id="playerModal" class="modal">
-    <div class="modal-content player-content">
-        <div class="modal-header">
-            <h2 id="playerTitle">게임 제목</h2>
-            <div class="header-buttons">
-                <button id="fullscreenBtn" class="btn btn-secondary">전체화면 🔲</button>
-                <button id="closePlayer" class="btn btn-primary">닫기 ✖️</button>
-            </div>
-        </div>
-        
-        <div class="iframe-container">
-            <iframe id="gameFrame" 
-                    sandbox="allow-scripts allow-modals allow-pointer-lock allow-same-origin allow-forms" 
-                    allow="fullscreen" 
-                    frameborder="0">
-            </iframe>
-        </div>
-    </div>
+<div class="modal-header">
+    <h2 id="playerTitle">게임 제목</h2>
+    <button id="fullscreenBtn" class="btn btn-secondary" style="margin-right: 10px;">전체화면 🔲</button>
+    <button id="closePlayer" class="btn btn-primary">닫기 ✖️</button>
 </div>
+
+<iframe id="gameFrame" 
+        sandbox="allow-scripts allow-modals allow-pointer-lock allow-same-origin allow-forms" 
+        allow="fullscreen" 
+        frameborder="0">
+</iframe>
+  
+  <div id="placeholder" class="game-placeholder">
+    <p>Loading game...</p>
+  </div>
+</div>
+    </div>
   </div>
 
   <script src="script.js"></script>
