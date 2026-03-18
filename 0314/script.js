@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerModal = document.getElementById('playerModal');
     const uploadModal = document.getElementById('uploadModal');
     
-    const searchInput = document.getElementById('searchInput'); // 검색창 요소 가져오기
+    const homeLogo = document.getElementById('homeLogo'); // ✨ 로고 요소 가져오기
+    const searchInput = document.getElementById('searchInput');
     const uploadBtn = document.getElementById('uploadBtn');
     const closeUpload = document.getElementById('closeUpload');
     const closePlayer = document.getElementById('closePlayer');
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitGameBtn = document.getElementById('submitGame');
     const gameNameInput = document.getElementById('gameName');
 
-    // 2. 게임 목록 가져오기 (검색어 파라미터 추가)
+    // 게임 목록 가져오기
     async function fetchGames(searchTerm = '') {
         try {
             let query = supabaseClient
@@ -33,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .order('created_at', { ascending: false })
                 .range(0, 19);
             
-            // 검색어가 있으면 이름(name) 컬럼에서 검색어가 포함된 것만 필터링
             if (searchTerm) {
                 query = query.ilike('name', `%${searchTerm}%`);
             }
@@ -47,11 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. 목록 렌더링
+    // 목록 렌더링
     function renderGames(gameList) {
         if (!gameGrid) return;
         
-        // 검색 결과가 없을 때 처리
         if (gameList.length === 0) {
             gameGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">검색 결과가 없습니다. 😢</p>';
             return;
@@ -83,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // 4. 업로드 버튼 이벤트
+    // 업로드 버튼 이벤트
     if (submitGameBtn) {
         submitGameBtn.onclick = async () => {
             const name = gameNameInput.value.trim();
@@ -151,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (gameFileName) gameFileName.textContent = '';
                 if (thumbnailFileName) thumbnailFileName.textContent = '';
                 
-                // 업로드 후 검색창 초기화 및 전체 목록 다시 불러오기
                 if (searchInput) searchInput.value = '';
                 fetchGames(); 
             } catch (error) {
@@ -163,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 5. 게임 플레이 함수 
+    // 게임 플레이 함수 
     window.openGame = async (id, url, name, currentViewCount) => {
         document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
@@ -180,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .update({ view_count: currentViewCount + 1 })
                 .eq('id', id)
                 .then(({ error }) => {
-                    // 검색어가 입력된 상태라면 검색어를 유지하면서 새로고침
                     const currentSearch = searchInput ? searchInput.value.trim() : '';
                     if (!error) fetchGames(currentSearch); 
                 });
@@ -197,7 +194,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 6. 이벤트 리스너 모음
+    // ✨ 로고 클릭 이벤트 추가 (메인으로 돌아가기)
+    if (homeLogo) {
+        homeLogo.addEventListener('click', () => {
+            if (searchInput) searchInput.value = ''; // 검색어 지우기
+            fetchGames(); // 전체 목록 다시 로드 (인기순)
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // 페이지 맨 위로 스무스하게 올리기
+        });
+    }
+
+    // 전체화면 및 모달 이벤트
     if (fullscreenBtn) {
         fullscreenBtn.onclick = () => {
             if (gameFrame.requestFullscreen) gameFrame.requestFullscreen();
@@ -219,14 +225,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gameFileInput) gameFileInput.onchange = (e) => { if (gameFileName) gameFileName.textContent = e.target.files[0]?.name || ''; };
     if (thumbnailFileInput) thumbnailFileInput.onchange = (e) => { if (thumbnailFileName) thumbnailFileName.textContent = e.target.files[0]?.name || ''; };
 
-    // ✨ 검색창 실시간 검색 이벤트 추가
+    // 검색창 실시간 검색 이벤트
     let searchTimeout;
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout); // 이전 타이머 취소
+            clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const searchTerm = e.target.value.trim();
-                fetchGames(searchTerm); // 0.3초 뒤에 검색 실행
+                fetchGames(searchTerm);
             }, 300);
         });
     }
