@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerModal = document.getElementById('playerModal');
     const uploadModal = document.getElementById('uploadModal');
     
+    const searchInput = document.getElementById('searchInput'); // 검색창 요소 가져오기
     const uploadBtn = document.getElementById('uploadBtn');
     const closeUpload = document.getElementById('closeUpload');
     const closePlayer = document.getElementById('closePlayer');
@@ -22,15 +23,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitGameBtn = document.getElementById('submitGame');
     const gameNameInput = document.getElementById('gameName');
 
-    // 2. 게임 목록 가져오기 (인기순 정렬 적용)
-    async function fetchGames() {
+    // 2. 게임 목록 가져오기 (검색어 파라미터 추가)
+    async function fetchGames(searchTerm = '') {
         try {
-            const { data, error } = await supabaseClient
+            let query = supabaseClient
                 .from('games')
                 .select('*')
-                .order('view_count', { ascending: false }) // 1순위: 조회수 높은 순 (인기순)
-                .order('created_at', { ascending: false }) // 2순위: 동점일 경우 최신순
+                .order('view_count', { ascending: false })
+                .order('created_at', { ascending: false })
                 .range(0, 19);
+            
+            // 검색어가 있으면 이름(name) 컬럼에서 검색어가 포함된 것만 필터링
+            if (searchTerm) {
+                query = query.ilike('name', `%${searchTerm}%`);
+            }
+
+            const { data, error } = await query;
             
             if (error) throw error;
             renderGames(data);
@@ -39,9 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. 목록 렌더링 (조회수 뱃지 추가)
+    // 3. 목록 렌더링
     function renderGames(gameList) {
         if (!gameGrid) return;
+        
+        // 검색 결과가 없을 때 처리
+        if (gameList.length === 0) {
+            gameGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">검색 결과가 없습니다. 😢</p>';
+            return;
+        }
+
         gameGrid.innerHTML = gameList.map(game => {
             const thumbnailContent = game.thumbnail_url 
                 ? `<img src="${game.thumbnail_url}" alt="${game.name}" class="game-thumb-img">`
@@ -49,10 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M15 9v6M12 12h6"/>
                    </svg>`;
 
-            // 기존에 업로드된 게임들은 view_count가 null일 수 있으므로 기본값 0 처리
             const viewCount = game.view_count || 0;
 
-            // openGame 함수에 id와 현재 조회수(viewCount)도 같이 넘겨줍니다.
             return `
             <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${game.name}', ${viewCount})">
                 <div class="game-thumbnail">
@@ -70,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // 4. 업로드 버튼 이벤트 (view_count 0 추가)
+    // 4. 업로드 버튼 이벤트
     if (submitGameBtn) {
         submitGameBtn.onclick = async () => {
             const name = gameNameInput.value.trim();
@@ -124,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         name: name, 
                         file_url: gamePublicUrl,
                         thumbnail_url: thumbPublicUrl,
-                        view_count: 0 // 최초 업로드 시 조회수 0으로 설정
+                        view_count: 0 
                     }]);
 
                 if (dbError) throw dbError;
@@ -138,6 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (gameFileName) gameFileName.textContent = '';
                 if (thumbnailFileName) thumbnailFileName.textContent = '';
                 
+                // 업로드 후 검색창 초기화 및 전체 목록 다시 불러오기
+                if (searchInput) searchInput.value = '';
                 fetchGames(); 
             } catch (error) {
                 alert("오류 발생: " + error.message);
@@ -148,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 5. 게임 플레이 함수 (조회수 증가 로직 포함)
+    // 5. 게임 플레이 함수 
     window.openGame = async (id, url, name, currentViewCount) => {
         document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
@@ -156,21 +171,20 @@ document.addEventListener('DOMContentLoaded', () => {
         gameFrame.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
         
-        // 여기에 앞서 말씀드렸던 모바일 뷰포트 메타 태그를 주입해서 모바일 렉(터치 지연)을 방지합니다!
         const viewportMeta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
         gameFrame.srcdoc = `${viewportMeta}<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:black;">게임을 불러오는 중입니다...</div>`;
 
         try {
-            // 조회수 1 증가시키기 (비동기로 백그라운드 처리)
             supabaseClient
                 .from('games')
                 .update({ view_count: currentViewCount + 1 })
                 .eq('id', id)
                 .then(({ error }) => {
-                    if (!error) fetchGames(); // 성공 시 리스트를 백그라운드에서 새로고침하여 바뀐 조회수 반영
+                    // 검색어가 입력된 상태라면 검색어를 유지하면서 새로고침
+                    const currentSearch = searchInput ? searchInput.value.trim() : '';
+                    if (!error) fetchGames(currentSearch); 
                 });
 
-            // 게임 코드 불러와서 뷰포트 메타 태그와 함께 주입
             const response = await fetch(url);
             if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
             
@@ -183,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 6. 이벤트 리스너 모음
     if (fullscreenBtn) {
         fullscreenBtn.onclick = () => {
             if (gameFrame.requestFullscreen) gameFrame.requestFullscreen();
@@ -204,5 +219,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gameFileInput) gameFileInput.onchange = (e) => { if (gameFileName) gameFileName.textContent = e.target.files[0]?.name || ''; };
     if (thumbnailFileInput) thumbnailFileInput.onchange = (e) => { if (thumbnailFileName) thumbnailFileName.textContent = e.target.files[0]?.name || ''; };
 
+    // ✨ 검색창 실시간 검색 이벤트 추가
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout); // 이전 타이머 취소
+            searchTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.trim();
+                fetchGames(searchTerm); // 0.3초 뒤에 검색 실행
+            }, 300);
+        });
+    }
+
+    // 앱 시작 시 전체 게임 목록 불러오기
     fetchGames();
 });
