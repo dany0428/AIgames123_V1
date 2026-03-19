@@ -1,3 +1,146 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: system-ui, sans-serif;
+  background-color: #0f0a1a;
+  color: #f0f0f0;
+  min-height: 100vh;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: #1a1025;
+  border-bottom: 2px solid #8b5cf6;
+}
+
+.logo { font-size: 1.5rem; font-weight: bold; color: #a78bfa; }
+.search-container { flex: 1; max-width: 400px; margin: 0 2rem; }
+.search-input {
+  width: 100%; padding: 0.75rem; border-radius: 8px;
+  border: 2px solid #3b2d5a; background: #1a1025; color: white;
+}
+
+.upload-btn {
+  padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #7c3aed, #6366f1);
+  border: none; border-radius: 8px; color: white; cursor: pointer;
+}
+
+.main-content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+.section-title { margin-bottom: 1.5rem; color: #a78bfa; }
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.game-card {
+  background: #1a1025; border-radius: 12px; border: 2px solid #3b2d5a;
+  overflow: hidden; cursor: pointer; transition: 0.3s;
+}
+.game-card:hover { transform: translateY(-5px); border-color: #8b5cf6; }
+
+.game-thumbnail {
+  height: 160px; background: linear-gradient(135deg, #2d1f4a, #1a1025);
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+.ai-badge {
+  position: relative !important; /* 강제로 덮어쓰기 위해 추가 */
+  top: auto !important;
+  right: auto !important;
+  background: #7c3aed;
+  padding: 4px 8px; 
+  border-radius: 4px; 
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.card-badges {
+  position: absolute; 
+  top: 8px; 
+  right: 8px; 
+  display: flex; 
+  gap: 6px;
+}
+.view-badge {
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 4px 8px; 
+  border-radius: 4px; 
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.game-info { padding: 1rem; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal { background: #1a1025; border: 2px solid #8b5cf6; border-radius: 16px; width: 90%; max-width: 500px; }
+.modal-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
+.close-btn { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
+
+.modal-body { padding: 1.5rem; }
+.form-group { margin-bottom: 1rem; }
+.form-input { width: 100%; padding: 0.75rem; border-radius: 8px; background: #0f0a1a; border: 2px solid #3b2d5a; color: white; }
+
+.file-input-wrapper { border: 2px dashed #3b2d5a; padding: 2rem; text-align: center; position: relative; }
+.file-input-wrapper input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.submit-btn { width: 100%; padding: 1rem; background: #7c3aed; border: none; color: white; border-radius: 8px; cursor: pointer; }
+
+/* Player Modal */
+.player-modal { max-width: 1200px; height: 90vh; display: flex; flex-direction: column; width: 90%; }
+.player-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
+.header-actions { display: flex; align-items: center; gap: 1rem; }
+
+/* 전체화면 버튼 스타일 추가 */
+.fullscreen-btn {
+  padding: 0.5rem 1rem;
+  background-color: #3b2d5a;
+  color: white;
+  border: 1px solid #8b5cf6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+.fullscreen-btn:hover { background-color: #8b5cf6; }
+
+.game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+/* iframe 크기가 컨테이너에 꽉 차도록 수정 */
+#gameFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: none; /* 로딩 전엔 숨김 */
+  background-color: white; /* 투명한 게임을 위한 기본 흰 배경 (필요에 따라 변경) */
+}
+
+.game-placeholder { color: #666; text-align: center; }
+.game-placeholder svg { width: 60px; opacity: 0.5; }
+
+/* 썸네일 이미지 스타일 */
+.game-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 이미지가 찌그러지지 않고 영역을 꽉 채우게 만듭니다 */
+}
+
+/* 모달에 스크롤이 생길 수 있으므로 최대 높이 및 스크롤 처리 */
+#uploadModal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+
 /* 상단 네비게이션 좌측 묶음 (햄버거 + 로고) */
 .nav-left {
   display: flex;
