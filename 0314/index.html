@@ -8,9 +8,25 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>장르 / 카테고리</h3>
+      <button class="close-btn" id="closeSidebar">&times;</button>
+    </div>
+    <ul class="genre-list" id="genreList">
+      </ul>
+  </aside>
+
   <nav class="navbar">
-    <div class="logo" id="homeLogo" style="cursor: pointer;">AIGames123</div>
+    <div class="nav-left">
+      <div class="hamburger" id="menuBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </div>
+      <div class="logo" id="homeLogo" style="cursor: pointer;">AI Games Arcade</div>
+    </div>
+    
     <div class="search-container">
       <input type="text" class="search-input" id="searchInput" placeholder="Search games...">
     </div>
@@ -18,7 +34,7 @@
   </nav>
 
   <main class="main-content">
-    <h2 class="section-title">Popular Games</h2>
+    <h2 class="section-title" id="sectionTitle">Popular Games</h2>
     <div class="game-grid" id="gameGrid"></div>
   </main>
 
@@ -33,6 +49,11 @@
           <label class="form-label">Game Name</label>
           <input type="text" class="form-input" id="gameName" placeholder="Enter game name">
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Tags (쉼표로 구분. 예: 액션, 퍼즐, 2D)</label>
+          <input type="text" class="form-input" id="gameTags" placeholder="e.g. Action, Puzzle, Retro">
+        </div>
         
         <div class="form-group">
           <label class="form-label">Game Thumbnail (Image)</label>
@@ -44,7 +65,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Game File (.html only for now)</label>
+          <label class="form-label">Game File (.html only)</label>
           <div class="file-input-wrapper">
             <input type="file" id="gameFileInput" accept=".html">
             <div class="file-input-text">Click to upload HTML game</div>
