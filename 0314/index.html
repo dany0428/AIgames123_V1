@@ -122,7 +122,7 @@
   </div>
 
   <!-- 게임 플레이어 모달 -->
-  <div class="modal-overlay" id="playerModal">
+<div class="modal-overlay" id="playerModal">
     <div class="modal player-modal">
       <div class="player-header">
         <h3 class="player-title" id="playerTitle">Game Title</h3>
@@ -132,10 +132,26 @@
           <button class="close-btn" id="closePlayer">&times;</button>
         </div>
       </div>
+      
       <div class="game-frame-container">
         <iframe id="gameFrame" sandbox="allow-scripts allow-pointer-lock allow-same-origin allow-modals" allowfullscreen frameborder="0"></iframe>
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
       </div>
+
+      <!-- ✨ 새로 추가된 하단 업로더 정보 및 추천 영역 -->
+      <div class="game-footer">
+        <div class="uploader-profile">
+          <div class="uploader-avatar">👤</div>
+          <div class="uploader-info">
+            <span class="uploader-label">Uploaded by</span>
+            <span class="uploader-name" id="uploaderName">게이머</span>
+          </div>
+        </div>
+        <div class="vote-container">
+          <button class="vote-btn upvote" id="upvoteBtn">👍 <span id="upvoteCount">0</span></button>
+        </div>
+      </div>
+      
     </div>
   </div>
 
