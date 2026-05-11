@@ -5,7 +5,6 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 document.addEventListener('DOMContentLoaded', () => {
     let currentUser = null; 
 
-    // 상단 UI 요소
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userInfo = document.getElementById('userInfo');
@@ -14,20 +13,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     const searchContainer = document.getElementById('searchContainer');
     
-    // 화면 섹션 요소
     const mainContent = document.getElementById('mainContent');
     const profileContent = document.getElementById('profileContent');
 
-    // === 인증(Auth) UI 업데이트 ===
+    // === 인증(Auth) UI 업데이트 (custom_name 우선 적용) ===
     function updateAuthUI(user) {
+        const prevUser = currentUser;
         currentUser = user;
+        
         if (user) {
             if(loginBtn) loginBtn.style.display = 'none';
             if(logoutBtn) logoutBtn.style.display = 'block';
             if(uploadBtn) uploadBtn.style.display = 'block';
             if(userInfo) {
                 userInfo.style.display = 'block';
-                const userName = user.user_metadata.preferred_username || user.user_metadata.full_name || '게이머';
+                // ✨ 깃허브 기본 이름보다 custom_name을 최우선으로 보여줍니다!
+                const userName = user.user_metadata.custom_name || user.user_metadata.preferred_username || user.user_metadata.full_name || '게이머';
                 userInfo.textContent = `${userName}님`;
             }
         } else {
@@ -35,7 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if(logoutBtn) logoutBtn.style.display = 'none';
             if(uploadBtn) uploadBtn.style.display = 'none';
             if(userInfo) userInfo.style.display = 'none';
-            showMainContent(); // 로그아웃 시 무조건 메인화면으로 강제 이동
+            showMainContent(); 
+        }
+
+        if (prevUser !== user && typeof fetchGames === 'function') {
+            const currentSearch = searchInput ? searchInput.value.trim() : '';
+            fetchGames(currentSearch, currentTag);
         }
     }
 
@@ -56,29 +62,36 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload(); 
     };
 
-    // === 화면 전환 로직 ===
+    // === 화면 전환 로직 (프로필 화면 데이터 채우기) ===
     function showMainContent() {
         mainContent.style.display = 'block';
         profileContent.style.display = 'none';
         searchContainer.style.visibility = 'visible';
-        fetchGames(); // 메인화면 갈 때 목록 새로고침
+        fetchGames(); 
     }
 
     function showProfileContent() {
         if (!currentUser) return;
         mainContent.style.display = 'none';
         profileContent.style.display = 'block';
-        searchContainer.style.visibility = 'hidden'; // 프로필에서는 검색창 숨김
+        searchContainer.style.visibility = 'hidden'; 
         
-        // 닉네임 입력칸에 현재 이름 채워넣기
-        document.getElementById('profileNameInput').value = currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '';
-        fetchMyGames(); // 내 게임 목록 불러오기
+        // ✨ 프로필 화면 대시보드 정보 채우기
+        const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
+        const avatarUrl = currentUser.user_metadata.avatar_url || 'https://via.placeholder.com/100';
+        
+        document.getElementById('profileAvatar').src = avatarUrl;
+        document.getElementById('profileDisplayName').textContent = currentName;
+        document.getElementById('profileNameInput').value = currentName;
+        document.getElementById('profileEmail').textContent = currentUser.email || 'No email provided';
+
+        fetchMyGames(); // 내 게임 목록 및 통계 계산
     }
 
     if (homeLogo) homeLogo.addEventListener('click', showMainContent);
     if (userInfo) userInfo.addEventListener('click', showProfileContent);
 
-    // ✨ 프로필 이름 변경 로직
+    // ✨ 프로필 이름 영구 저장 로직
     const saveProfileBtn = document.getElementById('saveProfileBtn');
     if(saveProfileBtn) {
         saveProfileBtn.onclick = async () => {
@@ -89,27 +102,27 @@ document.addEventListener('DOMContentLoaded', () => {
             saveProfileBtn.textContent = "저장 중...";
 
             try {
-                // Supabase Auth의 유저 메타데이터(이름) 업데이트
+                // preferred_username 대신 custom_name에 저장하여 깃허브 덮어쓰기 방지
                 const { data, error } = await supabaseClient.auth.updateUser({
-                    data: { preferred_username: newName }
+                    data: { custom_name: newName }
                 });
                 if (error) throw error;
                 
                 alert("닉네임이 성공적으로 변경되었습니다!");
-                updateAuthUI(data.user); // 상단 이름 즉시 반영
+                updateAuthUI(data.user);
+                showProfileContent(); // 대시보드 화면 바로 갱신
             } catch (error) {
                 alert("변경 실패: " + error.message);
             } finally {
                 saveProfileBtn.disabled = false;
-                saveProfileBtn.textContent = "변경";
+                saveProfileBtn.textContent = "저장하기";
             }
         }
     }
 
 
-    // === 메인 게임 목록 요소들 ===
     const gameGrid = document.getElementById('gameGrid');
-    const myGameGrid = document.getElementById('myGameGrid'); // 프로필용 그리드
+    const myGameGrid = document.getElementById('myGameGrid'); 
     const gameFrame = document.getElementById('gameFrame');
     const placeholder = document.getElementById('placeholder');
     const playerModal = document.getElementById('playerModal');
@@ -125,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentTag = '';
 
-    // 태그 목록 불러오기
     async function fetchAndRenderTags() {
         try {
             const { data, error } = await supabaseClient.from('games').select('tags');
@@ -141,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {}
     }
 
-    // 메인 게임 목록 가져오기
     async function fetchGames(searchTerm = '', tagFilter = '') {
         try {
             let query = supabaseClient.from('games').select('*').order('view_count', { ascending: false }).order('created_at', { ascending: false }).range(0, 49);
@@ -156,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error('데이터 로드 실패:', error.message); }
     }
 
-    // ✨ 프로필 화면용 '내 게임 목록' 가져오기
+    // ✨ 내 게임 목록 가져오기 및 통계(Stats) 계산
     async function fetchMyGames() {
         try {
             const { data, error } = await supabaseClient
@@ -166,22 +177,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
-            renderGames(data, myGameGrid, true); // true = 프로필 모드(수정 버튼 렌더링)
+
+            // 통계 계산 로직 추가
+            let totalViews = 0;
+            data.forEach(game => { totalViews += (game.view_count || 0); });
+            
+            document.getElementById('statTotalGames').textContent = `${data.length}개`;
+            document.getElementById('statTotalViews').textContent = `${totalViews}회`;
+
+            renderGames(data, myGameGrid, true); 
         } catch (error) { console.error('내 게임 로드 실패:', error.message); }
     }
 
     window.filterByTag = (tag) => {
         currentTag = tag;
-        showMainContent(); // 태그 클릭 시 무조건 메인으로 이동
+        showMainContent(); 
         if(sectionTitle) sectionTitle.textContent = tag ? `#${tag} Games` : 'Popular Games';
         if (searchInput) searchInput.value = ''; 
         if(sidebar) sidebar.classList.remove('active'); 
         fetchGames('', tag);
     };
 
-    // ✨ 게임 삭제 전역 함수
     window.deleteGame = async (gameId, event) => {
-        if(event) event.stopPropagation(); // 카드에서 클릭했을 때 모달창 방지
+        if(event) event.stopPropagation(); 
         if (!confirm("정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) return;
 
         try {
@@ -191,21 +209,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             playerModal.classList.remove('active');
             gameFrame.srcdoc = "";
-            
-            // 현재 화면이 어디냐에 따라 새로고침 분기
+            if (deleteGameBtn) deleteGameBtn.style.display = 'none';
+
             if (profileContent.style.display === 'block') fetchMyGames();
             else fetchGames();
         } catch (error) { alert("오류가 발생했습니다: " + error.message); }
     };
 
-    // ✨ 게임 정보 수정 전역 함수 및 모달 제어
     const editModal = document.getElementById('editModal');
     const closeEdit = document.getElementById('closeEdit');
     const submitEditGame = document.getElementById('submitEditGame');
     let editingGameId = null;
 
     window.openEditModal = (gameId, name, tags, event) => {
-        event.stopPropagation(); // 게임 플레이 모달 뜨는 것 방지
+        event.stopPropagation(); 
         editingGameId = gameId;
         document.getElementById('editGameName').value = name;
         document.getElementById('editGameTags').value = tags === 'undefined' ? '' : tags;
@@ -232,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
                 alert("정보가 수정되었습니다.");
                 editModal.classList.remove('active');
-                fetchMyGames(); // 내 목록 갱신
+                fetchMyGames(); 
             } catch(error) {
                 alert("수정 실패: " + error.message);
             } finally {
@@ -242,11 +259,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ✨ 공통 렌더링 함수 (isProfile 속성에 따라 수정/삭제 버튼 표시 결정)
     function renderGames(gameList, targetGrid, isProfile = false) {
         if (!targetGrid) return;
         if (gameList.length === 0) {
-            targetGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">해당하는 게임이 없습니다. 😢</p>';
+            targetGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">아직 업로드한 게임이 없습니다. 😢</p>';
             return;
         }
 
@@ -264,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tagsHtml = `<div class="card-tags">` + tagsArray.map(t => `<span class="tag-badge">${t.trim()}</span>`).join('') + `</div>`;
             }
 
-            // 프로필 화면일 때만 썸네일 우측 상단에 '수정/삭제' 액션 오버레이 추가
             let profileActionsHtml = '';
             if (isProfile) {
                 profileActionsHtml = `
@@ -292,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // 게임 플레이
     window.openGame = async (id, url, name, currentViewCount, uploaderId) => {
         document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
@@ -314,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id).then(({ error }) => {
-                // 백그라운드 갱신
                 if (profileContent.style.display === 'block') fetchMyGames();
                 else fetchGames(searchInput ? searchInput.value.trim() : '', currentTag); 
             });
@@ -329,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // === 업로드 기능 (기존과 동일) ===
     const uploadModal = document.getElementById('uploadModal');
     const closeUpload = document.getElementById('closeUpload');
     const submitGameBtn = document.getElementById('submitGame');
@@ -389,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 gameNameInput.value = ''; gameTagsInput.value = ''; gameFileInput.value = ''; thumbnailFileInput.value = '';
                 
-                // 업로드 후 현재 화면에 맞게 새로고침
                 if (profileContent.style.display === 'block') fetchMyGames();
                 else fetchGames(); 
             } catch (error) { alert("오류 발생: " + error.message); } 
@@ -397,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 각종 잡다한 이벤트
     if (menuBtn) menuBtn.addEventListener('click', () => sidebar.classList.add('active'));
     if (closeSidebar) closeSidebar.addEventListener('click', () => sidebar.classList.remove('active'));
     document.addEventListener('click', (e) => {
@@ -410,7 +420,11 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (gameFrame.msRequestFullscreen) gameFrame.msRequestFullscreen();
     };
     
-    if (closePlayer) closePlayer.onclick = () => { playerModal.classList.remove('active'); gameFrame.srcdoc = ""; };
+    if (closePlayer) closePlayer.onclick = () => { 
+        playerModal.classList.remove('active'); 
+        gameFrame.srcdoc = ""; 
+        if(deleteGameBtn) deleteGameBtn.style.display = 'none'; 
+    };
     
     if(document.getElementById('gameFileInput')) document.getElementById('gameFileInput').onchange = (e) => { document.getElementById('gameFileName').textContent = e.target.files[0]?.name || ''; };
     if(document.getElementById('thumbnailFileInput')) document.getElementById('thumbnailFileInput').onchange = (e) => { document.getElementById('thumbnailFileName').textContent = e.target.files[0]?.name || ''; };
@@ -426,6 +440,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 첫 시작은 메인 화면
     showMainContent();
 });
