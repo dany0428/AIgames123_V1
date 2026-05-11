@@ -182,36 +182,52 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ✨ 투표(추천/비추천) 전역 함수
-    window.handleVote = async (gameId, type, currentCount) => {
-        // 브라우저 캐시에 저장해서 같은 컴퓨터/폰에서 무한 클릭 방지
+    window.handleVote = async (gameId, currentCount) => {
         const voteKey = `voted_${gameId}`;
+        
+        // 1. 이미 투표했는지 확인
         if (localStorage.getItem(voteKey)) {
-            return alert("이미 이 게임에 평가를 남기셨습니다!");
+            return alert("이미 이 게임에 추천을 누르셨습니다!");
         }
 
         try {
-            const column = type === 'up' ? 'upvotes' : 'downvotes';
-            const { error } = await supabaseClient.from('games').update({ [column]: currentCount + 1 }).eq('id', gameId);
-            if (error) throw error;
+            // 2. 혹시나 글자로 넘어왔을 경우를 대비해 확실한 숫자로 변환합니다!
+            const safeCurrentCount = Number(currentCount) || 0;
+            const nextCount = safeCurrentCount + 1;
 
-            // UI 즉시 반영
-            const countSpan = document.getElementById(type === 'up' ? 'upvoteCount' : 'downvoteCount');
-            countSpan.textContent = currentCount + 1;
+            // 3. Supabase 데이터베이스 업데이트
+            const { error } = await supabaseClient
+                .from('games')
+                .update({ upvotes: nextCount })
+                .eq('id', gameId);
+
+            if (error) throw error; // 에러가 나면 아래 catch 블록으로 던집니다.
+
+            // 4. 성공했다면 화면의 숫자와 버튼 색상을 즉시 바꿉니다.
+            const countSpan = document.getElementById('upvoteCount');
+            if (countSpan) countSpan.textContent = nextCount;
             
             const upBtn = document.getElementById('upvoteBtn');
-            const downBtn = document.getElementById('downvoteBtn');
-            if (type === 'up') upBtn.classList.add('voted');
-            else downBtn.classList.add('voted');
+            if (upBtn) upBtn.classList.add('voted');
 
-            // 내 투표 기록 로컬에 저장
-            localStorage.setItem(voteKey, type);
+            // 5. 내 컴퓨터(브라우저)에 투표 완료 기록 저장
+            localStorage.setItem(voteKey, 'up');
             
-            // 백그라운드 리스트 갱신
-            if (profileContent.style.display === 'block') fetchMyGames();
-            else fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
+            // 6. 닫았을 때 목록에도 반영되도록 백그라운드 새로고침
+            const profileContent = document.getElementById('profileContent');
+            if (profileContent && profileContent.style.display === 'block') {
+                if (typeof fetchMyGames === 'function') fetchMyGames();
+            } else {
+                const searchInput = document.getElementById('searchInput');
+                if (typeof fetchGames === 'function') {
+                    fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
+                }
+            }
+
         } catch (error) {
-            alert("투표 중 오류가 발생했습니다.");
-            console.error(error);
+            // ✨ 만약 실패한다면 무슨 이유 때문에 실패했는지 화면에 확실히 띄워줍니다!
+            alert("추천 업데이트 실패 😢\n원인: " + error.message);
+            console.error("추천 에러 상세:", error);
         }
     };
 
