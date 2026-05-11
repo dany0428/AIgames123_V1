@@ -240,3 +240,59 @@ body {
   font-size: 0.7rem;
   border: 1px solid rgba(139, 92, 246, 0.4);
 }
+
+/* 프로필 섹션 스타일 */
+.profile-section {
+  background: #1a1025;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid #3b2d5a;
+  margin-bottom: 2rem;
+}
+
+/* 프로필 화면 내 게임 카드의 상단 액션 버튼 그룹 (수정, 삭제) */
+.profile-card-actions {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+/* 수정 버튼 (파란색) */
+.edit-btn {
+  background: rgba(59, 130, 246, 0.85); 
+}
+.edit-btn:hover {
+  background: rgba(59, 130, 246, 1);
+  transform: scale(1.1);
+}
+
+/* 삭제 버튼 (빨간색) */
+.del-btn {
+  background: rgba(239, 68, 68, 0.85);
+}
+.del-btn:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: scale(1.1);
+}
+
+/* hover 속성 적용을 위한 z-index 정리 */
+.game-thumbnail {
+  position: relative;
+}
