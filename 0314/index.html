@@ -10,14 +10,12 @@
 <body>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <h3>Genre / Category</h3>
+      <h3>장르 / 카테고리</h3>
       <button class="close-btn" id="closeSidebar">&times;</button>
     </div>
-    <ul class="genre-list" id="genreList">
-      </ul>
+    <ul class="genre-list" id="genreList"></ul>
   </aside>
 
-<!-- 기존 <nav class="navbar"> 안의 구조를 아래처럼 수정합니다 -->
   <nav class="navbar">
     <div class="nav-left">
       <div class="hamburger" id="menuBtn">
@@ -28,25 +26,43 @@
       <div class="logo" id="homeLogo" style="cursor: pointer;">AI Games Arcade</div>
     </div>
     
-    <div class="search-container">
+    <div class="search-container" id="searchContainer">
       <input type="text" class="search-input" id="searchInput" placeholder="Search games...">
     </div>
     
-    <!-- 인증 관련 UI 묶음 -->
-      <div class="nav-right" style="display: flex; gap: 1rem; align-items: center;">
-      <div id="userInfo" style="display: none; color: #a78bfa; font-weight: bold;"></div>
-      <!-- 색상과 텍스트를 GitHub 느낌으로 변경! -->
+    <div class="nav-right" style="display: flex; gap: 1rem; align-items: center;">
+      <!-- ✨ userInfo에 cursor:pointer를 추가하여 클릭할 수 있게 만듦 -->
+      <div id="userInfo" style="display: none; color: #a78bfa; font-weight: bold; cursor: pointer;" title="내 프로필 보기"></div>
       <button class="upload-btn" id="loginBtn" style="background: #24292e;">GitHub Login</button>
       <button class="upload-btn" id="uploadBtn" style="display: none;">Upload Game</button>
       <button class="upload-btn" id="logoutBtn" style="display: none; background: #3b2d5a;">Logout</button>
     </div>
   </nav>
 
-  <main class="main-content">
+  <!-- 기존 메인 화면 (id 추가) -->
+  <main class="main-content" id="mainContent">
     <h2 class="section-title" id="sectionTitle">Popular Games</h2>
     <div class="game-grid" id="gameGrid"></div>
   </main>
 
+  <!-- ✨ 새로 추가된 프로필 화면 (기본 숨김) -->
+  <main class="main-content" id="profileContent" style="display: none;">
+    <h2 class="section-title">My Profile</h2>
+    <div class="profile-section">
+      <div class="form-group">
+        <label class="form-label">Display Name (보이는 이름 변경)</label>
+        <div style="display: flex; gap: 10px; max-width: 400px;">
+          <input type="text" class="form-input" id="profileNameInput" placeholder="새로운 닉네임 입력">
+          <button class="upload-btn" id="saveProfileBtn">변경</button>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 3rem;">내가 업로드한 게임</h2>
+    <div class="game-grid" id="myGameGrid"></div>
+  </main>
+
+  <!-- 업로드 모달 -->
   <div class="modal-overlay" id="uploadModal">
     <div class="modal">
       <div class="modal-header">
@@ -54,58 +70,44 @@
         <button class="close-btn" id="closeUpload">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Game Name</label>
-          <input type="text" class="form-input" id="gameName" placeholder="Enter game name">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Tags (쉼표로 구분. 예: 액션, 퍼즐, 2D)</label>
-          <input type="text" class="form-input" id="gameTags" placeholder="e.g. Action, Puzzle, Retro">
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Game Thumbnail (Image)</label>
-          <div class="file-input-wrapper">
-            <input type="file" id="thumbnailFileInput" accept="image/*">
-            <div class="file-input-text">Click to upload Thumbnail</div>
-            <div class="file-name" id="thumbnailFileName"></div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Game File (.html only)</label>
-          <div class="file-input-wrapper">
-            <input type="file" id="gameFileInput" accept=".html">
-            <div class="file-input-text">Click to upload HTML game</div>
-            <div class="file-name" id="gameFileName"></div>
-          </div>
-        </div>
+        <div class="form-group"><label class="form-label">Game Name</label><input type="text" class="form-input" id="gameName"></div>
+        <div class="form-group"><label class="form-label">Tags (쉼표로 구분)</label><input type="text" class="form-input" id="gameTags"></div>
+        <div class="form-group"><label class="form-label">Game Thumbnail</label><div class="file-input-wrapper"><input type="file" id="thumbnailFileInput" accept="image/*"><div class="file-name" id="thumbnailFileName"></div></div></div>
+        <div class="form-group"><label class="form-label">Game File (.html)</label><div class="file-input-wrapper"><input type="file" id="gameFileInput" accept=".html"><div class="file-name" id="gameFileName"></div></div></div>
         <button class="submit-btn" id="submitGame">Launch Game</button>
       </div>
     </div>
   </div>
 
-<div class="modal-overlay" id="playerModal">
+  <!-- ✨ 게임 정보 수정 모달 (파일은 제외하고 이름과 태그만 빠르고 안전하게 수정) -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Game Info</h3>
+        <button class="close-btn" id="closeEdit">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Game Name</label><input type="text" class="form-input" id="editGameName"></div>
+        <div class="form-group"><label class="form-label">Tags (쉼표로 구분)</label><input type="text" class="form-input" id="editGameTags"></div>
+        <button class="submit-btn" id="submitEditGame">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 게임 플레이어 모달 -->
+  <div class="modal-overlay" id="playerModal">
     <div class="modal player-modal">
       <div class="player-header">
         <h3 class="player-title" id="playerTitle">Game Title</h3>
-        
-        <!-- ✨ 버튼들이 모여있는 상단 헤더 영역으로 삭제 버튼 이동 -->
         <div class="header-actions">
           <button class="delete-game-btn" id="deleteGameBtn" style="display: none;">삭제하기</button>
           <button class="fullscreen-btn" id="fullscreenBtn">전체화면</button>
           <button class="close-btn" id="closePlayer">&times;</button>
         </div>
-        
       </div>
       <div class="game-frame-container">
-        <!-- 기존에 여기 있던 삭제 버튼을 지웠습니다! -->
         <iframe id="gameFrame" sandbox="allow-scripts allow-pointer-lock allow-same-origin allow-modals" allowfullscreen frameborder="0"></iframe>
-        
-        <div id="placeholder" class="game-placeholder">
-          <p>Loading game...</p>
-        </div>
+        <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
       </div>
     </div>
   </div>
