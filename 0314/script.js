@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainContent = document.getElementById('mainContent');
     const profileContent = document.getElementById('profileContent');
 
-    // === 인증(Auth) UI 업데이트 (custom_name 우선 적용) ===
     function updateAuthUI(user) {
         const prevUser = currentUser;
         currentUser = user;
@@ -27,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(uploadBtn) uploadBtn.style.display = 'block';
             if(userInfo) {
                 userInfo.style.display = 'block';
-                // ✨ 깃허브 기본 이름보다 custom_name을 최우선으로 보여줍니다!
                 const userName = user.user_metadata.custom_name || user.user_metadata.preferred_username || user.user_metadata.full_name || '게이머';
                 userInfo.textContent = `${userName}님`;
             }
@@ -40,18 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (prevUser !== user && typeof fetchGames === 'function') {
-            const currentSearch = searchInput ? searchInput.value.trim() : '';
-            fetchGames(currentSearch, currentTag);
+            fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
         }
     }
 
     async function initAuth() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         updateAuthUI(session?.user);
-
-        supabaseClient.auth.onAuthStateChange((_event, session) => {
-            updateAuthUI(session?.user);
-        });
+        supabaseClient.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user));
     }
     initAuth();
 
@@ -62,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload(); 
     };
 
-    // === 화면 전환 로직 (프로필 화면 데이터 채우기) ===
     function showMainContent() {
         mainContent.style.display = 'block';
         profileContent.style.display = 'none';
@@ -76,57 +69,43 @@ document.addEventListener('DOMContentLoaded', () => {
         profileContent.style.display = 'block';
         searchContainer.style.visibility = 'hidden'; 
         
-        // ✨ 프로필 화면 대시보드 정보 채우기
         const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
         const avatarUrl = currentUser.user_metadata.avatar_url || 'https://via.placeholder.com/100';
         
-        document.getElementById('profileAvatar').src = avatarUrl;
-        document.getElementById('profileDisplayName').textContent = currentName;
-        document.getElementById('profileNameInput').value = currentName;
-        document.getElementById('profileEmail').textContent = currentUser.email || 'No email provided';
+        if(document.getElementById('profileAvatar')) document.getElementById('profileAvatar').src = avatarUrl;
+        if(document.getElementById('profileDisplayName')) document.getElementById('profileDisplayName').textContent = currentName;
+        if(document.getElementById('profileNameInput')) document.getElementById('profileNameInput').value = currentName;
+        if(document.getElementById('profileEmail')) document.getElementById('profileEmail').textContent = currentUser.email || 'No email provided';
 
-        fetchMyGames(); // 내 게임 목록 및 통계 계산
+        fetchMyGames(); 
     }
 
     if (homeLogo) homeLogo.addEventListener('click', showMainContent);
     if (userInfo) userInfo.addEventListener('click', showProfileContent);
 
-    // ✨ 프로필 이름 영구 저장 로직
     const saveProfileBtn = document.getElementById('saveProfileBtn');
     if(saveProfileBtn) {
         saveProfileBtn.onclick = async () => {
             const newName = document.getElementById('profileNameInput').value.trim();
             if(!newName) return alert("닉네임을 입력해주세요.");
-            
             saveProfileBtn.disabled = true;
             saveProfileBtn.textContent = "저장 중...";
-
             try {
-                // preferred_username 대신 custom_name에 저장하여 깃허브 덮어쓰기 방지
-                const { data, error } = await supabaseClient.auth.updateUser({
-                    data: { custom_name: newName }
-                });
+                const { data, error } = await supabaseClient.auth.updateUser({ data: { custom_name: newName } });
                 if (error) throw error;
-                
                 alert("닉네임이 성공적으로 변경되었습니다!");
                 updateAuthUI(data.user);
-                showProfileContent(); // 대시보드 화면 바로 갱신
-            } catch (error) {
-                alert("변경 실패: " + error.message);
-            } finally {
-                saveProfileBtn.disabled = false;
-                saveProfileBtn.textContent = "저장하기";
-            }
+                showProfileContent(); 
+            } catch (error) { alert("변경 실패: " + error.message); } 
+            finally { saveProfileBtn.disabled = false; saveProfileBtn.textContent = "저장하기"; }
         }
     }
-
 
     const gameGrid = document.getElementById('gameGrid');
     const myGameGrid = document.getElementById('myGameGrid'); 
     const gameFrame = document.getElementById('gameFrame');
     const placeholder = document.getElementById('placeholder');
     const playerModal = document.getElementById('playerModal');
-    
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const closeSidebar = document.getElementById('closeSidebar');
@@ -161,30 +140,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const { data, error } = await query;
             if (error) throw error;
-            
             renderGames(data, gameGrid, false);
             fetchAndRenderTags(); 
         } catch (error) { console.error('데이터 로드 실패:', error.message); }
     }
 
-    // ✨ 내 게임 목록 가져오기 및 통계(Stats) 계산
     async function fetchMyGames() {
         try {
-            const { data, error } = await supabaseClient
-                .from('games')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false });
-            
+            const { data, error } = await supabaseClient.from('games').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
             if (error) throw error;
-
-            // 통계 계산 로직 추가
             let totalViews = 0;
             data.forEach(game => { totalViews += (game.view_count || 0); });
-            
-            document.getElementById('statTotalGames').textContent = `${data.length}개`;
-            document.getElementById('statTotalViews').textContent = `${totalViews}회`;
-
+            if(document.getElementById('statTotalGames')) document.getElementById('statTotalGames').textContent = `${data.length}개`;
+            if(document.getElementById('statTotalViews')) document.getElementById('statTotalViews').textContent = `${totalViews}회`;
             renderGames(data, myGameGrid, true); 
         } catch (error) { console.error('내 게임 로드 실패:', error.message); }
     }
@@ -201,19 +169,50 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteGame = async (gameId, event) => {
         if(event) event.stopPropagation(); 
         if (!confirm("정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) return;
-
         try {
             const { error } = await supabaseClient.from('games').delete().eq('id', gameId);
             if (error) throw error;
             alert("게임이 삭제되었습니다.");
-            
             playerModal.classList.remove('active');
             gameFrame.srcdoc = "";
             if (deleteGameBtn) deleteGameBtn.style.display = 'none';
-
             if (profileContent.style.display === 'block') fetchMyGames();
             else fetchGames();
         } catch (error) { alert("오류가 발생했습니다: " + error.message); }
+    };
+
+    // ✨ 투표(추천/비추천) 전역 함수
+    window.handleVote = async (gameId, type, currentCount) => {
+        // 브라우저 캐시에 저장해서 같은 컴퓨터/폰에서 무한 클릭 방지
+        const voteKey = `voted_${gameId}`;
+        if (localStorage.getItem(voteKey)) {
+            return alert("이미 이 게임에 평가를 남기셨습니다!");
+        }
+
+        try {
+            const column = type === 'up' ? 'upvotes' : 'downvotes';
+            const { error } = await supabaseClient.from('games').update({ [column]: currentCount + 1 }).eq('id', gameId);
+            if (error) throw error;
+
+            // UI 즉시 반영
+            const countSpan = document.getElementById(type === 'up' ? 'upvoteCount' : 'downvoteCount');
+            countSpan.textContent = currentCount + 1;
+            
+            const upBtn = document.getElementById('upvoteBtn');
+            const downBtn = document.getElementById('downvoteBtn');
+            if (type === 'up') upBtn.classList.add('voted');
+            else downBtn.classList.add('voted');
+
+            // 내 투표 기록 로컬에 저장
+            localStorage.setItem(voteKey, type);
+            
+            // 백그라운드 리스트 갱신
+            if (profileContent.style.display === 'block') fetchMyGames();
+            else fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
+        } catch (error) {
+            alert("투표 중 오류가 발생했습니다.");
+            console.error(error);
+        }
     };
 
     const editModal = document.getElementById('editModal');
@@ -230,39 +229,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if(closeEdit) closeEdit.onclick = () => editModal.classList.remove('active');
-
     if(submitEditGame) {
         submitEditGame.onclick = async () => {
             const newName = document.getElementById('editGameName').value.trim();
             const newTags = document.getElementById('editGameTags').value.trim();
             if(!newName) return alert("게임 이름을 입력해주세요.");
-
             submitEditGame.disabled = true;
             submitEditGame.textContent = "저장 중...";
-
             try {
-                const { error } = await supabaseClient
-                    .from('games')
-                    .update({ name: newName, tags: newTags })
-                    .eq('id', editingGameId);
-                
+                const { error } = await supabaseClient.from('games').update({ name: newName, tags: newTags }).eq('id', editingGameId);
                 if (error) throw error;
                 alert("정보가 수정되었습니다.");
                 editModal.classList.remove('active');
                 fetchMyGames(); 
-            } catch(error) {
-                alert("수정 실패: " + error.message);
-            } finally {
-                submitEditGame.disabled = false;
-                submitEditGame.textContent = "저장하기";
-            }
+            } catch(error) { alert("수정 실패: " + error.message); } 
+            finally { submitEditGame.disabled = false; submitEditGame.textContent = "저장하기"; }
         }
     }
 
     function renderGames(gameList, targetGrid, isProfile = false) {
         if (!targetGrid) return;
         if (gameList.length === 0) {
-            targetGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">아직 업로드한 게임이 없습니다. 😢</p>';
+            targetGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">목록이 비어있습니다. 😢</p>';
             return;
         }
 
@@ -274,6 +262,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const viewCount = game.view_count || 0;
             const uploaderId = game.user_id ? `'${game.user_id}'` : 'null';
             
+            // 이름에 따옴표(')가 들어가면 에러가 나므로 안전하게 변환
+            const safeName = game.name ? game.name.replace(/'/g, "\\'") : 'Untitled';
+            const safeUploader = game.uploader_name ? game.uploader_name.replace(/'/g, "\\'") : '익명의 게이머';
+            
             let tagsHtml = '';
             if (game.tags) {
                 const tagsArray = game.tags.split(',').slice(0, 3);
@@ -284,13 +276,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isProfile) {
                 profileActionsHtml = `
                 <div class="profile-card-actions">
-                    <button class="action-btn edit-btn" onclick="openEditModal(${game.id}, '${game.name}', '${game.tags || ''}', event)" title="정보 수정">✏️</button>
+                    <button class="action-btn edit-btn" onclick="openEditModal(${game.id}, '${safeName}', '${game.tags || ''}', event)" title="정보 수정">✏️</button>
                     <button class="action-btn del-btn" onclick="deleteGame(${game.id}, event)" title="게임 삭제">🗑️</button>
                 </div>`;
             }
 
+            // 클릭 이벤트에 새롭게 데이터(업로더 이름, 추천수) 전달
             return `
-            <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${game.name}', ${viewCount}, ${uploaderId})">
+            <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${game.upvotes || 0}, ${game.downvotes || 0})">
                 <div class="game-thumbnail">
                     ${thumbnailContent}
                     ${profileActionsHtml}
@@ -307,8 +300,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    window.openGame = async (id, url, name, currentViewCount, uploaderId) => {
+    // ✨ 게임 모달 열기 (업로더 정보 바인딩)
+    window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, downvotes) => {
         document.getElementById('playerTitle').textContent = name;
+        
+        // 업로더 이름 적용
+        if(document.getElementById('uploaderName')) document.getElementById('uploaderName').textContent = uploaderName;
+        
+        // 추천/비추천 버튼 상태 리셋 및 세팅
+        const upBtn = document.getElementById('upvoteBtn');
+        const downBtn = document.getElementById('downvoteBtn');
+        document.getElementById('upvoteCount').textContent = upvotes;
+        document.getElementById('downvoteCount').textContent = downvotes;
+        
+        const pastVote = localStorage.getItem(`voted_${id}`);
+        upBtn.classList.remove('voted');
+        downBtn.classList.remove('voted');
+        if (pastVote === 'up') upBtn.classList.add('voted');
+        if (pastVote === 'down') downBtn.classList.add('voted');
+
+        // 투표 이벤트 등록
+        upBtn.onclick = () => handleVote(id, 'up', upvotes);
+        downBtn.onclick = () => handleVote(id, 'down', downvotes);
+
         playerModal.classList.add('active');
         gameFrame.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
@@ -391,8 +405,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     thumbPublicUrl = thumbData.publicUrl;
                 }
 
+                // ✨ 업로드 시 작성자 이름과 초기 투표수 저장
+                const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
+
                 const { error: dbError } = await supabaseClient.from('games').insert([{ 
-                    id: Date.now(), name: name, file_url: gamePublicUrl, thumbnail_url: thumbPublicUrl, tags: tags, view_count: 0, user_id: currentUser.id 
+                    id: Date.now(), 
+                    name: name, 
+                    file_url: gamePublicUrl, 
+                    thumbnail_url: thumbPublicUrl, 
+                    tags: tags, 
+                    view_count: 0, 
+                    user_id: currentUser.id,
+                    uploader_name: currentName,
+                    upvotes: 0,
+                    downvotes: 0
                 }]);
                 if (dbError) throw dbError;
 
