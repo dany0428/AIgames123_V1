@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginBtn) {
         loginBtn.onclick = async () => {
             await supabaseClient.auth.signInWithOAuth({
-                provider: 'google'
+                provider: 'github'
             });
         };
     }
