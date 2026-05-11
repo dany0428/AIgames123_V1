@@ -296,3 +296,95 @@ body {
 .game-thumbnail {
   position: relative;
 }
+
+/* ✨ 프로필 헤더 카드 (통계 및 프사) */
+.profile-header-card {
+  background: linear-gradient(135deg, #2d1f4a, #1a1025);
+  border: 2px solid #3b2d5a;
+  border-radius: 16px;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #8b5cf6;
+  object-fit: cover;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+.profile-display-name {
+  font-size: 2.2rem;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.profile-email {
+  color: #a78bfa;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+/* 통계(Stats) 디자인 */
+.profile-stats {
+  display: flex;
+  gap: 3rem;
+  background: rgba(0,0,0,0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 프로필 설정 카드 */
+.profile-settings-card {
+  background: #1a1025;
+  border: 2px solid #3b2d5a;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.settings-title {
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  border-bottom: 1px solid #3b2d5a;
+  padding-bottom: 0.8rem;
+}
+
+/* 반응형 처리 (모바일 화면일 때) */
+@media (max-width: 600px) {
+  .profile-header-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .profile-stats {
+    justify-content: center;
+    gap: 1.5rem;
+  }
+}
