@@ -45,16 +45,43 @@
     <div class="game-grid" id="gameGrid"></div>
   </main>
 
-  <!-- ✨ 새로 추가된 프로필 화면 (기본 숨김) -->
+<!-- 프로필 화면 -->
   <main class="main-content" id="profileContent" style="display: none;">
-    <h2 class="section-title">My Profile</h2>
-    <div class="profile-section">
+    
+    <!-- 프로필 요약 카드 -->
+    <div class="profile-header-card">
+      <div class="profile-avatar-container">
+        <!-- 깃허브 프사가 자동으로 들어갑니다 -->
+        <img id="profileAvatar" src="https://via.placeholder.com/100" alt="Profile Avatar" class="profile-avatar">
+      </div>
+      <div class="profile-info-summary">
+        <h2 id="profileDisplayName" class="profile-display-name">게이머</h2>
+        <p class="profile-email" id="profileEmail">user@example.com</p>
+        
+        <!-- 내 통계 요약 -->
+        <div class="profile-stats">
+          <div class="stat-box">
+            <span class="stat-value" id="statTotalGames">0</span>
+            <span class="stat-label">업로드한 게임</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value" id="statTotalViews">0</span>
+            <span class="stat-label">총 누적 조회수</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 설정 카드 -->
+    <div class="profile-settings-card">
+      <h3 class="settings-title">⚙️ 프로필 설정</h3>
       <div class="form-group">
-        <label class="form-label">Display Name (보이는 이름 변경)</label>
+        <label class="form-label">Display Name (내 마음대로 닉네임 설정)</label>
         <div style="display: flex; gap: 10px; max-width: 400px;">
           <input type="text" class="form-input" id="profileNameInput" placeholder="새로운 닉네임 입력">
-          <button class="upload-btn" id="saveProfileBtn">변경</button>
+          <button class="upload-btn" id="saveProfileBtn">저장하기</button>
         </div>
+        <p style="font-size: 0.8rem; color: #a78bfa; margin-top: 8px;">* 여기서 설정한 닉네임은 다시 로그인해도 영구적으로 유지됩니다.</p>
       </div>
     </div>
 
