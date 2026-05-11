@@ -90,20 +90,22 @@
     <div class="modal player-modal">
       <div class="player-header">
         <h3 class="player-title" id="playerTitle">Game Title</h3>
+        
+        <!-- ✨ 버튼들이 모여있는 상단 헤더 영역으로 삭제 버튼 이동 -->
         <div class="header-actions">
+          <button class="delete-game-btn" id="deleteGameBtn" style="display: none;">삭제하기</button>
           <button class="fullscreen-btn" id="fullscreenBtn">전체화면</button>
           <button class="close-btn" id="closePlayer">&times;</button>
         </div>
+        
       </div>
       <div class="game-frame-container">
+        <!-- 기존에 여기 있던 삭제 버튼을 지웠습니다! -->
         <iframe id="gameFrame" sandbox="allow-scripts allow-pointer-lock allow-same-origin allow-modals" allowfullscreen frameborder="0"></iframe>
         
         <div id="placeholder" class="game-placeholder">
           <p>Loading game...</p>
         </div>
-
-        <!-- ✨ 게임 화면 우측 하단에 들어갈 삭제 버튼 추가 (기본적으로 숨김) -->
-        <button class="delete-game-btn" id="deleteGameBtn" style="display: none;">삭제하기</button>
       </div>
     </div>
   </div>
