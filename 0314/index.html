@@ -17,6 +17,7 @@
       </ul>
   </aside>
 
+<!-- 기존 <nav class="navbar"> 안의 구조를 아래처럼 수정합니다 -->
   <nav class="navbar">
     <div class="nav-left">
       <div class="hamburger" id="menuBtn">
@@ -30,7 +31,15 @@
     <div class="search-container">
       <input type="text" class="search-input" id="searchInput" placeholder="Search games...">
     </div>
-    <button class="upload-btn" id="uploadBtn">Upload Game</button>
+    
+    <!-- 인증 관련 UI 묶음 -->
+      <div class="nav-right" style="display: flex; gap: 1rem; align-items: center;">
+      <div id="userInfo" style="display: none; color: #a78bfa; font-weight: bold;"></div>
+      <!-- 색상과 텍스트를 GitHub 느낌으로 변경! -->
+      <button class="upload-btn" id="loginBtn" style="background: #24292e;">GitHub Login</button>
+      <button class="upload-btn" id="uploadBtn" style="display: none;">Upload Game</button>
+      <button class="upload-btn" id="logoutBtn" style="display: none; background: #3b2d5a;">Logout</button>
+    </div>
   </nav>
 
   <main class="main-content">
