@@ -236,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         thumbnail_url: thumbPublicUrl,
                         tags: tags, // 태그 저장!
                         view_count: 0 
+                        user_id: currentUser.id
                     }]);
 
                 if (dbError) throw dbError;
