@@ -115,6 +115,24 @@ body {
 
 .game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
+/* 삭제버튼*/
+.delete-game-btn {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: #ef4444; /* 경고를 나타내는 부드러운 빨간색 텍스트 */
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+
+.delete-game-btn:hover {
+  background-color: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
 /* iframe 크기가 컨테이너에 꽉 차도록 수정 */
 #gameFrame {
   width: 100%;
