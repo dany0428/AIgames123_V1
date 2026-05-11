@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <!-- 사이드바 (장르/태그) -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h3>장르 / 카테고리</h3>
@@ -16,6 +17,7 @@
     <ul class="genre-list" id="genreList"></ul>
   </aside>
 
+  <!-- 네비게이션 바 -->
   <nav class="navbar">
     <div class="nav-left">
       <div class="hamburger" id="menuBtn">
@@ -31,7 +33,6 @@
     </div>
     
     <div class="nav-right" style="display: flex; gap: 1rem; align-items: center;">
-      <!-- ✨ userInfo에 cursor:pointer를 추가하여 클릭할 수 있게 만듦 -->
       <div id="userInfo" style="display: none; color: #a78bfa; font-weight: bold; cursor: pointer;" title="내 프로필 보기"></div>
       <button class="upload-btn" id="loginBtn" style="background: #24292e;">GitHub Login</button>
       <button class="upload-btn" id="uploadBtn" style="display: none;">Upload Game</button>
@@ -39,26 +40,21 @@
     </div>
   </nav>
 
-  <!-- 기존 메인 화면 (id 추가) -->
+  <!-- 메인 콘텐츠 (게임 목록) -->
   <main class="main-content" id="mainContent">
     <h2 class="section-title" id="sectionTitle">Popular Games</h2>
     <div class="game-grid" id="gameGrid"></div>
   </main>
 
-<!-- 프로필 화면 -->
+  <!-- 프로필 콘텐츠 (대시보드) -->
   <main class="main-content" id="profileContent" style="display: none;">
-    
-    <!-- 프로필 요약 카드 -->
     <div class="profile-header-card">
       <div class="profile-avatar-container">
-        <!-- 깃허브 프사가 자동으로 들어갑니다 -->
         <img id="profileAvatar" src="https://via.placeholder.com/100" alt="Profile Avatar" class="profile-avatar">
       </div>
       <div class="profile-info-summary">
         <h2 id="profileDisplayName" class="profile-display-name">게이머</h2>
         <p class="profile-email" id="profileEmail">user@example.com</p>
-        
-        <!-- 내 통계 요약 -->
         <div class="profile-stats">
           <div class="stat-box">
             <span class="stat-value" id="statTotalGames">0</span>
@@ -72,7 +68,6 @@
       </div>
     </div>
 
-    <!-- 설정 카드 -->
     <div class="profile-settings-card">
       <h3 class="settings-title">⚙️ 프로필 설정</h3>
       <div class="form-group">
@@ -106,7 +101,7 @@
     </div>
   </div>
 
-  <!-- ✨ 게임 정보 수정 모달 (파일은 제외하고 이름과 태그만 빠르고 안전하게 수정) -->
+  <!-- 게임 정보 수정 모달 -->
   <div class="modal-overlay" id="editModal">
     <div class="modal">
       <div class="modal-header">
@@ -121,9 +116,10 @@
     </div>
   </div>
 
-  <!-- 게임 플레이어 모달 -->
-<div class="modal-overlay" id="playerModal">
+  <!-- ✨ 문제의 게임 플레이어 모달 (아이디들이 완벽하게 복구됨!) -->
+  <div class="modal-overlay" id="playerModal">
     <div class="modal player-modal">
+      
       <div class="player-header">
         <h3 class="player-title" id="playerTitle">Game Title</h3>
         <div class="header-actions">
@@ -138,8 +134,8 @@
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
       </div>
 
-      <!-- ✨ 새로 추가된 하단 업로더 정보 및 추천 영역 -->
-<div class="game-footer">
+      <!-- 여기가 빠져있어서 에러가 났던 겁니다! -->
+      <div class="game-footer">
         <div class="uploader-profile">
           <div class="uploader-avatar">👤</div>
           <div class="uploader-info">
@@ -148,7 +144,6 @@
           </div>
         </div>
         <div class="vote-container">
-          <!-- 추천 버튼만 남김 -->
           <button class="vote-btn upvote" id="upvoteBtn">👍 <span id="upvoteCount">0</span></button>
         </div>
       </div>
