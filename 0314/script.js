@@ -302,32 +302,40 @@ function renderGames(gameList, targetGrid, isProfile = false) {
     }
 
     // ✨ 게임 모달 열기 (업로더 정보 바인딩)
-    window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, downvotes) => {
-        document.getElementById('playerTitle').textContent = name;
+   // ✨ 절대 에러가 나지 않는 초강력 방어형 openGame 함수
+    window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes) => {
         
-        // 업로더 이름 적용
-        if(document.getElementById('uploaderName')) document.getElementById('uploaderName').textContent = uploaderName;
+        // 1. HTML에 해당 ID가 "있을 때만" 텍스트를 바꿉니다! (여기서 에러가 났었습니다)
+        const titleEl = document.getElementById('playerTitle');
+        if (titleEl) titleEl.textContent = name;
+
+        const uploaderEl = document.getElementById('uploaderName');
+        if (uploaderEl) uploaderEl.textContent = uploaderName;
         
-        // 추천/비추천 버튼 상태 리셋 및 세팅
+        const upCountEl = document.getElementById('upvoteCount');
+        if (upCountEl) upCountEl.textContent = upvotes;
+
         const upBtn = document.getElementById('upvoteBtn');
-        const downBtn = document.getElementById('downvoteBtn');
-        document.getElementById('upvoteCount').textContent = upvotes;
-        document.getElementById('downvoteCount').textContent = downvotes;
-        
         const pastVote = localStorage.getItem(`voted_${id}`);
-        upBtn.classList.remove('voted');
-        downBtn.classList.remove('voted');
-        if (pastVote === 'up') upBtn.classList.add('voted');
-        if (pastVote === 'down') downBtn.classList.add('voted');
+        
+        if (upBtn) {
+            upBtn.classList.remove('voted');
+            if (pastVote === 'up') upBtn.classList.add('voted');
+            upBtn.onclick = () => handleUpvote(id, upvotes);
+        }
 
-        // 투표 이벤트 등록
-        upBtn.onclick = () => handleVote(id, 'up', upvotes);
-        downBtn.onclick = () => handleVote(id, 'down', downvotes);
+        // 2. 모달창 및 UI 요소들
+        const playerModal = document.getElementById('playerModal');
+        const gameFrame = document.getElementById('gameFrame');
+        const placeholder = document.getElementById('placeholder');
+        const deleteGameBtn = document.getElementById('deleteGameBtn');
 
-        playerModal.classList.add('active');
-        gameFrame.style.display = 'block';
+        // 모달창 띄우기
+        if (playerModal) playerModal.classList.add('active');
+        if (gameFrame) gameFrame.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
 
+        // 삭제 버튼 로직
         if (deleteGameBtn) {
             if (currentUser && currentUser.id === uploaderId) {
                 deleteGameBtn.style.display = 'block';
@@ -339,20 +347,31 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         }
         
         const viewportMeta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
-        gameFrame.srcdoc = `${viewportMeta}<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:black;">게임을 불러오는 중입니다...</div>`;
+        if (gameFrame) {
+            gameFrame.srcdoc = `${viewportMeta}<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:black;">게임을 불러오는 중입니다...</div>`;
+        }
 
         try {
+            // 조회수 증가 및 목록 갱신
             supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id).then(({ error }) => {
-                if (profileContent.style.display === 'block') fetchMyGames();
-                else fetchGames(searchInput ? searchInput.value.trim() : '', currentTag); 
+                const profileContent = document.getElementById('profileContent');
+                if (profileContent && profileContent.style.display === 'block') {
+                    fetchMyGames();
+                } else {
+                    const searchInput = document.getElementById('searchInput');
+                    fetchGames(searchInput ? searchInput.value.trim() : '', currentTag); 
+                }
             });
 
+            // 게임 HTML 파일 가져오기
             const response = await fetch(url);
             if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
             const htmlContent = await response.text();
-            gameFrame.srcdoc = viewportMeta + htmlContent;
+            
+            if (gameFrame) gameFrame.srcdoc = viewportMeta + htmlContent;
         } catch (error) {
-            gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; color:red;">문제가 발생했습니다.</div>';
+            if (gameFrame) gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; color:red;">문제가 발생했습니다.</div>';
+            console.error(error);
         }
     };
 
