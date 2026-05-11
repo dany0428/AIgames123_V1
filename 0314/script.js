@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderGames(gameList, targetGrid, isProfile = false) {
+function renderGames(gameList, targetGrid, isProfile = false) {
         if (!targetGrid) return;
         if (gameList.length === 0) {
             targetGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">목록이 비어있습니다. 😢</p>';
@@ -262,9 +262,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const viewCount = game.view_count || 0;
             const uploaderId = game.user_id ? `'${game.user_id}'` : 'null';
             
-            // 이름에 따옴표(')가 들어가면 에러가 나므로 안전하게 변환
-            const safeName = game.name ? game.name.replace(/'/g, "\\'") : 'Untitled';
-            const safeUploader = game.uploader_name ? game.uploader_name.replace(/'/g, "\\'") : '익명의 게이머';
+            // ✨ 에러 방지 강화: 데이터가 비어있어도 절대 에러 나지 않게!
+            const safeName = (game.name || 'Untitled').replace(/'/g, "\\'");
+            const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
+            const safeUpvotes = game.upvotes || 0;
             
             let tagsHtml = '';
             if (game.tags) {
@@ -281,9 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
             }
 
-            // 클릭 이벤트에 새롭게 데이터(업로더 이름, 추천수) 전달
+            // onclick에 safeUpvotes를 적용
             return `
-            <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${game.upvotes || 0}, ${game.downvotes || 0})">
+            <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${safeUpvotes})">
                 <div class="game-thumbnail">
                     ${thumbnailContent}
                     ${profileActionsHtml}
