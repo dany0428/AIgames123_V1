@@ -3,7 +3,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // === 인증(Auth) 로직 ===
     let currentUser = null; 
 
     const loginBtn = document.getElementById('loginBtn');
@@ -12,9 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('uploadBtn');
 
     function updateAuthUI(user) {
-        const prevUser = currentUser;
         currentUser = user;
-        
         if (user) {
             if(loginBtn) loginBtn.style.display = 'none';
             if(logoutBtn) logoutBtn.style.display = 'block';
@@ -29,12 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(logoutBtn) logoutBtn.style.display = 'none';
             if(uploadBtn) uploadBtn.style.display = 'none';
             if(userInfo) userInfo.style.display = 'none';
-        }
-
-        // 로그인/로그아웃 상태가 바뀌면 내 게임의 '삭제 버튼'을 갱신하기 위해 목록 다시 불러오기
-        if (prevUser !== user && typeof fetchGames === 'function') {
-            const currentSearch = searchInput ? searchInput.value.trim() : '';
-            fetchGames(currentSearch, currentTag);
         }
     }
 
@@ -55,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload(); 
     };
 
-    // === DOM 요소들 ===
+    // DOM 요소들
     const gameGrid = document.getElementById('gameGrid');
     const gameFrame = document.getElementById('gameFrame');
     const placeholder = document.getElementById('placeholder');
@@ -74,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closePlayer = document.getElementById('closePlayer');
     const fullscreenBtn = document.getElementById('fullscreenBtn'); 
     const submitGameBtn = document.getElementById('submitGame');
+    const deleteGameBtn = document.getElementById('deleteGameBtn'); // 새로 추가된 삭제 버튼
     
     const gameNameInput = document.getElementById('gameName');
     const gameTagsInput = document.getElementById('gameTags');
@@ -84,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentTag = '';
 
-    // 태그 목록 불러오기
     async function fetchAndRenderTags() {
         try {
             const { data, error } = await supabaseClient.from('games').select('tags');
@@ -108,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {}
     }
 
-    // 게임 목록 가져오기
     async function fetchGames(searchTerm = '', tagFilter = '') {
         try {
             let query = supabaseClient
@@ -139,26 +129,21 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchGames('', tag);
     };
 
-    // ✨ 게임 삭제 전역 함수 추가
-    window.deleteGame = async (gameId, event) => {
-        event.stopPropagation(); // 삭제 버튼 눌렀을 때 게임이 실행(모달창 오픈)되는 것을 막아줌
-
-        if (!confirm("정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) {
-            return;
-        }
+    // ✨ 삭제 처리 로직
+    window.deleteGame = async (gameId) => {
+        if (!confirm("정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) return;
 
         try {
-            // Supabase 데이터베이스에서 삭제
-            const { error } = await supabaseClient
-                .from('games')
-                .delete()
-                .eq('id', gameId);
-
+            const { error } = await supabaseClient.from('games').delete().eq('id', gameId);
             if (error) throw error;
 
             alert("게임이 삭제되었습니다.");
             
-            // 삭제 후 목록 새로고침
+            // 삭제 후 모달창 닫기 및 화면 초기화
+            playerModal.classList.remove('active');
+            gameFrame.srcdoc = "";
+            if (deleteGameBtn) deleteGameBtn.style.display = 'none';
+
             const currentSearch = searchInput ? searchInput.value.trim() : '';
             fetchGames(currentSearch, currentTag);
         } catch (error) {
@@ -167,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 게임 목록 그리기
     function renderGames(gameList) {
         if (!gameGrid) return;
         
@@ -182,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="50"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M15 9v6M12 12h6"/></svg>`;
 
             const viewCount = game.view_count || 0;
+            const uploaderId = game.user_id ? `'${game.user_id}'` : 'null'; // 업로더 ID 파라미터 전달 준비
             
             let tagsHtml = '';
             if (game.tags) {
@@ -189,17 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 tagsHtml = `<div class="card-tags">` + tagsArray.map(t => `<span class="tag-badge">${t.trim()}</span>`).join('') + `</div>`;
             }
 
-            // ✨ 로그인한 유저 ID와 게임 올린 유저 ID가 같으면 삭제 버튼 추가
-            let deleteBtnHtml = '';
-            if (currentUser && currentUser.id === game.user_id) {
-                deleteBtnHtml = `<button class="delete-btn" onclick="deleteGame(${game.id}, event)" title="내 게임 삭제">🗑️</button>`;
-            }
-
+            // 휴지통 모양 아이콘 삭제!
+            // openGame 함수에 uploaderId를 넘겨주도록 수정
             return `
-            <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${game.name}', ${viewCount})">
+            <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${game.name}', ${viewCount}, ${uploaderId})">
                 <div class="game-thumbnail">
                     ${thumbnailContent}
-                    ${deleteBtnHtml} <!-- 휴지통 버튼 렌더링 -->
                     <div class="card-badges">
                         <span class="view-badge">👁️ ${viewCount}</span>
                     </div>
@@ -213,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // 업로드 실행
     if (submitGameBtn) {
         submitGameBtn.onclick = async () => {
             if (!currentUser) return alert("로그인이 필요합니다!");
@@ -235,13 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     reader.onerror = (e) => reject(new Error("파일 읽기 실패"));
                     reader.readAsText(file, "UTF-8");
                 });
-
                 const blob = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
                 const fileName = `${Date.now()}_${file.name}`;
 
                 const { error: uploadError } = await supabaseClient.storage.from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
                 if (uploadError) throw uploadError;
-
                 const { data: { publicUrl: gamePublicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
 
                 let thumbPublicUrl = null;
@@ -253,18 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     thumbPublicUrl = thumbData.publicUrl;
                 }
 
-                const { error: dbError } = await supabaseClient
-                    .from('games')
-                    .insert([{ 
-                        id: Date.now(), 
-                        name: name, 
-                        file_url: gamePublicUrl,
-                        thumbnail_url: thumbPublicUrl,
-                        tags: tags,
-                        view_count: 0, 
-                        user_id: currentUser.id 
-                    }]);
-
+                const { error: dbError } = await supabaseClient.from('games').insert([{ 
+                    id: Date.now(), 
+                    name: name, 
+                    file_url: gamePublicUrl,
+                    thumbnail_url: thumbPublicUrl,
+                    tags: tags,
+                    view_count: 0, 
+                    user_id: currentUser.id 
+                }]);
                 if (dbError) throw dbError;
 
                 alert("업로드 성공!");
@@ -291,12 +265,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 게임 플레이
-    window.openGame = async (id, url, name, currentViewCount) => {
+    // ✨ 게임 열 때 로그인 정보 확인해서 버튼 보여주기
+    window.openGame = async (id, url, name, currentViewCount, uploaderId) => {
         document.getElementById('playerTitle').textContent = name;
         playerModal.classList.add('active');
         gameFrame.style.display = 'block';
         if (placeholder) placeholder.style.display = 'none';
+
+        // 내가 작성한 게임이면 우측 하단 삭제 버튼 보이기!
+        if (deleteGameBtn) {
+            if (currentUser && currentUser.id === uploaderId) {
+                deleteGameBtn.style.display = 'block';
+                deleteGameBtn.onclick = () => deleteGame(id);
+            } else {
+                deleteGameBtn.style.display = 'none';
+                deleteGameBtn.onclick = null;
+            }
+        }
         
         const viewportMeta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
         gameFrame.srcdoc = `${viewportMeta}<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:black;">게임을 불러오는 중입니다...</div>`;
@@ -317,16 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 각종 이벤트 리스너
-    if (homeLogo) {
-        homeLogo.addEventListener('click', () => {
-            if (searchInput) searchInput.value = ''; 
-            currentTag = '';
-            if(sectionTitle) sectionTitle.textContent = 'Popular Games';
-            fetchGames(); 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
+    if (homeLogo) homeLogo.addEventListener('click', () => {
+        if (searchInput) searchInput.value = ''; 
+        currentTag = '';
+        if(sectionTitle) sectionTitle.textContent = 'Popular Games';
+        fetchGames(); 
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
     if (menuBtn) menuBtn.addEventListener('click', () => sidebar.classList.add('active'));
     if (closeSidebar) closeSidebar.addEventListener('click', () => sidebar.classList.remove('active'));
@@ -337,20 +319,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if (fullscreenBtn) {
-        fullscreenBtn.onclick = () => {
-            if (gameFrame.requestFullscreen) gameFrame.requestFullscreen();
-            else if (gameFrame.webkitRequestFullscreen) gameFrame.webkitRequestFullscreen();
-            else if (gameFrame.msRequestFullscreen) gameFrame.msRequestFullscreen();
-        };
-    }
+    if (fullscreenBtn) fullscreenBtn.onclick = () => {
+        if (gameFrame.requestFullscreen) gameFrame.requestFullscreen();
+        else if (gameFrame.webkitRequestFullscreen) gameFrame.webkitRequestFullscreen();
+        else if (gameFrame.msRequestFullscreen) gameFrame.msRequestFullscreen();
+    };
 
     if (uploadBtn) uploadBtn.onclick = () => {
         if (!currentUser) return alert("로그인이 필요합니다.");
         uploadModal.classList.add('active');
     };
     if (closeUpload) closeUpload.onclick = () => uploadModal.classList.remove('active');
-    if (closePlayer) closePlayer.onclick = () => { playerModal.classList.remove('active'); gameFrame.srcdoc = ""; };
+    
+    if (closePlayer) closePlayer.onclick = () => { 
+        playerModal.classList.remove('active'); 
+        gameFrame.srcdoc = ""; 
+        if(deleteGameBtn) deleteGameBtn.style.display = 'none'; // 창 닫을 때 버튼도 다시 숨기기
+    };
+
     if (gameFileInput) gameFileInput.onchange = (e) => { if (gameFileName) gameFileName.textContent = e.target.files[0]?.name || ''; };
     if (thumbnailFileInput) thumbnailFileInput.onchange = (e) => { if (thumbnailFileName) thumbnailFileName.textContent = e.target.files[0]?.name || ''; };
 
@@ -365,6 +351,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 초기 게임 목록 로드 (인증 로직이 끝날 때까지 대기하지 않고 병렬 처리)
     fetchGames();
 });
