@@ -3,6 +3,59 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // --- 인증(Auth) 관련 로직 시작 ---
+    let currentUser = null; // 현재 로그인한 유저 정보 저장
+
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userInfo = document.getElementById('userInfo');
+
+    // UI 업데이트 함수 (로그인 상태에 따라 버튼 숨기기/보이기)
+    function updateAuthUI(user) {
+        currentUser = user;
+        if (user) {
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'block';
+            uploadBtn.style.display = 'block';
+            userInfo.style.display = 'block';
+            userInfo.textContent = `${user.user_metadata.full_name || '유저'}님`;
+        } else {
+            loginBtn.style.display = 'block';
+            logoutBtn.style.display = 'none';
+            uploadBtn.style.display = 'none';
+            userInfo.style.display = 'none';
+        }
+    }
+
+    // 초기 세션 확인 및 상태 변화 감지
+    async function initAuth() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        updateAuthUI(session?.user);
+
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            updateAuthUI(session?.user);
+        });
+    }
+    initAuth();
+
+    // 로그인 버튼 이벤트
+    if (loginBtn) {
+        loginBtn.onclick = async () => {
+            await supabaseClient.auth.signInWithOAuth({
+                provider: 'google'
+            });
+        };
+    }
+
+    // 로그아웃 버튼 이벤트
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+            await supabaseClient.auth.signOut();
+            alert("로그아웃 되었습니다.");
+        };
+    }
+    // --- 인증(Auth) 관련 로직 끝 ---
     const gameGrid = document.getElementById('gameGrid');
     const gameFrame = document.getElementById('gameFrame');
     const placeholder = document.getElementById('placeholder');
