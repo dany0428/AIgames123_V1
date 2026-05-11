@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ✨ 투표(추천/비추천) 전역 함수
-    window.handleVote = async (gameId, currentCount) => {
+    window.handleUpvote = async (gameId, currentCount) => {
         const voteKey = `voted_${gameId}`;
         
         // 1. 이미 투표했는지 확인
