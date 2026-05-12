@@ -89,6 +89,17 @@
     <div class="game-grid" id="myGameGrid"></div>
   </main>
 
+  <!--타인프로필 확인--!>
+  <main class="main-content" id="publicProfileContent" style="display: none;">
+    <div class="profile-header-card" style="margin-bottom: 2rem;">
+      <div class="profile-info-summary">
+        <h2 id="publicProfileName" class="profile-display-name">게이머</h2>
+        <p class="profile-email">님이 업로드한 게임 목록입니다.</p>
+      </div>
+    </div>
+    <div class="game-grid" id="publicGameGrid"></div>
+  </main>
+
   <!-- 업로드 모달 -->
   <div class="modal-overlay" id="uploadModal">
     <div class="modal">
@@ -145,6 +156,7 @@
           <div class="uploader-info">
             <span class="uploader-label">Uploaded by</span>
             <span class="uploader-name" id="uploaderName">게이머</span>
+            <span class="uploader-name" id="uploaderName" style="cursor: pointer; text-decoration: underline;" title="이 유저의 다른 게임 보기">게이머</span>
           </div>
         </div>
         <div class="vote-container">
