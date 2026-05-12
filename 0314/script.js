@@ -366,15 +366,16 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         if (titleEl) titleEl.textContent = name;
 
         const uploaderEl = document.getElementById('uploaderName');
-        if (uploaderEl) {
-            uploaderEl.textContent = uploaderName;
-            
-            // ✨ 이름 클릭 시 해당 유저의 게임 목록(프로필)으로 이동!
-            uploaderEl.onclick = () => {
+        if (uploaderEl) uploaderEl.textContent = uploaderName;
+
+        // 2. 글자 대신 '프로필 영역 전체'를 클릭했을 때 넘어가도록 변경!
+        const uploaderProfileBtn = document.getElementById('uploaderProfileBtn');
+        if (uploaderProfileBtn) {
+            uploaderProfileBtn.onclick = () => {
                 if (uploaderId && uploaderId !== 'null') {
                     showPublicProfile(uploaderId, uploaderName);
                 } else {
-                    alert("정말 오래 전에 업로드 된 게임이라 프로필을 확인할 수 없습니다. 😢");
+                    alert("오래 전 업로드 된 게임이라 프로필을 확인할 수 없습니다. 😢");
                 }
             };
         }
