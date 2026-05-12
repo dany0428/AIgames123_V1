@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMainContent() {
         mainContent.style.display = 'block';
         profileContent.style.display = 'none';
+        if (publicProfileContent) publicProfileContent.style.display = 'none'; // 타인 프로필 숨김
         searchContainer.style.visibility = 'visible';
         fetchGames(); 
     }
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentUser) return;
         mainContent.style.display = 'none';
         profileContent.style.display = 'block';
+        if (publicProfileContent) publicProfileContent.style.display = 'none'; // 타인 프로필 숨김
         searchContainer.style.visibility = 'hidden'; 
         
         const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
@@ -78,6 +80,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if(document.getElementById('profileEmail')) document.getElementById('profileEmail').textContent = currentUser.email || 'No email provided';
 
         fetchMyGames(); 
+    }
+    // ✨ (새로 추가) 타인의 프로필을 보여주는 함수
+    window.showPublicProfile = (userId, userName) => {
+        mainContent.style.display = 'none';
+        profileContent.style.display = 'none';
+        if (publicProfileContent) publicProfileContent.style.display = 'block';
+        if (searchContainer) searchContainer.style.visibility = 'hidden';
+        
+        const nameEl = document.getElementById('publicProfileName');
+        if (nameEl) nameEl.textContent = userName;
+        
+        fetchPublicGames(userId);
+        
+        // 프로필로 이동하면서 플레이어 모달창은 닫기
+        const playerModal = document.getElementById('playerModal');
+        const gameFrame = document.getElementById('gameFrame');
+        if (playerModal) playerModal.classList.remove('active');
+        if (gameFrame) gameFrame.srcdoc = "";
+    };
+
+    // ✨ (새로 추가) 타인이 올린 게임 목록 가져오기
+    async function fetchPublicGames(userId) {
+        try {
+            const { data, error } = await supabaseClient.from('games').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            if (error) throw error;
+            // 타인의 프로필이므로 수정/삭제 버튼이 안 보이게 false를 넘깁니다.
+            renderGames(data, publicGameGrid, false); 
+        } catch (error) { console.error('유저 게임 로드 실패:', error.message); }
     }
 
     if (homeLogo) homeLogo.addEventListener('click', showMainContent);
@@ -114,6 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullscreenBtn = document.getElementById('fullscreenBtn'); 
     const closePlayer = document.getElementById('closePlayer');
     const deleteGameBtn = document.getElementById('deleteGameBtn');
+    const publicProfileContent = document.getElementById('publicProfileContent');
+    const publicGameGrid = document.getElementById('publicGameGrid');
 
     let currentTag = '';
 
@@ -280,7 +312,15 @@ function renderGames(gameList, targetGrid, isProfile = false) {
             
             // ✨ 에러 방지 강화: 데이터가 비어있어도 절대 에러 나지 않게!
             const safeName = (game.name || 'Untitled').replace(/'/g, "\\'");
-            const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
+            const isMyGame = currentUser && currentUser.id === game.user_id;
+            
+            // 데이터베이스에 uploader_name이 비어있더라도, 내 게임이면 현재 내 닉네임을 끌어옴!
+            let uploaderNameRaw = game.uploader_name;
+            if (!uploaderNameRaw && isMyGame) {
+                uploaderNameRaw = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name;
+            }
+            
+            const safeUploader = (uploaderNameRaw || '익명의 게이머').replace(/'/g, "\\'");
             const safeUpvotes = game.upvotes || 0;
             
             let tagsHtml = '';
@@ -326,7 +366,18 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         if (titleEl) titleEl.textContent = name;
 
         const uploaderEl = document.getElementById('uploaderName');
-        if (uploaderEl) uploaderEl.textContent = uploaderName;
+        if (uploaderEl) {
+            uploaderEl.textContent = uploaderName;
+            
+            // ✨ 이름 클릭 시 해당 유저의 게임 목록(프로필)으로 이동!
+            uploaderEl.onclick = () => {
+                if (uploaderId && uploaderId !== 'null') {
+                    showPublicProfile(uploaderId, uploaderName);
+                } else {
+                    alert("정말 오래 전에 업로드 된 게임이라 프로필을 확인할 수 없습니다. 😢");
+                }
+            };
+        }
         
         const upCountEl = document.getElementById('upvoteCount');
         if (upCountEl) upCountEl.textContent = upvotes;
