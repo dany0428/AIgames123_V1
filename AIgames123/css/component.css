@@ -1,3 +1,28 @@
+/* ✨ 설정 카드 아바타 업로드 행 */
+.avatar-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-top: 4px;
+}
+
+.avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid #3b2d5a;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #0f0a1a;
+}
+
+.avatar-upload-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* ✨ 프로필 아바타 변경 오버레이 */
 .profile-avatar-container {
   position: relative;
