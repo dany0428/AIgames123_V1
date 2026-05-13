@@ -17,6 +17,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (homeLogo) homeLogo.addEventListener('click', showMainContent);
     if (userInfo) userInfo.addEventListener('click', showProfileContent);
 
+    // ✨ 정렬 드롭다운
+    const sortDropdown = document.getElementById('sortDropdown');
+    if (sortDropdown) {
+        sortDropdown.addEventListener('change', () => {
+            currentSort = sortDropdown.value;
+            const searchInput = document.getElementById('searchInput');
+            fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
+        });
+    }
+
     // 닉네임 저장 버튼
     const saveProfileBtn = document.getElementById('saveProfileBtn');
     if(saveProfileBtn) {
