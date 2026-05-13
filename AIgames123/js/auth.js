@@ -18,16 +18,16 @@ function updateAuthUI(user) {
             userInfo.textContent = `${userName}님`;
         }
 
-        // ✨ [버그수정] 로그인 시 내 모든 게임의 uploader_name을 최신 닉네임으로 동기화
-        // 이렇게 해야 비로그인 사용자도 업로더 이름을 볼 수 있습니다.
+        // ✨ 로그인 시 내 모든 게임의 uploader_name과 uploader_avatar를 최신 값으로 동기화
         if (!prevUser) {
             const currentName = user.user_metadata.custom_name || user.user_metadata.preferred_username || user.user_metadata.full_name || '게이머';
+            const currentAvatar = user.user_metadata.custom_avatar || user.user_metadata.avatar_url || '';
             supabaseClient
                 .from('games')
-                .update({ uploader_name: currentName })
+                .update({ uploader_name: currentName, uploader_avatar: currentAvatar })
                 .eq('user_id', user.id)
                 .then(({ error }) => {
-                    if (error) console.warn('uploader_name 동기화 실패:', error.message);
+                    if (error) console.warn('uploader 동기화 실패:', error.message);
                 });
         }
     } else {
@@ -75,9 +75,11 @@ function showProfileContent() {
     searchContainer.style.visibility = 'hidden';
 
     const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
-    const avatarUrl = currentUser.user_metadata.avatar_url || 'https://via.placeholder.com/100';
+    // ✨ [버그수정] custom_avatar(직접 업로드)를 우선 읽고, 없으면 GitHub avatar_url 사용
+    const avatarUrl = currentUser.user_metadata.custom_avatar || currentUser.user_metadata.avatar_url || 'https://via.placeholder.com/100';
 
     if(document.getElementById('profileAvatar')) document.getElementById('profileAvatar').src = avatarUrl;
+    if(document.getElementById('avatarPreview')) document.getElementById('avatarPreview').src = avatarUrl; // 설정 카드 미리보기도 동기화
     if(document.getElementById('profileDisplayName')) document.getElementById('profileDisplayName').textContent = currentName;
     if(document.getElementById('profileNameInput')) document.getElementById('profileNameInput').value = currentName;
     if(document.getElementById('profileEmail')) document.getElementById('profileEmail').textContent = currentUser.email || 'No email provided';
