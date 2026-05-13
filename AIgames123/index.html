@@ -56,8 +56,10 @@
   <!-- 프로필 화면 -->
   <main class="main-content" id="profileContent" style="display: none;">
     <div class="profile-header-card">
-      <div class="profile-avatar-container">
+      <div class="profile-avatar-container" id="avatarUploadTrigger" title="클릭해서 프로필 사진 변경">
         <img id="profileAvatar" src="https://via.placeholder.com/100" alt="Profile Avatar" class="profile-avatar">
+        <div class="avatar-edit-overlay">📷 변경</div>
+        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
       </div>
       <div class="profile-info-summary">
         <h2 id="profileDisplayName" class="profile-display-name">게이머</h2>
@@ -77,6 +79,21 @@
 
     <div class="profile-settings-card">
       <h3 class="settings-title">⚙️ 프로필 설정</h3>
+
+      <!-- ✨ 프로필 사진 변경 -->
+      <div class="form-group">
+        <label class="form-label">프로필 사진</label>
+        <div class="avatar-upload-row">
+          <img id="avatarPreview" src="https://via.placeholder.com/80" alt="미리보기" class="avatar-preview">
+          <div class="avatar-upload-actions">
+            <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+            <button class="upload-btn" id="avatarPickBtn" style="background:#3b2d5a;">사진 선택</button>
+            <button class="upload-btn" id="saveAvatarBtn">저장하기</button>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: #a78bfa; margin-top: 8px;">* 저장 후 게임 목록의 업로더 아이콘에도 반영됩니다.</p>
+      </div>
+
       <div class="form-group">
         <label class="form-label">Display Name (내 마음대로 닉네임 설정)</label>
         <div style="display: flex; gap: 10px; max-width: 400px;">
@@ -179,7 +196,10 @@
 
       <div class="game-footer">
         <div class="uploader-profile" id="uploaderProfileBtn" title="이 유저의 프로필 보기">
-          <div class="uploader-avatar">👤</div>
+          <div class="uploader-avatar">
+            <img id="uploaderAvatarImg" class="uploader-avatar-img" style="display:none;">
+            <span id="uploaderAvatarFallback">👤</span>
+          </div>
           <span class="uploader-name" id="uploaderName"></span>
         </div>
         <div class="vote-container">
