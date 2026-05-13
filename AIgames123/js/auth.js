@@ -106,6 +106,7 @@ window.showPublicProfile = (userId, userName) => {
     const gameFrame = document.getElementById('gameFrame');
     if (playerModal) playerModal.classList.remove('active');
     if (gameFrame) gameFrame.srcdoc = "";
+    document.body.style.overflow = '';
 };
 
 // ✨ 타인이 올린 게임 목록 가져오기
