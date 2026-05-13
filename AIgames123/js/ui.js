@@ -122,12 +122,30 @@ function initEditModal() {
     const editModal = document.getElementById('editModal');
     const closeEdit = document.getElementById('closeEdit');
     const submitEditGame = document.getElementById('submitEditGame');
+    const editTagSelector = document.getElementById('editTagSelector');
+
+    // ✨ 수정 모달 태그 선택기 렌더링
+    if (editTagSelector) {
+        editTagSelector.innerHTML = PRESET_TAGS.map(tag =>
+            `<button type="button" class="tag-option" data-tag="${tag}">${tag}</button>`
+        ).join('');
+
+        editTagSelector.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tag-option');
+            if (!btn) return;
+            btn.classList.toggle('selected');
+        });
+    }
 
     if(closeEdit) closeEdit.onclick = () => editModal.classList.remove('active');
     if(submitEditGame) {
         submitEditGame.onclick = async () => {
             const newName = document.getElementById('editGameName').value.trim();
-            const newTags = document.getElementById('editGameTags').value.trim();
+            // 선택된 태그를 쉼표로 묶어서 가져옴
+            const newTags = editTagSelector
+                ? Array.from(editTagSelector.querySelectorAll('.tag-option.selected'))
+                    .map(btn => btn.dataset.tag).join(', ')
+                : '';
             if(!newName) return alert("게임 이름을 입력해주세요.");
             submitEditGame.disabled = true;
             submitEditGame.textContent = "저장 중...";
