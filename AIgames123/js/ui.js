@@ -213,57 +213,105 @@ function initSearch() {
     }
 }
 
-// ✨ 프로필 아바타 업로드
-function initProfileAvatar() {
-    const trigger = document.getElementById('avatarUploadTrigger');
-    const fileInput = document.getElementById('avatarFileInput');
-    if (!trigger || !fileInput) return;
+// ✨ 아바타 업로드 공통 함수
+async function uploadAvatar(file) {
+    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    const ext = file.name.split('.').pop();
+    const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
 
-    trigger.addEventListener('click', () => fileInput.click());
+    const { error: uploadError } = await supabaseClient.storage
+        .from('game-files')
+        .upload(fileName, file, { upsert: true });
+    if (uploadError) throw uploadError;
 
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file || !currentUser) return;
+    const { data: { publicUrl } } = supabaseClient.storage
+        .from('game-files')
+        .getPublicUrl(fileName);
 
-        const originalOverlay = trigger.querySelector('.avatar-edit-overlay');
-        if (originalOverlay) originalOverlay.textContent = '업로드 중...';
-
-        try {
-            const ext = file.name.split('.').pop();
-            const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
-
-            // Supabase Storage에 업로드
-            const { error: uploadError } = await supabaseClient.storage
-                .from('game-files')
-                .upload(fileName, file, { upsert: true });
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabaseClient.storage
-                .from('game-files')
-                .getPublicUrl(fileName);
-
-            // user_metadata에 custom_avatar로 저장
-            const { data, error: updateError } = await supabaseClient.auth.updateUser({
-                data: { custom_avatar: publicUrl }
-            });
-            if (updateError) throw updateError;
-
-            // 화면 즉시 반영
-            const profileAvatar = document.getElementById('profileAvatar');
-            if (profileAvatar) profileAvatar.src = publicUrl;
-
-            // 내 모든 게임의 uploader_avatar도 업데이트
-            await supabaseClient.from('games')
-                .update({ uploader_avatar: publicUrl })
-                .eq('user_id', currentUser.id);
-
-            updateAuthUI(data.user);
-            alert('프로필 사진이 변경되었습니다! 🎉');
-        } catch (err) {
-            alert('업로드 실패: ' + err.message);
-        } finally {
-            if (originalOverlay) originalOverlay.textContent = '📷 변경';
-            fileInput.value = '';
-        }
+    // user_metadata에 custom_avatar로 영구 저장
+    const { data, error: updateError } = await supabaseClient.auth.updateUser({
+        data: { custom_avatar: publicUrl }
     });
+    if (updateError) throw updateError;
+
+    // 화면 즉시 반영 (헤더 아바타 + 설정 카드 미리보기)
+    if (document.getElementById('profileAvatar')) document.getElementById('profileAvatar').src = publicUrl;
+    if (document.getElementById('avatarPreview')) document.getElementById('avatarPreview').src = publicUrl;
+
+    // 내 모든 게임의 uploader_avatar도 일괄 업데이트
+    const { error: gamesError } = await supabaseClient.from('games')
+        .update({ uploader_avatar: publicUrl })
+        .eq('user_id', currentUser.id);
+    if (gamesError) console.warn('게임 아바타 동기화 실패:', gamesError.message);
+
+    updateAuthUI(data.user);
+    return publicUrl;
+}
+
+// ✨ 프로필 아바타 업로드 초기화
+function initProfileAvatar() {
+    let selectedFile = null; // 설정 카드에서 선택된 파일 임시 보관
+
+    // ── 헤더 아바타 클릭 → 파일 선택 → 즉시 업로드 ──
+    const headerTrigger = document.getElementById('avatarUploadTrigger');
+    const headerInput   = document.getElementById('avatarFileInputHeader');
+    const headerOverlay = headerTrigger ? headerTrigger.querySelector('.avatar-edit-overlay') : null;
+
+    if (headerTrigger && headerInput) {
+        headerTrigger.addEventListener('click', () => headerInput.click());
+        headerInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentUser) return;
+            if (headerOverlay) headerOverlay.textContent = '업로드 중...';
+            try {
+                await uploadAvatar(file);
+                alert('프로필 사진이 변경되었습니다! 🎉');
+            } catch (err) {
+                alert('업로드 실패: ' + err.message);
+            } finally {
+                if (headerOverlay) headerOverlay.textContent = '📷 변경';
+                headerInput.value = '';
+            }
+        });
+    }
+
+    // ── 설정 카드: 사진 선택 → 미리보기 ──
+    const pickBtn  = document.getElementById('avatarPickBtn');
+    const fileInput = document.getElementById('avatarFileInput');
+    const preview  = document.getElementById('avatarPreview');
+
+    if (pickBtn && fileInput) {
+        pickBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            selectedFile = file;
+            // 로컬 미리보기
+            const reader = new FileReader();
+            reader.onload = (ev) => { if (preview) preview.src = ev.target.result; };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ── 설정 카드: 저장하기 → 업로드 ──
+    const saveBtn = document.getElementById('saveAvatarBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            if (!selectedFile) return alert('먼저 사진을 선택해주세요.');
+            if (!currentUser) return alert('로그인이 필요합니다.');
+            saveBtn.disabled = true;
+            saveBtn.textContent = '저장 중...';
+            try {
+                await uploadAvatar(selectedFile);
+                selectedFile = null;
+                if (fileInput) fileInput.value = '';
+                alert('프로필 사진이 저장되었습니다! 🎉');
+            } catch (err) {
+                alert('업로드 실패: ' + err.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '저장하기';
+            }
+        });
+    }
 }
