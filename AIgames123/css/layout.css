@@ -1,0 +1,200 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: #1a1025;
+  border-bottom: 2px solid #8b5cf6;
+}
+
+.logo { font-size: 1.5rem; font-weight: bold; color: #a78bfa; }
+.search-container { flex: 1; max-width: 400px; margin: 0 2rem; }
+.search-input {
+  width: 100%; padding: 0.75rem; border-radius: 8px;
+  border: 2px solid #3b2d5a; background: #1a1025; color: white;
+}
+
+.upload-btn {
+  padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #7c3aed, #6366f1);
+  border: none; border-radius: 8px; color: white; cursor: pointer;
+}
+
+.main-content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+.section-title { margin-bottom: 1.5rem; color: #a78bfa; }
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+/* 상단 네비게이션 좌측 묶음 (햄버거 + 로고) */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 햄버거 버튼 스타일 */
+.hamburger {
+  cursor: pointer;
+  color: #a78bfa;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+.hamburger:hover {
+  transform: scale(1.1);
+  color: #c4b5fd;
+}
+
+/* 왼쪽에서 튀어나오는 사이드바 */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px; /* 평소에는 화면 밖으로 숨김 */
+  width: 260px;
+  height: 100vh;
+  background-color: #1a1025;
+  border-right: 2px solid #8b5cf6;
+  z-index: 2000;
+  transition: left 0.3s ease-in-out;
+  padding: 1.5rem;
+  box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+  overflow-y: auto;
+}
+.sidebar.active {
+  left: 0; /* 클래스가 붙으면 화면으로 들어옴 */
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  color: #a78bfa;
+}
+
+/* 프로필 섹션 스타일 */
+.profile-section {
+  background: #1a1025;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid #3b2d5a;
+  margin-bottom: 2rem;
+}
+
+/* ✨ 프로필 헤더 카드 (통계 및 프사) */
+.profile-header-card {
+  background: linear-gradient(135deg, #2d1f4a, #1a1025);
+  border: 2px solid #3b2d5a;
+  border-radius: 16px;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #8b5cf6;
+  object-fit: cover;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+.profile-display-name {
+  font-size: 2.2rem;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.profile-email {
+  color: #a78bfa;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+/* 통계(Stats) 디자인 */
+.profile-stats {
+  display: flex;
+  gap: 3rem;
+  background: rgba(0,0,0,0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 프로필 설정 카드 */
+.profile-settings-card {
+  background: #1a1025;
+  border: 2px solid #3b2d5a;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.settings-title {
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  border-bottom: 1px solid #3b2d5a;
+  padding-bottom: 0.8rem;
+}
+
+/* 반응형 처리 (모바일 화면일 때) */
+@media (max-width: 600px) {
+  .profile-header-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .profile-stats {
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .navbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  .search-container {
+    order: 3;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+  }
+}
+
+/* nav-right 정렬 */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* 프로필 아바타 컨테이너 */
+.profile-avatar-container {
+  flex-shrink: 0;
+}

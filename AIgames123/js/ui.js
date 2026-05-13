@@ -1,0 +1,157 @@
+function initUploadModal() {
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadModal = document.getElementById('uploadModal');
+    const closeUpload = document.getElementById('closeUpload');
+    const submitGameBtn = document.getElementById('submitGame');
+    const gameNameInput = document.getElementById('gameName');
+    const gameTagsInput = document.getElementById('gameTags');
+    const gameFileInput = document.getElementById('gameFileInput');
+    const thumbnailFileInput = document.getElementById('thumbnailFileInput');
+    const profileContent = document.getElementById('profileContent');
+
+    if (uploadBtn) uploadBtn.onclick = () => {
+        if (!currentUser) return alert("로그인이 필요합니다.");
+        uploadModal.classList.add('active');
+    };
+    if (closeUpload) closeUpload.onclick = () => uploadModal.classList.remove('active');
+
+    if (submitGameBtn) {
+        submitGameBtn.onclick = async () => {
+            if (!currentUser) return alert("로그인이 필요합니다!");
+            const name = gameNameInput.value.trim();
+            const tags = gameTagsInput.value.trim();
+            const file = gameFileInput.files[0];
+            const thumbFile = thumbnailFileInput.files[0];
+
+            if (!name || !file) return alert("게임 이름과 HTML 파일은 필수입니다!");
+            submitGameBtn.innerText = "업로드 중...";
+            submitGameBtn.disabled = true;
+
+            try {
+                const htmlText = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(new Error("파일 읽기 실패"));
+                    reader.readAsText(file, "UTF-8");
+                });
+                const blob = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
+                const fileName = `${Date.now()}_${file.name}`;
+
+                const { error: uploadError } = await supabaseClient.storage.from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
+                if (uploadError) throw uploadError;
+                const { data: { publicUrl: gamePublicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
+
+                let thumbPublicUrl = null;
+                if (thumbFile) {
+                    const thumbName = `${Date.now()}_thumb_${thumbFile.name}`;
+                    const { error: thumbError } = await supabaseClient.storage.from('game-files').upload(thumbName, thumbFile, { upsert: true });
+                    if (thumbError) throw thumbError;
+                    const { data: thumbData } = supabaseClient.storage.from('game-files').getPublicUrl(thumbName);
+                    thumbPublicUrl = thumbData.publicUrl;
+                }
+
+                // ✨ 업로드 시 작성자 이름과 초기 투표수 저장
+                const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
+
+                const { error: dbError } = await supabaseClient.from('games').insert([{
+                    id: Date.now(),
+                    name: name,
+                    file_url: gamePublicUrl,
+                    thumbnail_url: thumbPublicUrl,
+                    tags: tags,
+                    view_count: 0,
+                    user_id: currentUser.id,
+                    uploader_name: currentName,
+                    upvotes: 0,
+                    downvotes: 0
+                }]);
+                if (dbError) throw dbError;
+
+                alert("업로드 성공!");
+                uploadModal.classList.remove('active');
+
+                gameNameInput.value = ''; gameTagsInput.value = ''; gameFileInput.value = ''; thumbnailFileInput.value = '';
+
+                if (profileContent.style.display === 'block') fetchMyGames();
+                else fetchGames();
+            } catch (error) { alert("오류 발생: " + error.message); }
+            finally { submitGameBtn.innerText = "Launch Game"; submitGameBtn.disabled = false; }
+        };
+    }
+}
+
+function initEditModal() {
+    const editModal = document.getElementById('editModal');
+    const closeEdit = document.getElementById('closeEdit');
+    const submitEditGame = document.getElementById('submitEditGame');
+
+    if(closeEdit) closeEdit.onclick = () => editModal.classList.remove('active');
+    if(submitEditGame) {
+        submitEditGame.onclick = async () => {
+            const newName = document.getElementById('editGameName').value.trim();
+            const newTags = document.getElementById('editGameTags').value.trim();
+            if(!newName) return alert("게임 이름을 입력해주세요.");
+            submitEditGame.disabled = true;
+            submitEditGame.textContent = "저장 중...";
+            try {
+                const { error } = await supabaseClient.from('games').update({ name: newName, tags: newTags }).eq('id', editingGameId);
+                if (error) throw error;
+                alert("정보가 수정되었습니다.");
+                editModal.classList.remove('active');
+                fetchMyGames();
+            } catch(error) { alert("수정 실패: " + error.message); }
+            finally { submitEditGame.disabled = false; submitEditGame.textContent = "저장하기"; }
+        }
+    }
+}
+
+function initSidebar() {
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const closeSidebar = document.getElementById('closeSidebar');
+
+    if (menuBtn) menuBtn.addEventListener('click', () => sidebar.classList.add('active'));
+    if (closeSidebar) closeSidebar.addEventListener('click', () => sidebar.classList.remove('active'));
+    document.addEventListener('click', (e) => {
+        if (sidebar && menuBtn && sidebar.classList.contains('active') && !sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('active');
+    });
+}
+
+function initPlayer() {
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const closePlayer = document.getElementById('closePlayer');
+    const gameFrame = document.getElementById('gameFrame');
+    const deleteGameBtn = document.getElementById('deleteGameBtn');
+    const playerModal = document.getElementById('playerModal');
+
+    if (fullscreenBtn) fullscreenBtn.onclick = () => {
+        if (gameFrame.requestFullscreen) gameFrame.requestFullscreen();
+        else if (gameFrame.webkitRequestFullscreen) gameFrame.webkitRequestFullscreen();
+        else if (gameFrame.msRequestFullscreen) gameFrame.msRequestFullscreen();
+    };
+
+    if (closePlayer) closePlayer.onclick = () => {
+        playerModal.classList.remove('active');
+        gameFrame.srcdoc = "";
+        if(deleteGameBtn) deleteGameBtn.style.display = 'none';
+    };
+}
+
+function initFileInputs() {
+    if(document.getElementById('gameFileInput')) document.getElementById('gameFileInput').onchange = (e) => { document.getElementById('gameFileName').textContent = e.target.files[0]?.name || ''; };
+    if(document.getElementById('thumbnailFileInput')) document.getElementById('thumbnailFileInput').onchange = (e) => { document.getElementById('thumbnailFileName').textContent = e.target.files[0]?.name || ''; };
+}
+
+function initSearch() {
+    const searchInput = document.getElementById('searchInput');
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.trim();
+                fetchGames(searchTerm, currentTag);
+            }, 300);
+        });
+    }
+}
