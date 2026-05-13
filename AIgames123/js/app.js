@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPlayer();
     initFileInputs();
     initSearch();
+    initProfileAvatar();
 
     // 인증 초기화 (auth.js) → 완료 후 메인 화면 표시
     initAuth();
