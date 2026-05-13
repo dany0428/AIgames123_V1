@@ -212,3 +212,58 @@ function initSearch() {
         });
     }
 }
+
+// ✨ 프로필 아바타 업로드
+function initProfileAvatar() {
+    const trigger = document.getElementById('avatarUploadTrigger');
+    const fileInput = document.getElementById('avatarFileInput');
+    if (!trigger || !fileInput) return;
+
+    trigger.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file || !currentUser) return;
+
+        const originalOverlay = trigger.querySelector('.avatar-edit-overlay');
+        if (originalOverlay) originalOverlay.textContent = '업로드 중...';
+
+        try {
+            const ext = file.name.split('.').pop();
+            const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
+
+            // Supabase Storage에 업로드
+            const { error: uploadError } = await supabaseClient.storage
+                .from('game-files')
+                .upload(fileName, file, { upsert: true });
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabaseClient.storage
+                .from('game-files')
+                .getPublicUrl(fileName);
+
+            // user_metadata에 custom_avatar로 저장
+            const { data, error: updateError } = await supabaseClient.auth.updateUser({
+                data: { custom_avatar: publicUrl }
+            });
+            if (updateError) throw updateError;
+
+            // 화면 즉시 반영
+            const profileAvatar = document.getElementById('profileAvatar');
+            if (profileAvatar) profileAvatar.src = publicUrl;
+
+            // 내 모든 게임의 uploader_avatar도 업데이트
+            await supabaseClient.from('games')
+                .update({ uploader_avatar: publicUrl })
+                .eq('user_id', currentUser.id);
+
+            updateAuthUI(data.user);
+            alert('프로필 사진이 변경되었습니다! 🎉');
+        } catch (err) {
+            alert('업로드 실패: ' + err.message);
+        } finally {
+            if (originalOverlay) originalOverlay.textContent = '📷 변경';
+            fileInput.value = '';
+        }
+    });
+}
