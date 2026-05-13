@@ -142,6 +142,8 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         // 업로더 이름은 DB에 저장된 값을 우선 사용하고, 없을 때만 '익명의 게이머'로 표시.
         // (로그인 시 auth.js의 동기화 코드가 DB를 최신 상태로 유지해 줍니다.)
         const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
+        // ✨ uploader_avatar: URL에 따옴표가 없으므로 인코딩만 처리
+        const safeAvatar = (game.uploader_avatar || '').replace(/'/g, '%27');
 
         let tagsHtml = '';
         if (game.tags) {
@@ -159,7 +161,7 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         }
 
         return `
-        <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${safeUpvotes})">
+        <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${safeUpvotes}, '${safeAvatar}')">
             <div class="game-thumbnail">
                 ${thumbnailContent}
                 ${profileActionsHtml}
@@ -177,13 +179,27 @@ function renderGames(gameList, targetGrid, isProfile = false) {
 }
 
 // ✨ 게임 모달 열기
-window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes) => {
+window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar) => {
 
     const titleEl = document.getElementById('playerTitle');
     if (titleEl) titleEl.textContent = name;
 
     const uploaderEl = document.getElementById('uploaderName');
     if (uploaderEl) uploaderEl.textContent = uploaderName;
+
+    // ✨ 업로더 아바타 이미지/이모지 전환
+    const avatarImg = document.getElementById('uploaderAvatarImg');
+    const avatarFallback = document.getElementById('uploaderAvatarFallback');
+    if (avatarImg && avatarFallback) {
+        if (uploaderAvatar) {
+            avatarImg.src = uploaderAvatar;
+            avatarImg.style.display = 'block';
+            avatarFallback.style.display = 'none';
+        } else {
+            avatarImg.style.display = 'none';
+            avatarFallback.style.display = 'block';
+        }
+    }
 
     const uploaderProfileBtn = document.getElementById('uploaderProfileBtn');
     if (uploaderProfileBtn) {
