@@ -259,6 +259,22 @@ window.openEditModal = (gameId, name, tags, event) => {
     event.stopPropagation();
     editingGameId = gameId;
     document.getElementById('editGameName').value = name;
-    document.getElementById('editGameTags').value = tags === 'undefined' ? '' : tags;
+
+    // ✨ 기존 태그를 파싱해서 해당 버튼을 미리 선택 상태로 표시
+    const editTagSelector = document.getElementById('editTagSelector');
+    if (editTagSelector) {
+        const existingTags = (tags === 'undefined' || !tags)
+            ? []
+            : tags.split(',').map(t => t.trim().toLowerCase());
+
+        editTagSelector.querySelectorAll('.tag-option').forEach(btn => {
+            if (existingTags.includes(btn.dataset.tag.toLowerCase())) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+    }
+
     document.getElementById('editModal').classList.add('active');
 }
