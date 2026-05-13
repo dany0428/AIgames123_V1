@@ -9,7 +9,7 @@
   display: flex; align-items: center; justify-content: center; position: relative;
 }
 .ai-badge {
-  position: relative !important; /* 강제로 덮어쓰기 위해 추가 */
+  position: relative !important;
   top: auto !important;
   right: auto !important;
   background: #7c3aed;
@@ -66,7 +66,6 @@
 .player-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
 .header-actions { display: flex; align-items: center; gap: 1rem; }
 
-/* 전체화면 버튼 스타일 추가 */
 .fullscreen-btn {
   padding: 0.5rem 1rem;
   background-color: #3b2d5a;
@@ -81,53 +80,46 @@
 
 .game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
-/* 삭제버튼*/
 .delete-game-btn {
   padding: 0.5rem 1rem;
   background-color: transparent;
-  color: #ef4444; /* 경고를 나타내는 부드러운 빨간색 텍스트 */
+  color: #ef4444;
   border: 1px solid #ef4444;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
   transition: 0.2s;
 }
-
 .delete-game-btn:hover {
   background-color: #ef4444;
   color: white;
   border-color: #ef4444;
 }
 
-/* iframe 크기가 컨테이너에 꽉 차도록 수정 */
 #gameFrame {
   width: 100%;
   height: 100%;
   border: none;
-  display: none; /* 로딩 전엔 숨김 */
-  background-color: white; /* 투명한 게임을 위한 기본 흰 배경 (필요에 따라 변경) */
+  display: none;
+  background-color: white;
 }
 
 .game-placeholder { color: #666; text-align: center; }
 .game-placeholder svg { width: 60px; opacity: 0.5; }
 
-/* 썸네일 이미지 스타일 */
 .game-thumb-img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* 이미지가 찌그러지지 않고 영역을 꽉 채우게 만듭니다 */
+  object-fit: cover;
 }
 
-/* 모달에 스크롤이 생길 수 있으므로 최대 높이 및 스크롤 처리 */
 #uploadModal .modal-body {
   max-height: 70vh;
   overflow-y: auto;
 }
 
 /* 장르 리스트 */
-.genre-list {
-  list-style: none;
-}
+.genre-list { list-style: none; }
 .genre-item {
   padding: 1rem;
   margin-bottom: 0.5rem;
@@ -144,7 +136,7 @@
   transform: translateX(5px);
 }
 
-/* 게임 카드 내 태그 디자인 */
+/* 게임 카드 내 태그 */
 .card-tags {
   display: flex;
   gap: 6px;
@@ -160,7 +152,40 @@
   border: 1px solid rgba(139, 92, 246, 0.4);
 }
 
-/* 프로필 화면 내 게임 카드의 상단 액션 버튼 그룹 (수정, 삭제) */
+/* ✨ 업로드 모달 태그 선택기 */
+.tag-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.tag-option {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #3b2d5a;
+  background: transparent;
+  color: #a78bfa;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tag-option:hover {
+  border-color: #8b5cf6;
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.tag-option.selected {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+  font-weight: 600;
+}
+
+/* 프로필 카드 액션 버튼 */
 .profile-card-actions {
   position: absolute;
   top: 8px;
@@ -184,28 +209,13 @@
   color: white;
 }
 
-/* 수정 버튼 (파란색) */
-.edit-btn {
-  background: rgba(59, 130, 246, 0.85); 
-}
-.edit-btn:hover {
-  background: rgba(59, 130, 246, 1);
-  transform: scale(1.1);
-}
+.edit-btn { background: rgba(59, 130, 246, 0.85); }
+.edit-btn:hover { background: rgba(59, 130, 246, 1); transform: scale(1.1); }
 
-/* 삭제 버튼 (빨간색) */
-.del-btn {
-  background: rgba(239, 68, 68, 0.85);
-}
-.del-btn:hover {
-  background: rgba(239, 68, 68, 1);
-  transform: scale(1.1);
-}
+.del-btn { background: rgba(239, 68, 68, 0.85); }
+.del-btn:hover { background: rgba(239, 68, 68, 1); transform: scale(1.1); }
 
-/* hover 속성 적용을 위한 z-index 정리 */
-.game-thumbnail {
-  position: relative;
-}
+.game-thumbnail { position: relative; }
 
 .game-footer {
   display: flex;
@@ -220,14 +230,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  cursor: pointer; /* 마우스 올리면 손가락 모양 */
+  cursor: pointer;
   padding: 6px 12px;
   border-radius: 8px;
   transition: background 0.2s ease;
 }
-.uploader-profile:hover {
-  background: rgba(255, 255, 255, 0.1); 
-}
+.uploader-profile:hover { background: rgba(255, 255, 255, 0.1); }
 
 .uploader-avatar {
   width: 40px;
@@ -241,23 +249,13 @@
   box-shadow: 0 0 10px rgba(124, 58, 237, 0.4);
 }
 
-.uploader-info {
-  display: flex;
-  flex-direction: column;
-}
-
 .uploader-name {
   font-size: 1rem;
   color: #fff;
   font-weight: bold;
-  /*text-decoration: none !important;*/ /* 거슬리던 언더바 강제 삭제! */
 }
 
-/* 추천 버튼 */
-.vote-container {
-  display: flex;
-  gap: 10px;
-}
+.vote-container { display: flex; gap: 10px; }
 
 .vote-btn {
   display: flex;
@@ -272,10 +270,8 @@
   transition: 0.2s;
   font-size: 0.9rem;
 }
-
 .vote-btn:hover { background: #3b2d5a; }
 
-/* 이미 투표했을 때의 색상 변화 */
 .vote-btn.upvote.voted {
   background: rgba(59, 130, 246, 0.2);
   border-color: #3b82f6;
