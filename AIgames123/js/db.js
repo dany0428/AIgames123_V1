@@ -72,39 +72,33 @@ window.deleteGame = async (gameId, event) => {
     } catch (error) { alert("오류가 발생했습니다: " + error.message); }
 };
 
-// ✨ 투표(추천/비추천) 전역 함수
+// ✨ 투표(추천) 전역 함수
 window.handleUpvote = async (gameId, currentCount) => {
     const voteKey = `voted_${gameId}`;
 
-    // 1. 이미 투표했는지 확인
     if (localStorage.getItem(voteKey)) {
         return alert("이미 이 게임에 추천을 누르셨습니다!");
     }
 
     try {
-        // 2. 혹시나 글자로 넘어왔을 경우를 대비해 확실한 숫자로 변환합니다!
         const safeCurrentCount = Number(currentCount) || 0;
         const nextCount = safeCurrentCount + 1;
 
-        // 3. Supabase 데이터베이스 업데이트
         const { error } = await supabaseClient
             .from('games')
             .update({ upvotes: nextCount })
             .eq('id', gameId);
 
-        if (error) throw error; // 에러가 나면 아래 catch 블록으로 던집니다.
+        if (error) throw error;
 
-        // 4. 성공했다면 화면의 숫자와 버튼 색상을 즉시 바꿉니다.
         const countSpan = document.getElementById('upvoteCount');
         if (countSpan) countSpan.textContent = nextCount;
 
         const upBtn = document.getElementById('upvoteBtn');
         if (upBtn) upBtn.classList.add('voted');
 
-        // 5. 내 컴퓨터(브라우저)에 투표 완료 기록 저장
         localStorage.setItem(voteKey, 'up');
 
-        // 6. 닫았을 때 목록에도 반영되도록 백그라운드 새로고침
         const profileContent = document.getElementById('profileContent');
         if (profileContent && profileContent.style.display === 'block') {
             if (typeof fetchMyGames === 'function') fetchMyGames();
@@ -116,7 +110,6 @@ window.handleUpvote = async (gameId, currentCount) => {
         }
 
     } catch (error) {
-        // ✨ 만약 실패한다면 무슨 이유 때문에 실패했는지 화면에 확실히 띄워줍니다!
         alert("추천 업데이트 실패 😢\n원인: " + error.message);
         console.error("추천 에러 상세:", error);
     }
@@ -136,19 +129,13 @@ function renderGames(gameList, targetGrid, isProfile = false) {
 
         const viewCount = game.view_count || 0;
         const uploaderId = game.user_id ? `'${game.user_id}'` : 'null';
-
-        // ✨ 에러 방지 강화: 데이터가 비어있어도 절대 에러 나지 않게!
         const safeName = (game.name || 'Untitled').replace(/'/g, "\\'");
-        const isMyGame = currentUser && currentUser.id === game.user_id;
-
-        // 데이터베이스에 uploader_name이 비어있더라도, 내 게임이면 현재 내 닉네임을 끌어옴!
-        let uploaderNameRaw = game.uploader_name;
-        if (!uploaderNameRaw && isMyGame) {
-            uploaderNameRaw = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name;
-        }
-
-        const safeUploader = (uploaderNameRaw || '익명의 게이머').replace(/'/g, "\\'");
         const safeUpvotes = game.upvotes || 0;
+
+        // ✨ [버그수정] game.uploader_name을 로그인 여부와 무관하게 직접 사용.
+        // 업로더 이름은 DB에 저장된 값을 우선 사용하고, 없을 때만 '익명의 게이머'로 표시.
+        // (로그인 시 auth.js의 동기화 코드가 DB를 최신 상태로 유지해 줍니다.)
+        const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
 
         let tagsHtml = '';
         if (game.tags) {
@@ -165,7 +152,6 @@ function renderGames(gameList, targetGrid, isProfile = false) {
             </div>`;
         }
 
-        // onclick에 safeUpvotes를 적용
         return `
         <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${safeUpvotes})">
             <div class="game-thumbnail">
@@ -184,18 +170,15 @@ function renderGames(gameList, targetGrid, isProfile = false) {
     }).join('');
 }
 
-// ✨ 게임 모달 열기 (업로더 정보 바인딩)
-// ✨ 절대 에러가 나지 않는 초강력 방어형 openGame 함수
+// ✨ 게임 모달 열기
 window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes) => {
 
-    // 1. HTML에 해당 ID가 "있을 때만" 텍스트를 바꿉니다! (여기서 에러가 났었습니다)
     const titleEl = document.getElementById('playerTitle');
     if (titleEl) titleEl.textContent = name;
 
     const uploaderEl = document.getElementById('uploaderName');
     if (uploaderEl) uploaderEl.textContent = uploaderName;
 
-    // 2. 글자 대신 '프로필 영역 전체'를 클릭했을 때 넘어가도록 변경!
     const uploaderProfileBtn = document.getElementById('uploaderProfileBtn');
     if (uploaderProfileBtn) {
         uploaderProfileBtn.onclick = () => {
@@ -219,18 +202,15 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
         upBtn.onclick = () => handleUpvote(id, upvotes);
     }
 
-    // 2. 모달창 및 UI 요소들
     const playerModal = document.getElementById('playerModal');
     const gameFrame = document.getElementById('gameFrame');
     const placeholder = document.getElementById('placeholder');
     const deleteGameBtn = document.getElementById('deleteGameBtn');
 
-    // 모달창 띄우기
     if (playerModal) playerModal.classList.add('active');
     if (gameFrame) gameFrame.style.display = 'block';
     if (placeholder) placeholder.style.display = 'none';
 
-    // 삭제 버튼 로직
     if (deleteGameBtn) {
         if (currentUser && currentUser.id === uploaderId) {
             deleteGameBtn.style.display = 'block';
@@ -247,7 +227,6 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     }
 
     try {
-        // 조회수 증가 및 목록 갱신
         supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id).then(({ error }) => {
             const profileContent = document.getElementById('profileContent');
             if (profileContent && profileContent.style.display === 'block') {
@@ -258,7 +237,6 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
             }
         });
 
-        // 게임 HTML 파일 가져오기
         const response = await fetch(url);
         if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
         const htmlContent = await response.text();
