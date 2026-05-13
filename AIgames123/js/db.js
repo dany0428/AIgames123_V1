@@ -213,6 +213,7 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     const deleteGameBtn = document.getElementById('deleteGameBtn');
 
     if (playerModal) playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // 모달 열릴 때 배경 스크롤/이동 차단
     if (gameFrame) gameFrame.style.display = 'block';
     if (placeholder) placeholder.style.display = 'none';
 
