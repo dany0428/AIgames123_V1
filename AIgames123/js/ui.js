@@ -1,13 +1,49 @@
+// ✨ 업로드 모달에서 사용할 사전 정의 태그 목록
+const PRESET_TAGS = [
+    'Action', 'Adventure', 'RPG', 'FPS', 'Puzzle',
+    'Strategy', 'Simulation', 'Sports', 'Horror', 'Racing',
+    'Platform', 'Arcade', 'Card', 'Board', 'Idle',
+    'Casual', 'Shooter', 'Fighting', 'Survival', 'Music'
+];
+
 function initUploadModal() {
     const uploadBtn = document.getElementById('uploadBtn');
     const uploadModal = document.getElementById('uploadModal');
     const closeUpload = document.getElementById('closeUpload');
     const submitGameBtn = document.getElementById('submitGame');
     const gameNameInput = document.getElementById('gameName');
-    const gameTagsInput = document.getElementById('gameTags');
     const gameFileInput = document.getElementById('gameFileInput');
     const thumbnailFileInput = document.getElementById('thumbnailFileInput');
     const profileContent = document.getElementById('profileContent');
+    const tagSelector = document.getElementById('tagSelector');
+
+    // ✨ 태그 선택기 렌더링
+    if (tagSelector) {
+        tagSelector.innerHTML = PRESET_TAGS.map(tag =>
+            `<button type="button" class="tag-option" data-tag="${tag}">${tag}</button>`
+        ).join('');
+
+        // 클릭 토글
+        tagSelector.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tag-option');
+            if (!btn) return;
+            btn.classList.toggle('selected');
+        });
+    }
+
+    // 선택된 태그를 쉼표로 구분된 문자열로 반환하는 헬퍼
+    function getSelectedTags() {
+        if (!tagSelector) return '';
+        return Array.from(tagSelector.querySelectorAll('.tag-option.selected'))
+            .map(btn => btn.dataset.tag)
+            .join(', ');
+    }
+
+    // 태그 선택 초기화
+    function clearTagSelector() {
+        if (!tagSelector) return;
+        tagSelector.querySelectorAll('.tag-option.selected').forEach(btn => btn.classList.remove('selected'));
+    }
 
     if (uploadBtn) uploadBtn.onclick = () => {
         if (!currentUser) return alert("로그인이 필요합니다.");
@@ -19,7 +55,7 @@ function initUploadModal() {
         submitGameBtn.onclick = async () => {
             if (!currentUser) return alert("로그인이 필요합니다!");
             const name = gameNameInput.value.trim();
-            const tags = gameTagsInput.value.trim();
+            const tags = getSelectedTags(); // ✨ 텍스트 입력 대신 선택된 태그 사용
             const file = gameFileInput.files[0];
             const thumbFile = thumbnailFileInput.files[0];
 
@@ -50,7 +86,6 @@ function initUploadModal() {
                     thumbPublicUrl = thumbData.publicUrl;
                 }
 
-                // ✨ 업로드 시 작성자 이름과 초기 투표수 저장
                 const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
 
                 const { error: dbError } = await supabaseClient.from('games').insert([{
@@ -70,7 +105,11 @@ function initUploadModal() {
                 alert("업로드 성공!");
                 uploadModal.classList.remove('active');
 
-                gameNameInput.value = ''; gameTagsInput.value = ''; gameFileInput.value = ''; thumbnailFileInput.value = '';
+                // ✨ 폼 초기화 (태그 선택기 포함)
+                gameNameInput.value = '';
+                clearTagSelector();
+                gameFileInput.value = '';
+                thumbnailFileInput.value = '';
 
                 if (profileContent.style.display === 'block') fetchMyGames();
                 else fetchGames();
