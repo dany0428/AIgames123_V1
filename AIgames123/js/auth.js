@@ -17,6 +17,19 @@ function updateAuthUI(user) {
             const userName = user.user_metadata.custom_name || user.user_metadata.preferred_username || user.user_metadata.full_name || '게이머';
             userInfo.textContent = `${userName}님`;
         }
+
+        // ✨ [버그수정] 로그인 시 내 모든 게임의 uploader_name을 최신 닉네임으로 동기화
+        // 이렇게 해야 비로그인 사용자도 업로더 이름을 볼 수 있습니다.
+        if (!prevUser) {
+            const currentName = user.user_metadata.custom_name || user.user_metadata.preferred_username || user.user_metadata.full_name || '게이머';
+            supabaseClient
+                .from('games')
+                .update({ uploader_name: currentName })
+                .eq('user_id', user.id)
+                .then(({ error }) => {
+                    if (error) console.warn('uploader_name 동기화 실패:', error.message);
+                });
+        }
     } else {
         if(loginBtn) loginBtn.style.display = 'block';
         if(logoutBtn) logoutBtn.style.display = 'none';
@@ -44,7 +57,7 @@ function showMainContent() {
 
     mainContent.style.display = 'block';
     profileContent.style.display = 'none';
-    if (publicProfileContent) publicProfileContent.style.display = 'none'; // 타인 프로필 숨김
+    if (publicProfileContent) publicProfileContent.style.display = 'none';
     searchContainer.style.visibility = 'visible';
     fetchGames();
 }
@@ -58,7 +71,7 @@ function showProfileContent() {
 
     mainContent.style.display = 'none';
     profileContent.style.display = 'block';
-    if (publicProfileContent) publicProfileContent.style.display = 'none'; // 타인 프로필 숨김
+    if (publicProfileContent) publicProfileContent.style.display = 'none';
     searchContainer.style.visibility = 'hidden';
 
     const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
@@ -72,7 +85,7 @@ function showProfileContent() {
     fetchMyGames();
 }
 
-// ✨ (새로 추가) 타인의 프로필을 보여주는 함수
+// ✨ 타인의 프로필을 보여주는 함수
 window.showPublicProfile = (userId, userName) => {
     const mainContent = document.getElementById('mainContent');
     const profileContent = document.getElementById('profileContent');
@@ -89,20 +102,18 @@ window.showPublicProfile = (userId, userName) => {
 
     fetchPublicGames(userId);
 
-    // 프로필로 이동하면서 플레이어 모달창은 닫기
     const playerModal = document.getElementById('playerModal');
     const gameFrame = document.getElementById('gameFrame');
     if (playerModal) playerModal.classList.remove('active');
     if (gameFrame) gameFrame.srcdoc = "";
 };
 
-// ✨ (새로 추가) 타인이 올린 게임 목록 가져오기
+// ✨ 타인이 올린 게임 목록 가져오기
 async function fetchPublicGames(userId) {
     const publicGameGrid = document.getElementById('publicGameGrid');
     try {
         const { data, error } = await supabaseClient.from('games').select('*').eq('user_id', userId).order('created_at', { ascending: false });
         if (error) throw error;
-        // 타인의 프로필이므로 수정/삭제 버튼이 안 보이게 false를 넘깁니다.
         renderGames(data, publicGameGrid, false);
     } catch (error) { console.error('유저 게임 로드 실패:', error.message); }
 }
