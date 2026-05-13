@@ -97,8 +97,7 @@ function initUploadModal() {
                     view_count: 0,
                     user_id: currentUser.id,
                     uploader_name: currentName,
-                    upvotes: 0,
-                    downvotes: 0
+                    upvotes: 0
                 }]);
                 if (dbError) throw dbError;
 
