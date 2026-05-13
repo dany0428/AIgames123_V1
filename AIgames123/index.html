@@ -42,7 +42,14 @@
 
   <!-- 메인 화면 -->
   <main class="main-content" id="mainContent">
-    <h2 class="section-title" id="sectionTitle">Popular Games</h2>
+    <div class="section-header">
+      <h2 class="section-title" id="sectionTitle">Popular Games</h2>
+      <select class="sort-dropdown" id="sortDropdown">
+        <option value="view_count">👁️ 조회수 순</option>
+        <option value="upvotes">👍 추천 순</option>
+        <option value="created_at">🕐 최신 순</option>
+      </select>
+    </div>
     <div class="game-grid" id="gameGrid"></div>
   </main>
 
