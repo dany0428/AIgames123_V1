@@ -70,6 +70,7 @@ window.deleteGame = async (gameId, event) => {
         if (error) throw error;
         alert("게임이 삭제되었습니다.");
         playerModal.classList.remove('active');
+        document.body.style.overflow = '';
         gameFrame.srcdoc = "";
         if (deleteGameBtn) deleteGameBtn.style.display = 'none';
         if (profileContent.style.display === 'block') fetchMyGames();
