@@ -17,7 +17,12 @@ async function fetchAndRenderTags() {
 async function fetchGames(searchTerm = '', tagFilter = '') {
     const gameGrid = document.getElementById('gameGrid');
     try {
-        let query = supabaseClient.from('games').select('*').order('view_count', { ascending: false }).order('created_at', { ascending: false }).range(0, 49);
+        // currentSort 전역변수 기준으로 정렬 컬럼 결정
+        const sortCol = currentSort || 'view_count';
+        let query = supabaseClient.from('games').select('*')
+            .order(sortCol, { ascending: false })
+            .order('created_at', { ascending: false }) // 동점일 때 2차 정렬
+            .range(0, 49);
         if (searchTerm) query = query.ilike('name', `%${searchTerm}%`);
         if (tagFilter) query = query.ilike('tags', `%${tagFilter}%`);
 
