@@ -150,7 +150,11 @@
       </div>
       <div class="modal-body">
         <div class="form-group"><label class="form-label">Game Name</label><input type="text" class="form-input" id="editGameName"></div>
-        <div class="form-group"><label class="form-label">Tags (쉼표로 구분)</label><input type="text" class="form-input" id="editGameTags"></div>
+        <div class="form-group">
+          <label class="form-label">Tags (클릭으로 선택)</label>
+          <div class="tag-selector" id="editTagSelector"></div>
+          <p style="font-size: 0.78rem; color: #666; margin-top: 8px;">* 여러 개 선택 가능 / 다시 클릭하면 해제</p>
+        </div>
         <button class="submit-btn" id="submitEditGame">저장하기</button>
       </div>
     </div>
