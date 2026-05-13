@@ -170,6 +170,7 @@ function initPlayer() {
 
     if (closePlayer) closePlayer.onclick = () => {
         playerModal.classList.remove('active');
+        document.body.style.overflow = ''; // 모달 닫힐 때 배경 스크롤 복원
         gameFrame.srcdoc = "";
         if(deleteGameBtn) deleteGameBtn.style.display = 'none';
     };
