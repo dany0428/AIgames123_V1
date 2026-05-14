@@ -1,306 +1,260 @@
-async function fetchAndRenderTags() {
-    const genreList = document.getElementById('genreList');
-    try {
-        const { data, error } = await supabaseClient.from('games').select('tags');
-        if (!error) {
-            const allTags = new Set();
-            data.forEach(game => {
-                if (game.tags) game.tags.split(',').forEach(tag => { if (tag.trim()) allTags.add(tag.trim()); });
-            });
-            let tagsHtml = `<li class="genre-item ${currentTag === '' ? 'active' : ''}" onclick="filterByTag('')">All Games</li>`;
-            Array.from(allTags).sort().forEach(tag => { tagsHtml += `<li class="genre-item ${currentTag === tag ? 'active' : ''}" onclick="filterByTag('${tag}')"># ${tag}</li>`; });
-            if(genreList) genreList.innerHTML = tagsHtml;
-        }
-    } catch (error) {}
+// ════════════════════════════════════
+//  태그 사이드바 렌더 (fetchGames 데이터 재활용 — 별도 DB 호출 없음)
+// ════════════════════════════════════
+
+function renderTagSidebar(games) {
+    if (!DOM.genreList) return;
+    const allTags = new Set();
+    games.forEach(g => {
+        if (g.tags) g.tags.split(',').forEach(t => { if (t.trim()) allTags.add(t.trim()); });
+    });
+    const items = [`<li class="genre-item ${currentTag === '' ? 'active' : ''}" onclick="filterByTag('')">All Games</li>`];
+    Array.from(allTags).sort().forEach(tag => {
+        items.push(`<li class="genre-item ${currentTag === tag ? 'active' : ''}" onclick="filterByTag('${tag}')"># ${tag}</li>`);
+    });
+    DOM.genreList.innerHTML = items.join('');
 }
 
+// ════════════════════════════════════
+//  게임 목록 조회 (태그 사이드바 동시 처리)
+// ════════════════════════════════════
+
 async function fetchGames(searchTerm = '', tagFilter = '') {
-    const gameGrid = document.getElementById('gameGrid');
     try {
-        // currentSort 전역변수 기준으로 정렬 컬럼 결정
         const sortCol = currentSort || 'view_count';
         let query = supabaseClient.from('games').select('*')
             .order(sortCol, { ascending: false })
-            .order('created_at', { ascending: false }) // 동점일 때 2차 정렬
+            .order('created_at', { ascending: false })
             .range(0, 49);
         if (searchTerm) query = query.ilike('name', `%${searchTerm}%`);
-        if (tagFilter) query = query.ilike('tags', `%${tagFilter}%`);
+        if (tagFilter)  query = query.ilike('tags', `%${tagFilter}%`);
 
         const { data, error } = await query;
         if (error) throw error;
-        renderGames(data, gameGrid, false);
-        fetchAndRenderTags();
-    } catch (error) { console.error('데이터 로드 실패:', error.message); }
+        renderGames(data, DOM.gameGrid, false);
+        renderTagSidebar(data); // ✅ 별도 DB 호출 없이 같은 데이터로 태그 렌더
+    } catch (err) { console.error('데이터 로드 실패:', err.message); }
 }
 
+// ════════════════════════════════════
+//  내 게임 목록
+// ════════════════════════════════════
+
 async function fetchMyGames() {
-    const myGameGrid = document.getElementById('myGameGrid');
+    if (!currentUser) return;
     try {
-        const { data, error } = await supabaseClient.from('games').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        const { data, error } = await supabaseClient.from('games').select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
         if (error) throw error;
-        let totalViews = 0;
-        data.forEach(game => { totalViews += (game.view_count || 0); });
-        if(document.getElementById('statTotalGames')) document.getElementById('statTotalGames').textContent = `${data.length}개`;
-        if(document.getElementById('statTotalViews')) document.getElementById('statTotalViews').textContent = `${totalViews}회`;
-        renderGames(data, myGameGrid, true);
-    } catch (error) { console.error('내 게임 로드 실패:', error.message); }
+        const totalViews = data.reduce((sum, g) => sum + (g.view_count || 0), 0);
+        if (DOM.statTotalGames) DOM.statTotalGames.textContent = `${data.length}개`;
+        if (DOM.statTotalViews) DOM.statTotalViews.textContent = `${totalViews}회`;
+        renderGames(data, DOM.myGameGrid, true);
+    } catch (err) { console.error('내 게임 로드 실패:', err.message); }
 }
+
+// ════════════════════════════════════
+//  태그 필터
+// ════════════════════════════════════
 
 window.filterByTag = (tag) => {
     currentTag = tag;
-    // ✨ URL 업데이트 (뒤로가기 지원)
     if (typeof _pushTagHistory === 'function') _pushTagHistory(tag);
-    const sectionTitle = document.getElementById('sectionTitle');
-    const searchInput  = document.getElementById('searchInput');
-    const sidebar      = document.getElementById('sidebar');
-    if (sectionTitle) sectionTitle.textContent = tag ? `#${tag} Games` : 'Popular Games';
-    if (searchInput)  searchInput.value = '';
-    if (sidebar)      sidebar.classList.remove('active');
-    // 메인 화면 전환 (history는 이미 위에서 처리)
-    const mainContent          = document.getElementById('mainContent');
-    const profileContent       = document.getElementById('profileContent');
-    const publicProfileContent = document.getElementById('publicProfileContent');
-    const searchContainer      = document.getElementById('searchContainer');
-    if (mainContent)          mainContent.style.display          = 'block';
-    if (profileContent)       profileContent.style.display       = 'none';
-    if (publicProfileContent) publicProfileContent.style.display = 'none';
-    if (searchContainer)      searchContainer.style.visibility   = 'visible';
-    fetchGames('', tag);
+    // auth.js의 _renderMain 재활용 — 화면 전환 코드 중복 제거
+    _renderMain(tag);
+    if (DOM.searchInput) DOM.searchInput.value = '';
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.remove('active');
 };
 
+// ════════════════════════════════════
+//  게임 삭제
+// ════════════════════════════════════
+
 window.deleteGame = async (gameId, event) => {
-    if(event) event.stopPropagation();
-    if (!confirm("정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) return;
-    const playerModal = document.getElementById('playerModal');
-    const gameFrame = document.getElementById('gameFrame');
-    const deleteGameBtn = document.getElementById('deleteGameBtn');
-    const profileContent = document.getElementById('profileContent');
+    if (event) event.stopPropagation();
+    if (!confirm('정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return;
     try {
         const { error } = await supabaseClient.from('games').delete().eq('id', gameId);
         if (error) throw error;
-        alert("게임이 삭제되었습니다.");
-        playerModal.classList.remove('active');
+        alert('게임이 삭제되었습니다.');
+        DOM.playerModal.classList.remove('active');
         document.body.style.overflow = '';
-        gameFrame.srcdoc = "";
-        if (deleteGameBtn) deleteGameBtn.style.display = 'none';
-        if (profileContent.style.display === 'block') fetchMyGames();
-        else fetchGames();
-    } catch (error) { alert("오류가 발생했습니다: " + error.message); }
+        DOM.gameFrame.srcdoc = '';
+        if (DOM.deleteGameBtn) DOM.deleteGameBtn.style.display = 'none';
+        DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
+    } catch (err) { alert('오류가 발생했습니다: ' + err.message); }
 };
 
-// ✨ 투표(추천) 전역 함수
+// ════════════════════════════════════
+//  추천 (upvote)
+// ════════════════════════════════════
+
 window.handleUpvote = async (gameId, currentCount) => {
     const voteKey = `voted_${gameId}`;
-
-    if (localStorage.getItem(voteKey)) {
-        return alert("이미 이 게임에 추천을 누르셨습니다!");
-    }
+    if (localStorage.getItem(voteKey)) return alert('이미 이 게임에 추천을 누르셨습니다!');
 
     try {
-        const safeCurrentCount = Number(currentCount) || 0;
-        const nextCount = safeCurrentCount + 1;
-
-        const { error } = await supabaseClient
-            .from('games')
-            .update({ upvotes: nextCount })
-            .eq('id', gameId);
-
+        const nextCount = (Number(currentCount) || 0) + 1;
+        const { error } = await supabaseClient.from('games')
+            .update({ upvotes: nextCount }).eq('id', gameId);
         if (error) throw error;
 
-        const countSpan = document.getElementById('upvoteCount');
-        if (countSpan) countSpan.textContent = nextCount;
-
-        const upBtn = document.getElementById('upvoteBtn');
-        if (upBtn) upBtn.classList.add('voted');
-
+        if (DOM.upvoteCount) DOM.upvoteCount.textContent = nextCount;
+        if (DOM.upvoteBtn)   DOM.upvoteBtn.classList.add('voted');
         localStorage.setItem(voteKey, 'up');
 
-        const profileContent = document.getElementById('profileContent');
-        if (profileContent && profileContent.style.display === 'block') {
-            if (typeof fetchMyGames === 'function') fetchMyGames();
-        } else {
-            const searchInput = document.getElementById('searchInput');
-            if (typeof fetchGames === 'function') {
-                fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
-            }
-        }
-
-    } catch (error) {
-        alert("추천 업데이트 실패 😢\n원인: " + error.message);
-        console.error("추천 에러 상세:", error);
+        // 백그라운드 목록 갱신 (UI 블로킹 없이)
+        DOM.profileContent.style.display === 'block' ? fetchMyGames()
+            : fetchGames(DOM.searchInput?.value.trim() || '', currentTag);
+    } catch (err) {
+        alert('추천 업데이트 실패 😢\n원인: ' + err.message);
     }
 };
+
+// ════════════════════════════════════
+//  게임 카드 렌더
+// ════════════════════════════════════
 
 function renderGames(gameList, targetGrid, isProfile = false) {
     if (!targetGrid) return;
-    if (gameList.length === 0) {
-        targetGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888; padding: 2rem;">목록이 비어있습니다. 😢</p>';
+    if (!gameList.length) {
+        targetGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#888;padding:2rem;">목록이 비어있습니다. 😢</p>';
         return;
     }
 
-    targetGrid.innerHTML = gameList.map(game => {
+    // DocumentFragment로 한 번에 DOM 반영 (리플로우 최소화)
+    const fragment = document.createDocumentFragment();
+    gameList.forEach(game => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+
+        const safeUpvotes  = game.upvotes || 0;
+        const viewCount    = game.view_count || 0;
+        const uploaderId   = game.user_id || null;
+        const safeName     = (game.name || 'Untitled').replace(/'/g, "\\'");
+        const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
+        const safeAvatar   = (game.uploader_avatar || '').replace(/'/g, '%27');
+
+        card.onclick = () => openGame(game.id, game.file_url, safeName, viewCount, uploaderId, safeUploader, safeUpvotes, safeAvatar);
+
         const thumbnailContent = game.thumbnail_url
-            ? `<img src="${game.thumbnail_url}" alt="${game.name}" class="game-thumb-img">`
+            ? `<img src="${game.thumbnail_url}" alt="${game.name}" class="game-thumb-img" loading="lazy">`
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="50"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M15 9v6M12 12h6"/></svg>`;
 
-        const viewCount = game.view_count || 0;
-        const uploaderId = game.user_id ? `'${game.user_id}'` : 'null';
-        const safeName = (game.name || 'Untitled').replace(/'/g, "\\'");
-        const safeUpvotes = game.upvotes || 0;
+        const tagsHtml = game.tags
+            ? `<div class="card-tags">${game.tags.split(',').slice(0, 3).map(t => `<span class="tag-badge">${t.trim()}</span>`).join('')}</div>`
+            : '';
 
-        // ✨ [버그수정] game.uploader_name을 로그인 여부와 무관하게 직접 사용.
-        // 업로더 이름은 DB에 저장된 값을 우선 사용하고, 없을 때만 '익명의 게이머'로 표시.
-        // (로그인 시 auth.js의 동기화 코드가 DB를 최신 상태로 유지해 줍니다.)
-        const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
-        // ✨ uploader_avatar: URL에 따옴표가 없으므로 인코딩만 처리
-        const safeAvatar = (game.uploader_avatar || '').replace(/'/g, '%27');
-
-        let tagsHtml = '';
-        if (game.tags) {
-            const tagsArray = game.tags.split(',').slice(0, 3);
-            tagsHtml = `<div class="card-tags">` + tagsArray.map(t => `<span class="tag-badge">${t.trim()}</span>`).join('') + `</div>`;
-        }
-
-        let profileActionsHtml = '';
-        if (isProfile) {
-            profileActionsHtml = `
+        const profileActionsHtml = isProfile ? `
             <div class="profile-card-actions">
-                <button class="action-btn edit-btn" onclick="openEditModal(${game.id}, '${safeName}', '${game.tags || ''}', event)" title="정보 수정">✏️</button>
-                <button class="action-btn del-btn" onclick="deleteGame(${game.id}, event)" title="게임 삭제">🗑️</button>
-            </div>`;
-        }
+                <button class="action-btn edit-btn" onclick="openEditModal(${game.id},'${safeName}','${game.tags||''}',event)" title="정보 수정">✏️</button>
+                <button class="action-btn del-btn"  onclick="deleteGame(${game.id},event)" title="게임 삭제">🗑️</button>
+            </div>` : '';
 
-        return `
-        <div class="game-card" onclick="openGame(${game.id}, '${game.file_url}', '${safeName}', ${viewCount}, ${uploaderId}, '${safeUploader}', ${safeUpvotes}, '${safeAvatar}')">
+        card.innerHTML = `
             <div class="game-thumbnail">
                 ${thumbnailContent}
                 ${profileActionsHtml}
-                <div class="card-badges">
-                    <span class="view-badge">👁️ ${viewCount}</span>
-                </div>
+                <div class="card-badges"><span class="view-badge">👁️ ${viewCount}</span></div>
             </div>
             <div class="game-info">
                 <h3 class="game-title">${game.name}</h3>
                 ${tagsHtml}
-            </div>
-        </div>
-        `;
-    }).join('');
+            </div>`;
+        fragment.appendChild(card);
+    });
+
+    targetGrid.innerHTML = '';
+    targetGrid.appendChild(fragment);
 }
 
-// ✨ 게임 모달 열기
+// ════════════════════════════════════
+//  게임 모달 열기
+// ════════════════════════════════════
+
 window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar) => {
+    // UI 즉시 업데이트
+    if (DOM.playerTitle)  DOM.playerTitle.textContent  = name;
+    if (DOM.uploaderName) DOM.uploaderName.textContent = uploaderName;
 
-    const titleEl = document.getElementById('playerTitle');
-    if (titleEl) titleEl.textContent = name;
-
-    const uploaderEl = document.getElementById('uploaderName');
-    if (uploaderEl) uploaderEl.textContent = uploaderName;
-
-    // ✨ 업로더 아바타 이미지/이모지 전환
-    const avatarImg = document.getElementById('uploaderAvatarImg');
-    const avatarFallback = document.getElementById('uploaderAvatarFallback');
-    if (avatarImg && avatarFallback) {
+    // 업로더 아바타
+    if (DOM.uploaderAvatarImg && DOM.uploaderAvatarFallback) {
         if (uploaderAvatar) {
-            avatarImg.src = uploaderAvatar;
-            avatarImg.style.display = 'block';
-            avatarFallback.style.display = 'none';
+            DOM.uploaderAvatarImg.src          = uploaderAvatar;
+            DOM.uploaderAvatarImg.style.display    = 'block';
+            DOM.uploaderAvatarFallback.style.display = 'none';
         } else {
-            avatarImg.style.display = 'none';
-            avatarFallback.style.display = 'block';
+            DOM.uploaderAvatarImg.style.display    = 'none';
+            DOM.uploaderAvatarFallback.style.display = 'block';
         }
     }
 
-    const uploaderProfileBtn = document.getElementById('uploaderProfileBtn');
-    if (uploaderProfileBtn) {
-        uploaderProfileBtn.onclick = () => {
-            if (uploaderId && uploaderId !== 'null') {
-                showPublicProfile(uploaderId, uploaderName);
-            } else {
-                alert("오래 전 업로드 된 게임이라 프로필을 확인할 수 없습니다. 😢");
-            }
-        };
+    // 업로더 프로필 클릭
+    if (DOM.uploaderProfileBtn) {
+        DOM.uploaderProfileBtn.onclick = () => uploaderId && uploaderId !== 'null'
+            ? showPublicProfile(uploaderId, uploaderName)
+            : alert('오래 전 업로드 된 게임이라 프로필을 확인할 수 없습니다. 😢');
     }
 
-    const upCountEl = document.getElementById('upvoteCount');
-    if (upCountEl) upCountEl.textContent = upvotes;
-
-    const upBtn = document.getElementById('upvoteBtn');
-    const pastVote = localStorage.getItem(`voted_${id}`);
-
-    if (upBtn) {
-        upBtn.classList.remove('voted');
-        if (pastVote === 'up') upBtn.classList.add('voted');
-        upBtn.onclick = () => handleUpvote(id, upvotes);
+    // 추천 버튼
+    if (DOM.upvoteCount) DOM.upvoteCount.textContent = upvotes;
+    if (DOM.upvoteBtn) {
+        DOM.upvoteBtn.classList.toggle('voted', localStorage.getItem(`voted_${id}`) === 'up');
+        DOM.upvoteBtn.onclick = () => handleUpvote(id, upvotes);
     }
 
-    const playerModal = document.getElementById('playerModal');
-    const gameFrame = document.getElementById('gameFrame');
-    const placeholder = document.getElementById('placeholder');
-    const deleteGameBtn = document.getElementById('deleteGameBtn');
-
-    if (playerModal) playerModal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // 모달 열릴 때 배경 스크롤/이동 차단
-    if (gameFrame) gameFrame.style.display = 'block';
-    if (placeholder) placeholder.style.display = 'none';
-
-    if (deleteGameBtn) {
-        if (currentUser && currentUser.id === uploaderId) {
-            deleteGameBtn.style.display = 'block';
-            deleteGameBtn.onclick = () => deleteGame(id, null);
-        } else {
-            deleteGameBtn.style.display = 'none';
-            deleteGameBtn.onclick = null;
-        }
+    // 삭제 버튼
+    if (DOM.deleteGameBtn) {
+        const isOwner = currentUser && currentUser.id === uploaderId;
+        DOM.deleteGameBtn.style.display = isOwner ? 'block' : 'none';
+        DOM.deleteGameBtn.onclick = isOwner ? () => deleteGame(id, null) : null;
     }
 
-    const viewportMeta = '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">';
-    if (gameFrame) {
-        gameFrame.srcdoc = `${viewportMeta}<div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; color:black;">게임을 불러오는 중입니다...</div>`;
+    // 모달 열기
+    DOM.playerModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if (DOM.gameFrame)   DOM.gameFrame.style.display  = 'block';
+    if (DOM.placeholder) DOM.placeholder.style.display = 'none';
+
+    const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
+    DOM.gameFrame.srcdoc = `${viewportMeta}<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#333;">게임을 불러오는 중입니다...</div>`;
+
+    // 조회수 업데이트 + 게임 파일 fetch를 병렬 실행 ✅
+    const [, gameResult] = await Promise.allSettled([
+        supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id),
+        fetch(url).then(r => { if (!r.ok) throw new Error('게임을 불러올 수 없습니다.'); return r.text(); })
+    ]);
+
+    if (gameResult.status === 'fulfilled') {
+        DOM.gameFrame.srcdoc = viewportMeta + gameResult.value;
+    } else {
+        DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:red;">문제가 발생했습니다.</div>';
+        console.error(gameResult.reason);
     }
 
-    try {
-        supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id).then(({ error }) => {
-            const profileContent = document.getElementById('profileContent');
-            if (profileContent && profileContent.style.display === 'block') {
-                fetchMyGames();
-            } else {
-                const searchInput = document.getElementById('searchInput');
-                fetchGames(searchInput ? searchInput.value.trim() : '', currentTag);
-            }
-        });
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('게임을 불러올 수 없습니다.');
-        const htmlContent = await response.text();
-
-        if (gameFrame) gameFrame.srcdoc = viewportMeta + htmlContent;
-    } catch (error) {
-        if (gameFrame) gameFrame.srcdoc = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; color:red;">문제가 발생했습니다.</div>';
-        console.error(error);
-    }
+    // 목록 백그라운드 갱신
+    DOM.profileContent.style.display === 'block' ? fetchMyGames()
+        : fetchGames(DOM.searchInput?.value.trim() || '', currentTag);
 };
+
+// ════════════════════════════════════
+//  수정 모달 열기
+// ════════════════════════════════════
 
 window.openEditModal = (gameId, name, tags, event) => {
     event.stopPropagation();
     editingGameId = gameId;
     document.getElementById('editGameName').value = name;
 
-    // ✨ 기존 태그를 파싱해서 해당 버튼을 미리 선택 상태로 표시
     const editTagSelector = document.getElementById('editTagSelector');
     if (editTagSelector) {
-        const existingTags = (tags === 'undefined' || !tags)
-            ? []
-            : tags.split(',').map(t => t.trim().toLowerCase());
-
+        const existing = (!tags || tags === 'undefined')
+            ? [] : tags.split(',').map(t => t.trim().toLowerCase());
         editTagSelector.querySelectorAll('.tag-option').forEach(btn => {
-            if (existingTags.includes(btn.dataset.tag.toLowerCase())) {
-                btn.classList.add('selected');
-            } else {
-                btn.classList.remove('selected');
-            }
+            btn.classList.toggle('selected', existing.includes(btn.dataset.tag.toLowerCase()));
         });
     }
-
     document.getElementById('editModal').classList.add('active');
-}
+};
