@@ -48,13 +48,23 @@ async function fetchMyGames() {
 
 window.filterByTag = (tag) => {
     currentTag = tag;
-    showMainContent();
+    // ✨ URL 업데이트 (뒤로가기 지원)
+    if (typeof _pushTagHistory === 'function') _pushTagHistory(tag);
     const sectionTitle = document.getElementById('sectionTitle');
-    const searchInput = document.getElementById('searchInput');
-    const sidebar = document.getElementById('sidebar');
-    if(sectionTitle) sectionTitle.textContent = tag ? `#${tag} Games` : 'Popular Games';
-    if (searchInput) searchInput.value = '';
-    if(sidebar) sidebar.classList.remove('active');
+    const searchInput  = document.getElementById('searchInput');
+    const sidebar      = document.getElementById('sidebar');
+    if (sectionTitle) sectionTitle.textContent = tag ? `#${tag} Games` : 'Popular Games';
+    if (searchInput)  searchInput.value = '';
+    if (sidebar)      sidebar.classList.remove('active');
+    // 메인 화면 전환 (history는 이미 위에서 처리)
+    const mainContent          = document.getElementById('mainContent');
+    const profileContent       = document.getElementById('profileContent');
+    const publicProfileContent = document.getElementById('publicProfileContent');
+    const searchContainer      = document.getElementById('searchContainer');
+    if (mainContent)          mainContent.style.display          = 'block';
+    if (profileContent)       profileContent.style.display       = 'none';
+    if (publicProfileContent) publicProfileContent.style.display = 'none';
+    if (searchContainer)      searchContainer.style.visibility   = 'visible';
     fetchGames('', tag);
 };
 
