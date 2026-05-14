@@ -59,6 +59,14 @@ function showMainContent() {
     profileContent.style.display = 'none';
     if (publicProfileContent) publicProfileContent.style.display = 'none';
     searchContainer.style.visibility = 'visible';
+
+    // ✨ 태그 필터·섹션 타이틀 초기화
+    currentTag = '';
+    const sectionTitle = document.getElementById('sectionTitle');
+    if (sectionTitle) sectionTitle.textContent = 'Popular Games';
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+
     fetchGames();
 }
 
