@@ -1,326 +1,297 @@
-// ✨ 업로드 모달에서 사용할 사전 정의 태그 목록
 const PRESET_TAGS = [
-    'Action', 'Adventure', 'RPG', 'FPS', 'Puzzle',
-    'Strategy', 'Simulation', 'Sports', 'Horror', 'Racing',
-    'Platform', 'Arcade', 'Card', 'Board', 'Idle',
-    'Casual', 'Shooter', 'Fighting', 'Survival', 'Music'
+    'Action','Adventure','RPG','FPS','Puzzle',
+    'Strategy','Simulation','Sports','Horror','Racing',
+    'Platform','Arcade','Card','Board','Idle',
+    'Casual','Shooter','Fighting','Survival','Music',
 ];
 
-function initUploadModal() {
-    const uploadBtn = document.getElementById('uploadBtn');
-    const uploadModal = document.getElementById('uploadModal');
-    const closeUpload = document.getElementById('closeUpload');
-    const submitGameBtn = document.getElementById('submitGame');
-    const gameNameInput = document.getElementById('gameName');
-    const gameFileInput = document.getElementById('gameFileInput');
-    const thumbnailFileInput = document.getElementById('thumbnailFileInput');
-    const profileContent = document.getElementById('profileContent');
-    const tagSelector = document.getElementById('tagSelector');
+// ════════════════════════════════════
+//  공유 태그 선택기 빌더 (중복 코드 제거)
+// ════════════════════════════════════
 
-    // ✨ 태그 선택기 렌더링
-    if (tagSelector) {
-        tagSelector.innerHTML = PRESET_TAGS.map(tag =>
-            `<button type="button" class="tag-option" data-tag="${tag}">${tag}</button>`
-        ).join('');
-
-        // 클릭 토글
-        tagSelector.addEventListener('click', (e) => {
-            const btn = e.target.closest('.tag-option');
-            if (!btn) return;
-            btn.classList.toggle('selected');
-        });
-    }
-
-    // 선택된 태그를 쉼표로 구분된 문자열로 반환하는 헬퍼
-    function getSelectedTags() {
-        if (!tagSelector) return '';
-        return Array.from(tagSelector.querySelectorAll('.tag-option.selected'))
-            .map(btn => btn.dataset.tag)
-            .join(', ');
-    }
-
-    // 태그 선택 초기화
-    function clearTagSelector() {
-        if (!tagSelector) return;
-        tagSelector.querySelectorAll('.tag-option.selected').forEach(btn => btn.classList.remove('selected'));
-    }
-
-    if (uploadBtn) uploadBtn.onclick = () => {
-        if (!currentUser) return alert("로그인이 필요합니다.");
-        uploadModal.classList.add('active');
-    };
-    if (closeUpload) closeUpload.onclick = () => uploadModal.classList.remove('active');
-
-    if (submitGameBtn) {
-        submitGameBtn.onclick = async () => {
-            if (!currentUser) return alert("로그인이 필요합니다!");
-            const name = gameNameInput.value.trim();
-            const tags = getSelectedTags(); // ✨ 텍스트 입력 대신 선택된 태그 사용
-            const file = gameFileInput.files[0];
-            const thumbFile = thumbnailFileInput.files[0];
-
-            if (!name || !file) return alert("게임 이름과 HTML 파일은 필수입니다!");
-            submitGameBtn.innerText = "업로드 중...";
-            submitGameBtn.disabled = true;
-
-            try {
-                const htmlText = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.onerror = (e) => reject(new Error("파일 읽기 실패"));
-                    reader.readAsText(file, "UTF-8");
-                });
-                const blob = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
-                const fileName = `${Date.now()}_${file.name}`;
-
-                const { error: uploadError } = await supabaseClient.storage.from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
-                if (uploadError) throw uploadError;
-                const { data: { publicUrl: gamePublicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
-
-                let thumbPublicUrl = null;
-                if (thumbFile) {
-                    const thumbName = `${Date.now()}_thumb_${thumbFile.name}`;
-                    const { error: thumbError } = await supabaseClient.storage.from('game-files').upload(thumbName, thumbFile, { upsert: true });
-                    if (thumbError) throw thumbError;
-                    const { data: thumbData } = supabaseClient.storage.from('game-files').getPublicUrl(thumbName);
-                    thumbPublicUrl = thumbData.publicUrl;
-                }
-
-                const currentName = currentUser.user_metadata.custom_name || currentUser.user_metadata.preferred_username || currentUser.user_metadata.full_name || '게이머';
-
-                const { error: dbError } = await supabaseClient.from('games').insert([{
-                    id: Date.now(),
-                    name: name,
-                    file_url: gamePublicUrl,
-                    thumbnail_url: thumbPublicUrl,
-                    tags: tags,
-                    view_count: 0,
-                    user_id: currentUser.id,
-                    uploader_name: currentName,
-                    upvotes: 0
-                }]);
-                if (dbError) throw dbError;
-
-                alert("업로드 성공!");
-                uploadModal.classList.remove('active');
-
-                // ✨ 폼 초기화 (태그 선택기 포함)
-                gameNameInput.value = '';
-                clearTagSelector();
-                gameFileInput.value = '';
-                thumbnailFileInput.value = '';
-
-                if (profileContent.style.display === 'block') fetchMyGames();
-                else fetchGames();
-            } catch (error) { alert("오류 발생: " + error.message); }
-            finally { submitGameBtn.innerText = "Launch Game"; submitGameBtn.disabled = false; }
-        };
-    }
+function buildTagSelector(container) {
+    if (!container) return;
+    container.innerHTML = PRESET_TAGS
+        .map(tag => `<button type="button" class="tag-option" data-tag="${tag}">${tag}</button>`)
+        .join('');
+    container.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tag-option');
+        if (btn) btn.classList.toggle('selected');
+    });
 }
 
+function getSelectedTags(container) {
+    if (!container) return '';
+    return Array.from(container.querySelectorAll('.tag-option.selected'))
+        .map(b => b.dataset.tag).join(', ');
+}
+
+function clearTagSelector(container) {
+    container?.querySelectorAll('.tag-option.selected')
+        .forEach(b => b.classList.remove('selected'));
+}
+
+// ════════════════════════════════════
+//  업로드 모달
+// ════════════════════════════════════
+
+function initUploadModal() {
+    const uploadModal       = document.getElementById('uploadModal');
+    const submitGameBtn     = document.getElementById('submitGame');
+    const gameNameInput     = document.getElementById('gameName');
+    const gameFileInput     = document.getElementById('gameFileInput');
+    const thumbnailFileInput = document.getElementById('thumbnailFileInput');
+    const tagSelector       = document.getElementById('tagSelector');
+
+    buildTagSelector(tagSelector);
+
+    if (DOM.uploadBtn) DOM.uploadBtn.onclick = () => {
+        if (!currentUser) return alert('로그인이 필요합니다.');
+        uploadModal.classList.add('active');
+    };
+    document.getElementById('closeUpload').onclick = () => uploadModal.classList.remove('active');
+
+    if (!submitGameBtn) return;
+    submitGameBtn.onclick = async () => {
+        if (!currentUser) return alert('로그인이 필요합니다!');
+        const name     = gameNameInput.value.trim();
+        const tags     = getSelectedTags(tagSelector);
+        const file     = gameFileInput.files[0];
+        const thumbFile = thumbnailFileInput.files[0];
+        if (!name || !file) return alert('게임 이름과 HTML 파일은 필수입니다!');
+
+        submitGameBtn.textContent = '업로드 중...';
+        submitGameBtn.disabled    = true;
+        try {
+            // HTML 파일 읽기
+            const htmlText = await file.text();
+            const blob     = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
+            const fileName = `${Date.now()}_${file.name}`;
+
+            const { error: uploadErr } = await supabaseClient.storage
+                .from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
+            if (uploadErr) throw uploadErr;
+            const { data: { publicUrl: gameUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
+
+            // 썸네일 업로드 (있는 경우만)
+            let thumbUrl = null;
+            if (thumbFile) {
+                const thumbName = `${Date.now()}_thumb_${thumbFile.name}`;
+                const { error: thumbErr } = await supabaseClient.storage
+                    .from('game-files').upload(thumbName, thumbFile, { upsert: true });
+                if (thumbErr) throw thumbErr;
+                thumbUrl = supabaseClient.storage.from('game-files').getPublicUrl(thumbName).data.publicUrl;
+            }
+
+            const uploaderName = currentUser.user_metadata.custom_name
+                || currentUser.user_metadata.preferred_username
+                || currentUser.user_metadata.full_name || '게이머';
+
+            // id 제거 — Supabase 자동 생성 UUID 사용 ✅
+            const { error: dbErr } = await supabaseClient.from('games').insert([{
+                name,
+                file_url:       gameUrl,
+                thumbnail_url:  thumbUrl,
+                tags,
+                view_count:     0,
+                upvotes:        0,
+                user_id:        currentUser.id,
+                uploader_name:  uploaderName,
+                uploader_avatar: currentUser.user_metadata.custom_avatar
+                    || currentUser.user_metadata.avatar_url || null,
+            }]);
+            if (dbErr) throw dbErr;
+
+            alert('업로드 성공!');
+            uploadModal.classList.remove('active');
+            gameNameInput.value = '';
+            clearTagSelector(tagSelector);
+            gameFileInput.value = '';
+            thumbnailFileInput.value = '';
+
+            DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
+        } catch (err) {
+            alert('오류 발생: ' + err.message);
+        } finally {
+            submitGameBtn.textContent = 'Launch Game';
+            submitGameBtn.disabled    = false;
+        }
+    };
+}
+
+// ════════════════════════════════════
+//  수정 모달
+// ════════════════════════════════════
+
 function initEditModal() {
-    const editModal = document.getElementById('editModal');
-    const closeEdit = document.getElementById('closeEdit');
+    const editModal      = document.getElementById('editModal');
     const submitEditGame = document.getElementById('submitEditGame');
     const editTagSelector = document.getElementById('editTagSelector');
 
-    // ✨ 수정 모달 태그 선택기 렌더링
-    if (editTagSelector) {
-        editTagSelector.innerHTML = PRESET_TAGS.map(tag =>
-            `<button type="button" class="tag-option" data-tag="${tag}">${tag}</button>`
-        ).join('');
+    buildTagSelector(editTagSelector); // 공유 빌더 사용 ✅
 
-        editTagSelector.addEventListener('click', (e) => {
-            const btn = e.target.closest('.tag-option');
-            if (!btn) return;
-            btn.classList.toggle('selected');
-        });
-    }
+    document.getElementById('closeEdit').onclick = () => editModal.classList.remove('active');
 
-    if(closeEdit) closeEdit.onclick = () => editModal.classList.remove('active');
-    if(submitEditGame) {
-        submitEditGame.onclick = async () => {
-            const newName = document.getElementById('editGameName').value.trim();
-            // 선택된 태그를 쉼표로 묶어서 가져옴
-            const newTags = editTagSelector
-                ? Array.from(editTagSelector.querySelectorAll('.tag-option.selected'))
-                    .map(btn => btn.dataset.tag).join(', ')
-                : '';
-            if(!newName) return alert("게임 이름을 입력해주세요.");
-            submitEditGame.disabled = true;
-            submitEditGame.textContent = "저장 중...";
-            try {
-                const { error } = await supabaseClient.from('games').update({ name: newName, tags: newTags }).eq('id', editingGameId);
-                if (error) throw error;
-                alert("정보가 수정되었습니다.");
-                editModal.classList.remove('active');
-                fetchMyGames();
-            } catch(error) { alert("수정 실패: " + error.message); }
-            finally { submitEditGame.disabled = false; submitEditGame.textContent = "저장하기"; }
+    if (!submitEditGame) return;
+    submitEditGame.onclick = async () => {
+        const newName = document.getElementById('editGameName').value.trim();
+        const newTags = getSelectedTags(editTagSelector);
+        if (!newName) return alert('게임 이름을 입력해주세요.');
+
+        submitEditGame.disabled    = true;
+        submitEditGame.textContent = '저장 중...';
+        try {
+            const { error } = await supabaseClient.from('games')
+                .update({ name: newName, tags: newTags }).eq('id', editingGameId);
+            if (error) throw error;
+            alert('정보가 수정되었습니다.');
+            editModal.classList.remove('active');
+            fetchMyGames();
+        } catch (err) {
+            alert('수정 실패: ' + err.message);
+        } finally {
+            submitEditGame.disabled    = false;
+            submitEditGame.textContent = '저장하기';
         }
-    }
+    };
 }
+
+// ════════════════════════════════════
+//  사이드바
+// ════════════════════════════════════
 
 function initSidebar() {
-    const menuBtn = document.getElementById('menuBtn');
-    const sidebar = document.getElementById('sidebar');
+    const menuBtn     = document.getElementById('menuBtn');
+    const sidebar     = document.getElementById('sidebar');
     const closeSidebar = document.getElementById('closeSidebar');
+    if (!sidebar) return;
 
-    if (menuBtn) menuBtn.addEventListener('click', () => sidebar.classList.add('active'));
-    if (closeSidebar) closeSidebar.addEventListener('click', () => sidebar.classList.remove('active'));
+    menuBtn?.addEventListener('click',  () => sidebar.classList.add('active'));
+    closeSidebar?.addEventListener('click', () => sidebar.classList.remove('active'));
     document.addEventListener('click', (e) => {
-        if (sidebar && menuBtn && sidebar.classList.contains('active') && !sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('active');
+        if (sidebar.classList.contains('active')
+            && !sidebar.contains(e.target)
+            && !menuBtn?.contains(e.target)) {
+            sidebar.classList.remove('active');
+        }
     });
 }
+
+// ════════════════════════════════════
+//  게임 플레이어 (닫기/전체화면)
+// ════════════════════════════════════
 
 function initPlayer() {
     const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const closePlayer = document.getElementById('closePlayer');
-    const gameFrame = document.getElementById('gameFrame');
-    const deleteGameBtn = document.getElementById('deleteGameBtn');
-    const playerModal = document.getElementById('playerModal');
+    const closePlayer   = document.getElementById('closePlayer');
 
-    if (fullscreenBtn) fullscreenBtn.onclick = () => {
-        if (gameFrame.requestFullscreen) gameFrame.requestFullscreen();
-        else if (gameFrame.webkitRequestFullscreen) gameFrame.webkitRequestFullscreen();
-        else if (gameFrame.msRequestFullscreen) gameFrame.msRequestFullscreen();
-    };
+    fullscreenBtn?.addEventListener('click', () => {
+        const fs = DOM.gameFrame.requestFullscreen
+            || DOM.gameFrame.webkitRequestFullscreen
+            || DOM.gameFrame.msRequestFullscreen;
+        fs?.call(DOM.gameFrame);
+    });
 
-    if (closePlayer) closePlayer.onclick = () => {
-        playerModal.classList.remove('active');
-        document.body.style.overflow = ''; // 모달 닫힐 때 배경 스크롤 복원
-        gameFrame.srcdoc = "";
-        if(deleteGameBtn) deleteGameBtn.style.display = 'none';
-    };
+    closePlayer?.addEventListener('click', () => {
+        DOM.playerModal.classList.remove('active');
+        document.body.style.overflow = '';
+        DOM.gameFrame.srcdoc = '';
+        if (DOM.deleteGameBtn) DOM.deleteGameBtn.style.display = 'none';
+    });
 }
+
+// ════════════════════════════════════
+//  파일 입력 레이블
+// ════════════════════════════════════
 
 function initFileInputs() {
-    if(document.getElementById('gameFileInput')) document.getElementById('gameFileInput').onchange = (e) => { document.getElementById('gameFileName').textContent = e.target.files[0]?.name || ''; };
-    if(document.getElementById('thumbnailFileInput')) document.getElementById('thumbnailFileInput').onchange = (e) => { document.getElementById('thumbnailFileName').textContent = e.target.files[0]?.name || ''; };
+    [['gameFileInput','gameFileName'], ['thumbnailFileInput','thumbnailFileName']].forEach(([inputId, labelId]) => {
+        const input = document.getElementById(inputId);
+        const label = document.getElementById(labelId);
+        if (input && label) input.onchange = e => { label.textContent = e.target.files[0]?.name || ''; };
+    });
 }
+
+// ════════════════════════════════════
+//  검색 디바운스
+// ════════════════════════════════════
 
 function initSearch() {
-    const searchInput = document.getElementById('searchInput');
-    let searchTimeout;
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                const searchTerm = e.target.value.trim();
-                fetchGames(searchTerm, currentTag);
-            }, 300);
-        });
-    }
+    if (!DOM.searchInput) return;
+    let timer;
+    DOM.searchInput.addEventListener('input', (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fetchGames(e.target.value.trim(), currentTag), 300);
+    });
 }
 
-// ✨ 모바일 가상 D-pad
+// ════════════════════════════════════
+//  모바일 가상 D-pad
+// ════════════════════════════════════
+
+const KEY_CODES = { ArrowUp:38, ArrowDown:40, ArrowLeft:37, ArrowRight:39, Space:32, Enter:13, Escape:27 };
+
 function initDpad() {
-    const overlay  = document.getElementById('dpadOverlay');
-    const gameFrame = document.getElementById('gameFrame');
-    if (!overlay || !gameFrame) return;
+    if (!DOM.dpadOverlay || !DOM.gameFrame) return;
+    const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+    DOM.dpadOverlay.classList.add('active');
 
-    // 터치 기기 판별 (포인터 미지원 or 터치 지원)
-    const isTouchDevice = () =>
-        window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
-
-    if (!isTouchDevice()) return; // PC에선 표시 안 함
-    overlay.classList.add('active');
-
-    // iframe에 키 이벤트를 주입하는 헬퍼
     function sendKey(type, key, code) {
         try {
-            const win = gameFrame.contentWindow;
-            if (!win) return;
-            win.dispatchEvent(new KeyboardEvent(type, {
-                key, code, keyCode: getKeyCode(code),
-                bubbles: true, cancelable: true
-            }));
-            // document에도 함께 전달 (일부 게임이 document에 바인딩)
-            win.document.dispatchEvent(new KeyboardEvent(type, {
-                key, code, keyCode: getKeyCode(code),
-                bubbles: true, cancelable: true
-            }));
-        } catch(e) { /* cross-origin 게임은 무시 */ }
+            const opts = { key, code, keyCode: KEY_CODES[code] || 0, bubbles: true, cancelable: true };
+            DOM.gameFrame.contentWindow?.dispatchEvent(new KeyboardEvent(type, opts));
+            DOM.gameFrame.contentWindow?.document.dispatchEvent(new KeyboardEvent(type, opts));
+        } catch (_) { /* cross-origin 무시 */ }
     }
 
-    function getKeyCode(code) {
-        const map = {
-            ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39,
-            Space: 32, Enter: 13, Escape: 27
-        };
-        return map[code] || 0;
-    }
-
-    // 모든 D-pad / 액션 버튼에 이벤트 연결
-    const allBtns = overlay.querySelectorAll('[data-key]');
-    allBtns.forEach(btn => {
-        const key  = btn.dataset.key;
-        const code = btn.dataset.code;
-
-        const press = (e) => {
-            e.preventDefault();
-            btn.classList.add('pressed');
-            sendKey('keydown', key, code);
-        };
-        const release = (e) => {
-            e.preventDefault();
-            btn.classList.remove('pressed');
-            sendKey('keyup', key, code);
-        };
-
-        btn.addEventListener('touchstart', press,   { passive: false });
-        btn.addEventListener('touchend',   release,  { passive: false });
-        btn.addEventListener('touchcancel',release,  { passive: false });
-        // 마우스 폴백 (개발자 도구 모바일 시뮬)
-        btn.addEventListener('mousedown',  press);
-        btn.addEventListener('mouseup',    release);
-        btn.addEventListener('mouseleave', release);
+    DOM.dpadOverlay.querySelectorAll('[data-key]').forEach(btn => {
+        const { key, code } = btn.dataset;
+        const press   = e => { e.preventDefault(); btn.classList.add('pressed');    sendKey('keydown', key, code); };
+        const release = e => { e.preventDefault(); btn.classList.remove('pressed'); sendKey('keyup',   key, code); };
+        btn.addEventListener('touchstart',  press,   { passive: false });
+        btn.addEventListener('touchend',    release, { passive: false });
+        btn.addEventListener('touchcancel', release, { passive: false });
+        btn.addEventListener('mousedown',   press);
+        btn.addEventListener('mouseup',     release);
+        btn.addEventListener('mouseleave',  release);
     });
 }
 
-// ✨ 아바타 업로드 공통 함수
+// ════════════════════════════════════
+//  프로필 아바타 업로드
+// ════════════════════════════════════
+
 async function uploadAvatar(file) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
-    const ext = file.name.split('.').pop();
+    const ext      = file.name.split('.').pop();
     const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
 
-    const { error: uploadError } = await supabaseClient.storage
-        .from('game-files')
-        .upload(fileName, file, { upsert: true });
-    if (uploadError) throw uploadError;
+    const { error: upErr } = await supabaseClient.storage
+        .from('game-files').upload(fileName, file, { upsert: true });
+    if (upErr) throw upErr;
 
-    const { data: { publicUrl } } = supabaseClient.storage
-        .from('game-files')
-        .getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
 
-    // user_metadata에 custom_avatar로 영구 저장
-    const { data, error: updateError } = await supabaseClient.auth.updateUser({
-        data: { custom_avatar: publicUrl }
-    });
-    if (updateError) throw updateError;
+    const { data, error: metaErr } = await supabaseClient.auth.updateUser({ data: { custom_avatar: publicUrl } });
+    if (metaErr) throw metaErr;
 
-    // 화면 즉시 반영 (헤더 아바타 + 설정 카드 미리보기)
-    if (document.getElementById('profileAvatar')) document.getElementById('profileAvatar').src = publicUrl;
-    if (document.getElementById('avatarPreview')) document.getElementById('avatarPreview').src = publicUrl;
+    if (DOM.profileAvatar) DOM.profileAvatar.src = publicUrl;
+    if (DOM.avatarPreview) DOM.avatarPreview.src = publicUrl;
 
-    // 내 모든 게임의 uploader_avatar도 일괄 업데이트
-    const { error: gamesError } = await supabaseClient.from('games')
-        .update({ uploader_avatar: publicUrl })
-        .eq('user_id', currentUser.id);
-    if (gamesError) console.warn('게임 아바타 동기화 실패:', gamesError.message);
+    // 게임 목록 아바타 동기화 (백그라운드)
+    supabaseClient.from('games').update({ uploader_avatar: publicUrl })
+        .eq('user_id', currentUser.id)
+        .then(({ error }) => { if (error) console.warn('아바타 동기화 실패:', error.message); });
 
     updateAuthUI(data.user);
     return publicUrl;
 }
 
-// ✨ 프로필 아바타 업로드 초기화
 function initProfileAvatar() {
-    let selectedFile = null; // 설정 카드에서 선택된 파일 임시 보관
-
-    // ── 헤더 아바타 클릭 → 파일 선택 → 즉시 업로드 ──
     const headerTrigger = document.getElementById('avatarUploadTrigger');
     const headerInput   = document.getElementById('avatarFileInputHeader');
-    const headerOverlay = headerTrigger ? headerTrigger.querySelector('.avatar-edit-overlay') : null;
+    const headerOverlay = headerTrigger?.querySelector('.avatar-edit-overlay');
 
     if (headerTrigger && headerInput) {
         headerTrigger.addEventListener('click', () => headerInput.click());
@@ -334,49 +305,41 @@ function initProfileAvatar() {
             } catch (err) {
                 alert('업로드 실패: ' + err.message);
             } finally {
-                if (headerOverlay) headerOverlay.textContent = '📷 변경';
+                if (headerOverlay) headerOverlay.textContent = '사진 변경';
                 headerInput.value = '';
             }
         });
     }
 
-    // ── 설정 카드: 사진 선택 → 미리보기 ──
-    const pickBtn  = document.getElementById('avatarPickBtn');
+    const pickBtn   = document.getElementById('avatarPickBtn');
     const fileInput = document.getElementById('avatarFileInput');
-    const preview  = document.getElementById('avatarPreview');
+    let selectedFile = null;
 
-    if (pickBtn && fileInput) {
-        pickBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            selectedFile = file;
-            // 로컬 미리보기
-            const reader = new FileReader();
-            reader.onload = (ev) => { if (preview) preview.src = ev.target.result; };
-            reader.readAsDataURL(file);
-        });
-    }
+    pickBtn?.addEventListener('click', () => fileInput?.click());
+    fileInput?.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0];
+        if (!selectedFile) return;
+        const reader = new FileReader();
+        reader.onload = ev => { if (DOM.avatarPreview) DOM.avatarPreview.src = ev.target.result; };
+        reader.readAsDataURL(selectedFile);
+    });
 
-    // ── 설정 카드: 저장하기 → 업로드 ──
     const saveBtn = document.getElementById('saveAvatarBtn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', async () => {
-            if (!selectedFile) return alert('먼저 사진을 선택해주세요.');
-            if (!currentUser) return alert('로그인이 필요합니다.');
-            saveBtn.disabled = true;
-            saveBtn.textContent = '저장 중...';
-            try {
-                await uploadAvatar(selectedFile);
-                selectedFile = null;
-                if (fileInput) fileInput.value = '';
-                alert('프로필 사진이 저장되었습니다! 🎉');
-            } catch (err) {
-                alert('업로드 실패: ' + err.message);
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.textContent = '저장하기';
-            }
-        });
-    }
+    saveBtn?.addEventListener('click', async () => {
+        if (!selectedFile) return alert('먼저 사진을 선택해주세요.');
+        if (!currentUser) return alert('로그인이 필요합니다.');
+        saveBtn.disabled    = true;
+        saveBtn.textContent = '저장 중...';
+        try {
+            await uploadAvatar(selectedFile);
+            selectedFile = null;
+            if (fileInput) fileInput.value = '';
+            alert('프로필 사진이 저장되었습니다! 🎉');
+        } catch (err) {
+            alert('업로드 실패: ' + err.message);
+        } finally {
+            saveBtn.disabled    = false;
+            saveBtn.textContent = '저장하기';
+        }
+    });
 }
