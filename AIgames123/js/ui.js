@@ -213,6 +213,71 @@ function initSearch() {
     }
 }
 
+// ✨ 모바일 가상 D-pad
+function initDpad() {
+    const overlay  = document.getElementById('dpadOverlay');
+    const gameFrame = document.getElementById('gameFrame');
+    if (!overlay || !gameFrame) return;
+
+    // 터치 기기 판별 (포인터 미지원 or 터치 지원)
+    const isTouchDevice = () =>
+        window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
+    if (!isTouchDevice()) return; // PC에선 표시 안 함
+    overlay.classList.add('active');
+
+    // iframe에 키 이벤트를 주입하는 헬퍼
+    function sendKey(type, key, code) {
+        try {
+            const win = gameFrame.contentWindow;
+            if (!win) return;
+            win.dispatchEvent(new KeyboardEvent(type, {
+                key, code, keyCode: getKeyCode(code),
+                bubbles: true, cancelable: true
+            }));
+            // document에도 함께 전달 (일부 게임이 document에 바인딩)
+            win.document.dispatchEvent(new KeyboardEvent(type, {
+                key, code, keyCode: getKeyCode(code),
+                bubbles: true, cancelable: true
+            }));
+        } catch(e) { /* cross-origin 게임은 무시 */ }
+    }
+
+    function getKeyCode(code) {
+        const map = {
+            ArrowUp: 38, ArrowDown: 40, ArrowLeft: 37, ArrowRight: 39,
+            Space: 32, Enter: 13, Escape: 27
+        };
+        return map[code] || 0;
+    }
+
+    // 모든 D-pad / 액션 버튼에 이벤트 연결
+    const allBtns = overlay.querySelectorAll('[data-key]');
+    allBtns.forEach(btn => {
+        const key  = btn.dataset.key;
+        const code = btn.dataset.code;
+
+        const press = (e) => {
+            e.preventDefault();
+            btn.classList.add('pressed');
+            sendKey('keydown', key, code);
+        };
+        const release = (e) => {
+            e.preventDefault();
+            btn.classList.remove('pressed');
+            sendKey('keyup', key, code);
+        };
+
+        btn.addEventListener('touchstart', press,   { passive: false });
+        btn.addEventListener('touchend',   release,  { passive: false });
+        btn.addEventListener('touchcancel',release,  { passive: false });
+        // 마우스 폴백 (개발자 도구 모바일 시뮬)
+        btn.addEventListener('mousedown',  press);
+        btn.addEventListener('mouseup',    release);
+        btn.addEventListener('mouseleave', release);
+    });
+}
+
 // ✨ 아바타 업로드 공통 함수
 async function uploadAvatar(file) {
     if (!currentUser) throw new Error('로그인이 필요합니다.');
