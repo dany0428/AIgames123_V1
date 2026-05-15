@@ -82,12 +82,17 @@ function initUploadModal() {
         submitGameBtn.textContent = '업로드 중...';
         submitGameBtn.disabled    = true;
         try {
+            // 파일명 sanitize: 한글·공백·특수문자 → _ (Storage key 오류 방지)
+            const sanitizeName = (n) => n
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\w.\-]/g, '_').replace(/_+/g, '_');
+
             const fileType = selectedFileType; // 'html' | 'zip'
             let gameUrl;
 
             if (fileType === 'zip') {
                 // ── ZIP 업로드: 파일 그대로 Storage에 저장 ──
-                const fileName = `${Date.now()}_${file.name}`;
+                const fileName = `${Date.now()}_${sanitizeName(file.name)}`;
                 const { error: uploadErr } = await supabaseClient.storage
                     .from('game-files').upload(fileName, file, { contentType: 'application/zip', upsert: true });
                 if (uploadErr) throw uploadErr;
@@ -96,7 +101,7 @@ function initUploadModal() {
                 // ── HTML 업로드 ──
                 const htmlText = await file.text();
                 const blob     = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
-                const fileName = `${Date.now()}_${file.name}`;
+                const fileName = `${Date.now()}_${sanitizeName(file.name)}`;
                 const { error: uploadErr } = await supabaseClient.storage
                     .from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
                 if (uploadErr) throw uploadErr;
@@ -106,7 +111,7 @@ function initUploadModal() {
             // ── 썸네일 ──
             let thumbUrl = null;
             if (thumbFile) {
-                const thumbName = `${Date.now()}_thumb_${thumbFile.name}`;
+                const thumbName = `${Date.now()}_thumb_${sanitizeName(thumbFile.name)}`;
                 const { error: thumbErr } = await supabaseClient.storage
                     .from('game-files').upload(thumbName, thumbFile, { upsert: true });
                 if (thumbErr) throw thumbErr;
