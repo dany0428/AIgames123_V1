@@ -129,6 +129,13 @@ async function _loadZipGame(buffer) {
             return;
         }
 
+        // ── wasm 감지 → 새 탭으로 열기 (COOP/COEP 필요) ──
+        const hasWasm = files.some(f => f.toLowerCase().endsWith('.wasm') && !zip.files[f].dir);
+        if (hasWasm) {
+            await _loadWasmGame(zip, files);
+            return;
+        }
+
         // index.html 위치 찾기 (루트 또는 서브폴더)
         let entryPath = files.find(f => f === 'index.html')
             || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
@@ -278,6 +285,98 @@ async function _loadSwfGame(zip, swfPath) {
     } catch (err) {
         DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">Flash 로드 실패: ${err.message}</div>`;
         console.error('SWF load error:', err);
+    }
+}
+
+// ════════════════════════════════════
+//  WASM 게임 → 새 탭 로더
+//  (SharedArrayBuffer는 COOP/COEP 필요 → srcdoc 불가)
+// ════════════════════════════════════
+
+async function _loadWasmGame(zip, files) {
+    // 로딩 중 안내 메시지
+    DOM.gameFrame.srcdoc = `
+<html><body style="margin:0;background:#111;display:flex;flex-direction:column;
+align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#a78bfa;gap:1.2rem;">
+  <div style="width:44px;height:44px;border:4px solid #3b2d5a;border-top-color:#8b5cf6;
+    border-radius:50%;animation:spin .8s linear infinite;"></div>
+  <p style="font-size:1rem;">WASM 게임 파일 압축 해제 중...</p>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body></html>`;
+
+    try {
+        // 모든 파일을 blob URL로 변환
+        const urlMap = {};
+        const baseDir = (() => {
+            const entry = files.find(f => f === 'index.html')
+                || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
+                || files.find(f => f.endsWith('.html') && !zip.files[f].dir) || '';
+            return entry.includes('/') ? entry.substring(0, entry.lastIndexOf('/') + 1) : '';
+        })();
+
+        await Promise.all(
+            files.filter(f => !zip.files[f].dir).map(async (f) => {
+                const data = await zip.files[f].async('arraybuffer');
+                // wasm은 정확한 MIME 타입으로 blob 생성
+                const mime = f.endsWith('.wasm') ? 'application/wasm'
+                    : f.endsWith('.js')          ? 'application/javascript'
+                    : f.endsWith('.html')        ? 'text/html'
+                    : 'application/octet-stream';
+                const blob = new Blob([data], { type: mime });
+                urlMap[f] = URL.createObjectURL(blob);
+                if (baseDir && f.startsWith(baseDir)) {
+                    urlMap[f.slice(baseDir.length)] = urlMap[f];
+                }
+            })
+        );
+
+        const entryPath = files.find(f => f === 'index.html')
+            || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
+            || files.find(f => f.endsWith('.html') && !zip.files[f].dir);
+
+        if (!entryPath) throw new Error('index.html을 찾을 수 없습니다.');
+
+        // index.html 읽어서 에셋 경로 교체
+        const dec  = new TextDecoder('utf-8');
+        const data = await zip.files[entryPath].async('arraybuffer');
+        let html   = dec.decode(data);
+
+        html = html.replace(
+            /((?:src|href|data-src)\s*=\s*["'])([^"'#?][^"']*)(?=["'])/gi,
+            (m, pre, path) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? pre + r : m; }
+        );
+        html = html.replace(
+            /url\(['"]?([^'")(]+)['"]?\)/gi,
+            (m, path) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? `url('${r}')` : m; }
+        );
+        // JS import / fetch 경로 교체
+        html = html.replace(
+            /(["'])([^"']+\.(?:js|wasm))(\1)/g,
+            (m, q, path, q2) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? q + r + q2 : m; }
+        );
+
+        // 새 탭으로 열기
+        const pageBlob = new Blob([html], { type: 'text/html' });
+        const pageUrl  = URL.createObjectURL(pageBlob);
+        const newTab   = window.open(pageUrl, '_blank');
+
+        if (newTab) {
+            DOM.gameFrame.srcdoc = `
+<html><body style="margin:0;background:#111;display:flex;flex-direction:column;
+align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#a78bfa;gap:1rem;text-align:center;padding:2rem;">
+  <div style="font-size:2rem;">🎮</div>
+  <p style="font-size:1.1rem;font-weight:bold;">WASM 게임이 새 탭에서 열렸습니다!</p>
+  <p style="color:#888;font-size:0.9rem;">팝업이 차단된 경우 아래 버튼을 눌러주세요.</p>
+  <button onclick="window.open('${pageUrl}','_blank')"
+    style="margin-top:.5rem;padding:.7rem 1.8rem;background:#7c3aed;border:none;
+    color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;">새 탭으로 열기</button>
+</body></html>`;
+        }
+    } catch (err) {
+        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;
+height:100vh;font-family:sans-serif;color:red;padding:2rem;text-align:center;">
+WASM 로드 실패: ${err.message}</div>`;
+        console.error('WASM load error:', err);
     }
 }
 
