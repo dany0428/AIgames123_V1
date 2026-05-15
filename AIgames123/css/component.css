@@ -526,3 +526,37 @@ button, .game-card, .genre-item, .tag-option,
 .dpad-action:active, .dpad-action.pressed {
   background: rgba(124, 58, 237, 0.9);
 }
+
+/* ════════════════════════════════════
+   📁 FILE TYPE TABS (업로드 모달)
+════════════════════════════════════ */
+
+.file-type-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.file-type-tab {
+  padding: 5px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #3b2d5a;
+  background: transparent;
+  color: #a78bfa;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.file-type-tab:hover {
+  border-color: #8b5cf6;
+  color: #c4b5fd;
+}
+
+.file-type-tab.active {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+  font-weight: 600;
+}
