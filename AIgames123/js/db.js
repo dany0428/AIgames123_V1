@@ -114,6 +114,91 @@ window.handleUpvote = async (gameId, currentCount) => {
 };
 
 // ════════════════════════════════════
+//  ZIP 게임 로더 (JSZip 사용)
+// ════════════════════════════════════
+
+async function _loadZipGame(buffer) {
+    try {
+        const zip   = await JSZip.loadAsync(buffer);
+        const files = Object.keys(zip.files);
+
+        // index.html 위치 찾기 (루트 또는 서브폴더)
+        let entryPath = files.find(f => f === 'index.html')
+            || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
+            || files.find(f => f.endsWith('.html') && !zip.files[f].dir);
+
+        if (!entryPath) {
+            DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;text-align:center;padding:2rem;">ZIP 안에 index.html 파일을 찾을 수 없습니다.<br>ZIP 루트에 index.html이 있는지 확인해주세요.</div>';
+            return;
+        }
+
+        // 기준 폴더 (서브폴더에 있는 경우 상대경로 처리용)
+        const baseDir = entryPath.includes('/') ? entryPath.substring(0, entryPath.lastIndexOf('/') + 1) : '';
+
+        // 모든 파일을 blob URL로 변환
+        const urlMap = {};
+        await Promise.all(
+            files
+                .filter(f => !zip.files[f].dir)
+                .map(async (f) => {
+                    const blob = await zip.files[f].async('blob');
+                    urlMap[f]  = URL.createObjectURL(blob);
+                    // baseDir 기준 상대경로도 등록
+                    if (baseDir && f.startsWith(baseDir)) {
+                        urlMap[f.slice(baseDir.length)] = urlMap[f];
+                    }
+                })
+        );
+
+        // index.html 텍스트 읽기 → 에셋 경로를 blob URL로 교체
+        let html = await zip.files[entryPath].async('string');
+
+        // src, href, url() 등을 blob URL로 교체
+        html = html.replace(
+            /((?:src|href|data-src)\s*=\s*["'])([^"'#?][^"']*)(?=["'])/gi,
+            (match, prefix, path) => {
+                const resolved = urlMap[path] || urlMap[baseDir + path];
+                return resolved ? prefix + resolved : match;
+            }
+        );
+        html = html.replace(
+            /url\(['"]?([^'")(]+)['"]?\)/gi,
+            (match, path) => {
+                const resolved = urlMap[path] || urlMap[baseDir + path];
+                return resolved ? `url('${resolved}')` : match;
+            }
+        );
+
+        // wasm 파일 MIME 타입 픽스: fetch 인터셉터 주입
+        const wasmFiles = Object.entries(urlMap)
+            .filter(([k]) => k.endsWith('.wasm'))
+            .map(([k, v]) => `"${k.split('/').pop()}":"${v}"`)
+            .join(',');
+
+        const wasmPatch = wasmFiles ? `
+<script>
+(function(){
+  const _wasmMap = {${wasmFiles}};
+  const _origFetch = window.fetch;
+  window.fetch = function(input, init) {
+    const url = typeof input === 'string' ? input : (input.url || '');
+    const name = url.split('/').pop().split('?')[0];
+    if(_wasmMap[name]) return _origFetch(_wasmMap[name], init);
+    return _origFetch(input, init);
+  };
+})();
+<\/script>` : '';
+
+        const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
+        DOM.gameFrame.srcdoc = viewportMeta + wasmPatch + html;
+
+    } catch (err) {
+        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">ZIP 로드 실패: ${err.message}</div>`;
+        console.error('ZIP load error:', err);
+    }
+}
+
+// ════════════════════════════════════
 //  게임 카드 렌더
 // ════════════════════════════════════
 
@@ -136,8 +221,9 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         const safeName     = (game.name || 'Untitled').replace(/'/g, "\\'");
         const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
         const safeAvatar   = (game.uploader_avatar || '').replace(/'/g, '%27');
+        const fileType     = game.file_type || 'html';
 
-        card.onclick = () => openGame(game.id, game.file_url, safeName, viewCount, uploaderId, safeUploader, safeUpvotes, safeAvatar);
+        card.onclick = () => openGame(game.id, game.file_url, safeName, viewCount, uploaderId, safeUploader, safeUpvotes, safeAvatar, fileType);
 
         const thumbnailContent = game.thumbnail_url
             ? `<img src="${game.thumbnail_url}" alt="${game.name}" class="game-thumb-img" loading="lazy">`
@@ -153,11 +239,15 @@ function renderGames(gameList, targetGrid, isProfile = false) {
                 <button class="action-btn del-btn"  onclick="deleteGame(${game.id},event)" title="게임 삭제">🗑️</button>
             </div>` : '';
 
+        const typeBadge = fileType === 'zip'
+            ? `<span class="view-badge" style="background:rgba(16,185,129,0.8);">📦 ZIP</span>`
+            : '';
+
         card.innerHTML = `
             <div class="game-thumbnail">
                 ${thumbnailContent}
                 ${profileActionsHtml}
-                <div class="card-badges"><span class="view-badge">👁️ ${viewCount}</span></div>
+                <div class="card-badges">${typeBadge}<span class="view-badge">👁️ ${viewCount}</span></div>
             </div>
             <div class="game-info">
                 <h3 class="game-title">${game.name}</h3>
@@ -174,7 +264,7 @@ function renderGames(gameList, targetGrid, isProfile = false) {
 //  게임 모달 열기
 // ════════════════════════════════════
 
-window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar) => {
+window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType) => {
     // UI 즉시 업데이트
     if (DOM.playerTitle)  DOM.playerTitle.textContent  = name;
     if (DOM.uploaderName) DOM.uploaderName.textContent = uploaderName;
@@ -224,11 +314,19 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     // 조회수 업데이트 + 게임 파일 fetch를 병렬 실행 ✅
     const [, gameResult] = await Promise.allSettled([
         supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id),
-        fetch(url).then(r => { if (!r.ok) throw new Error('게임을 불러올 수 없습니다.'); return r.text(); })
+        fetch(url).then(r => { if (!r.ok) throw new Error('게임을 불러올 수 없습니다.'); return r.arrayBuffer(); })
     ]);
 
     if (gameResult.status === 'fulfilled') {
-        DOM.gameFrame.srcdoc = viewportMeta + gameResult.value;
+        const buffer = gameResult.value;
+        const type   = fileType || 'html';
+
+        if (type === 'zip') {
+            await _loadZipGame(buffer);
+        } else {
+            const text = new TextDecoder('utf-8').decode(buffer);
+            DOM.gameFrame.srcdoc = viewportMeta + text;
+        }
     } else {
         DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:red;">문제가 발생했습니다.</div>';
         console.error(gameResult.reason);
