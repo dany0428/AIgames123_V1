@@ -36,14 +36,33 @@ function clearTagSelector(container) {
 // ════════════════════════════════════
 
 function initUploadModal() {
-    const uploadModal       = document.getElementById('uploadModal');
-    const submitGameBtn     = document.getElementById('submitGame');
-    const gameNameInput     = document.getElementById('gameName');
-    const gameFileInput     = document.getElementById('gameFileInput');
+    const uploadModal        = document.getElementById('uploadModal');
+    const submitGameBtn      = document.getElementById('submitGame');
+    const gameNameInput      = document.getElementById('gameName');
+    const gameFileInput      = document.getElementById('gameFileInput');
     const thumbnailFileInput = document.getElementById('thumbnailFileInput');
-    const tagSelector       = document.getElementById('tagSelector');
+    const tagSelector        = document.getElementById('tagSelector');
+    const fileTypeTabs       = document.getElementById('fileTypeTabs');
 
     buildTagSelector(tagSelector);
+
+    // ── 파일 타입 탭 전환 ──
+    let selectedFileType = 'html';
+    fileTypeTabs?.addEventListener('click', (e) => {
+        const tab = e.target.closest('.file-type-tab');
+        if (!tab) return;
+        selectedFileType = tab.dataset.type;
+        fileTypeTabs.querySelectorAll('.file-type-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        // accept 속성 변경
+        if (selectedFileType === 'zip') {
+            gameFileInput.accept = '.zip';
+        } else {
+            gameFileInput.accept = '.html';
+        }
+        gameFileInput.value = '';
+        document.getElementById('gameFileName').textContent = '파일을 선택하세요';
+    });
 
     if (DOM.uploadBtn) DOM.uploadBtn.onclick = () => {
         if (!currentUser) return alert('로그인이 필요합니다.');
@@ -54,26 +73,37 @@ function initUploadModal() {
     if (!submitGameBtn) return;
     submitGameBtn.onclick = async () => {
         if (!currentUser) return alert('로그인이 필요합니다!');
-        const name     = gameNameInput.value.trim();
-        const tags     = getSelectedTags(tagSelector);
-        const file     = gameFileInput.files[0];
+        const name      = gameNameInput.value.trim();
+        const tags      = getSelectedTags(tagSelector);
+        const file      = gameFileInput.files[0];
         const thumbFile = thumbnailFileInput.files[0];
-        if (!name || !file) return alert('게임 이름과 HTML 파일은 필수입니다!');
+        if (!name || !file) return alert('게임 이름과 게임 파일은 필수입니다!');
 
         submitGameBtn.textContent = '업로드 중...';
         submitGameBtn.disabled    = true;
         try {
-            // HTML 파일 읽기
-            const htmlText = await file.text();
-            const blob     = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
-            const fileName = `${Date.now()}_${file.name}`;
+            const fileType = selectedFileType; // 'html' | 'zip'
+            let gameUrl;
 
-            const { error: uploadErr } = await supabaseClient.storage
-                .from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
-            if (uploadErr) throw uploadErr;
-            const { data: { publicUrl: gameUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
+            if (fileType === 'zip') {
+                // ── ZIP 업로드: 파일 그대로 Storage에 저장 ──
+                const fileName = `${Date.now()}_${file.name}`;
+                const { error: uploadErr } = await supabaseClient.storage
+                    .from('game-files').upload(fileName, file, { contentType: 'application/zip', upsert: true });
+                if (uploadErr) throw uploadErr;
+                gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
+            } else {
+                // ── HTML 업로드 ──
+                const htmlText = await file.text();
+                const blob     = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
+                const fileName = `${Date.now()}_${file.name}`;
+                const { error: uploadErr } = await supabaseClient.storage
+                    .from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
+                if (uploadErr) throw uploadErr;
+                gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
+            }
 
-            // 썸네일 업로드 (있는 경우만)
+            // ── 썸네일 ──
             let thumbUrl = null;
             if (thumbFile) {
                 const thumbName = `${Date.now()}_thumb_${thumbFile.name}`;
@@ -87,16 +117,16 @@ function initUploadModal() {
                 || currentUser.user_metadata.preferred_username
                 || currentUser.user_metadata.full_name || '게이머';
 
-            // id 제거 — Supabase 자동 생성 UUID 사용 ✅
             const { error: dbErr } = await supabaseClient.from('games').insert([{
                 name,
-                file_url:       gameUrl,
-                thumbnail_url:  thumbUrl,
+                file_url:        gameUrl,
+                file_type:       fileType,
+                thumbnail_url:   thumbUrl,
                 tags,
-                view_count:     0,
-                upvotes:        0,
-                user_id:        currentUser.id,
-                uploader_name:  uploaderName,
+                view_count:      0,
+                upvotes:         0,
+                user_id:         currentUser.id,
+                uploader_name:   uploaderName,
                 uploader_avatar: currentUser.user_metadata.custom_avatar
                     || currentUser.user_metadata.avatar_url || null,
             }]);
@@ -108,6 +138,7 @@ function initUploadModal() {
             clearTagSelector(tagSelector);
             gameFileInput.value = '';
             thumbnailFileInput.value = '';
+            document.getElementById('gameFileName').textContent = '파일을 선택하세요';
 
             DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
         } catch (err) {
@@ -118,6 +149,7 @@ function initUploadModal() {
         }
     };
 }
+
 
 // ════════════════════════════════════
 //  수정 모달
