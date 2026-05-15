@@ -122,6 +122,13 @@ async function _loadZipGame(buffer) {
         const zip   = await JSZip.loadAsync(buffer);
         const files = Object.keys(zip.files);
 
+        // ── Flash(.swf) 감지 → Ruffle 전용 플레이어로 처리 ──
+        const swfFiles = files.filter(f => f.toLowerCase().endsWith('.swf') && !zip.files[f].dir);
+        if (swfFiles.length > 0) {
+            await _loadSwfGame(zip, swfFiles[0]);
+            return;
+        }
+
         // index.html 위치 찾기 (루트 또는 서브폴더)
         let entryPath = files.find(f => f === 'index.html')
             || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
@@ -195,6 +202,82 @@ async function _loadZipGame(buffer) {
     } catch (err) {
         DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">ZIP 로드 실패: ${err.message}</div>`;
         console.error('ZIP load error:', err);
+    }
+}
+
+// ════════════════════════════════════
+//  Flash(.swf) → Ruffle 에뮬레이터 로더
+// ════════════════════════════════════
+
+async function _loadSwfGame(zip, swfPath) {
+    try {
+        // swf 파일을 blob URL로 변환
+        const swfBlob = await zip.files[swfPath].async('blob');
+        const swfUrl  = URL.createObjectURL(swfBlob);
+
+        const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
+
+        // Ruffle CDN 주입 → swf blob URL을 직접 로드
+        const ruffleHtml = `${viewportMeta}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; background:#000; overflow:hidden; }
+    ruffle-player { width:100%; height:100%; display:block; }
+    #loading {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; background:#111;
+      color:#a78bfa; font-family:sans-serif; gap:1rem;
+    }
+    .spinner {
+      width:40px; height:40px; border:4px solid #3b2d5a;
+      border-top-color:#8b5cf6; border-radius:50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Flash 게임 로딩 중... (Ruffle)</span>
+  </div>
+  <script>
+    window.RufflePlayer = window.RufflePlayer || {};
+    window.RufflePlayer.config = {
+      autoplay: 'on',
+      unmuteOverlay: 'hidden',
+      scale: 'showAll',
+      backgroundColor: '#000000',
+    };
+  <\/script>
+  <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+  <script>
+    window.addEventListener('load', () => {
+      const ruffle = window.RufflePlayer.newest();
+      const player = ruffle.createPlayer();
+      player.style.width  = '100%';
+      player.style.height = '100%';
+      document.body.appendChild(player);
+      player.load('${swfUrl}').then(() => {
+        document.getElementById('loading').style.display = 'none';
+      }).catch(err => {
+        document.getElementById('loading').innerHTML =
+          '<span style="color:red">SWF 로드 실패: ' + err.message + '</span>';
+      });
+    });
+  <\/script>
+</body>
+</html>`;
+
+        DOM.gameFrame.srcdoc = ruffleHtml;
+
+    } catch (err) {
+        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">Flash 로드 실패: ${err.message}</div>`;
+        console.error('SWF load error:', err);
     }
 }
 
