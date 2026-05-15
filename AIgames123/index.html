@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/component.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
@@ -145,11 +146,19 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Game File (.html)</label>
+          <label class="form-label">Game File</label>
+          <div class="file-type-tabs" id="fileTypeTabs">
+            <button type="button" class="file-type-tab active" data-type="html">HTML</button>
+            <button type="button" class="file-type-tab" data-type="zip">ZIP</button>
+          </div>
           <div class="file-input-wrapper">
             <input type="file" id="gameFileInput" accept=".html">
             <div class="file-name" id="gameFileName">파일을 선택하세요</div>
           </div>
+          <p class="file-type-hint" id="fileTypeHint" style="font-size:0.78rem;color:#a78bfa;margin-top:6px;">
+            · HTML: 단일 파일 게임<br>
+            · ZIP: index.html + 에셋 묶음 (Godot, Unity WebGL 등)
+          </p>
         </div>
         <button class="submit-btn" id="submitGame">Launch Game</button>
       </div>
