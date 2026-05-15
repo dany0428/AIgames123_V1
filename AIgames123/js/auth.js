@@ -24,9 +24,10 @@ function _renderProfile() {
     const name   = currentUser.user_metadata.custom_name
         || currentUser.user_metadata.preferred_username
         || currentUser.user_metadata.full_name || '게이머';
+    const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%233b2d5a'/%3E%3Ctext y='.9em' font-size='60' x='20'%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E";
     const avatar = currentUser.user_metadata.custom_avatar
         || currentUser.user_metadata.avatar_url
-        || 'https://via.placeholder.com/100';
+        || DEFAULT_AVATAR;
 
     if (DOM.profileAvatar)      DOM.profileAvatar.src              = avatar;
     if (DOM.avatarPreview)      DOM.avatarPreview.src              = avatar;
