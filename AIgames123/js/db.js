@@ -355,23 +355,26 @@ align-items:center;justify-content:center;height:100vh;font-family:sans-serif;co
             (m, q, path, q2) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? q + r + q2 : m; }
         );
 
-        // 새 탭으로 열기
+        // blob URL 생성
         const pageBlob = new Blob([html], { type: 'text/html' });
         const pageUrl  = URL.createObjectURL(pageBlob);
-        const newTab   = window.open(pageUrl, '_blank');
 
-        if (newTab) {
-            DOM.gameFrame.srcdoc = `
+        // await 이후엔 팝업 차단됨 → iframe 안에 버튼을 보여줘서 사용자가 직접 클릭하게 유도
+        DOM.gameFrame.srcdoc = `<!DOCTYPE html>
 <html><body style="margin:0;background:#111;display:flex;flex-direction:column;
-align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#a78bfa;gap:1rem;text-align:center;padding:2rem;">
-  <div style="font-size:2rem;">🎮</div>
-  <p style="font-size:1.1rem;font-weight:bold;">WASM 게임이 새 탭에서 열렸습니다!</p>
-  <p style="color:#888;font-size:0.9rem;">팝업이 차단된 경우 아래 버튼을 눌러주세요.</p>
-  <button onclick="window.open('${pageUrl}','_blank')"
-    style="margin-top:.5rem;padding:.7rem 1.8rem;background:#7c3aed;border:none;
-    color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;">새 탭으로 열기</button>
+align-items:center;justify-content:center;height:100vh;font-family:sans-serif;
+color:#a78bfa;gap:1.2rem;text-align:center;padding:2rem;">
+  <div style="font-size:3rem;">🎮</div>
+  <p style="font-size:1.15rem;font-weight:bold;color:#fff;">WASM 게임 준비 완료!</p>
+  <p style="color:#888;font-size:0.88rem;">아래 버튼을 클릭하면 새 탭에서 게임이 실행됩니다.</p>
+  <a href="${pageUrl}" target="_blank"
+    style="margin-top:.5rem;padding:.8rem 2rem;background:#7c3aed;border:none;
+    color:#fff;border-radius:10px;cursor:pointer;font-size:1rem;font-weight:600;
+    text-decoration:none;display:inline-block;transition:background .2s;"
+    onmouseover="this.style.background='#6d28d9'"
+    onmouseout="this.style.background='#7c3aed'">▶ 게임 시작 (새 탭)</a>
+  <p style="color:#555;font-size:0.78rem;margin-top:.5rem;">팝업 차단 시 주소창 오른쪽의 팝업 허용 버튼을 눌러주세요.</p>
 </body></html>`;
-        }
     } catch (err) {
         DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;
 height:100vh;font-family:sans-serif;color:red;padding:2rem;text-align:center;">
