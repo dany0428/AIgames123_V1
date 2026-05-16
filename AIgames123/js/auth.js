@@ -34,6 +34,12 @@ function _renderProfile() {
     if (DOM.profileDisplayName) DOM.profileDisplayName.textContent = name;
     if (DOM.profileNameInput)   DOM.profileNameInput.value         = name;
     if (DOM.profileEmail)       DOM.profileEmail.textContent       = currentUser.email || '';
+
+    // 이메일 회원에게만 비밀번호 변경 섹션 표시
+    const isEmailUser = currentUser.app_metadata?.provider === 'email';
+    const pwSection   = document.getElementById('changePasswordSection');
+    if (pwSection) pwSection.style.display = isEmailUser ? 'block' : 'none';
+
     fetchMyGames();
 }
 
@@ -44,7 +50,6 @@ function _renderPublicProfile(userId, userName) {
     DOM.searchContainer.style.visibility   = 'hidden';
     if (DOM.publicProfileName) DOM.publicProfileName.textContent = userName;
 
-    // 열려있는 플레이어 모달 닫기
     DOM.playerModal.classList.remove('active');
     DOM.gameFrame.srcdoc = '';
     document.body.style.overflow = '';
@@ -98,7 +103,6 @@ window.showPublicProfile = (userId, userName) => {
     _renderPublicProfile(userId, userName);
 };
 
-// filterByTag용 pushState (db.js에서 호출)
 window._pushTagHistory = (tag) => {
     history.pushState(
         { page: 'main', tag },
@@ -115,18 +119,17 @@ window.addEventListener('popstate', (e) => {
     const state = e.state;
     if (!state) { _renderMain(''); return; }
     switch (state.page) {
-        case 'main':    _renderMain(state.tag || '');                    break;
-        case 'profile': _renderProfile();                                break;
+        case 'main':    _renderMain(state.tag || '');                       break;
+        case 'profile': _renderProfile();                                   break;
         case 'user':    _renderPublicProfile(state.userId, state.userName); break;
         default:        _renderMain('');
     }
 });
 
 // ════════════════════════════════════
-//  인증
+//  인증 UI 업데이트
 // ════════════════════════════════════
 
-// 최초 initAuth 완료 전까지 true → updateAuthUI의 fetchGames 중복 호출 방지
 let _authInitializing = true;
 
 function updateAuthUI(user) {
@@ -168,7 +171,6 @@ function updateAuthUI(user) {
         _renderMain('');
     }
 
-    // 초기 로딩 중엔 handleRoute가 fetchGames를 호출하므로 중복 방지
     if (!_authInitializing && prevUser !== user) {
         fetchGames(DOM.searchInput ? DOM.searchInput.value.trim() : '', currentTag);
     }
@@ -180,6 +182,172 @@ async function initAuth() {
     updateAuthUI(session?.user);
     _authInitializing = false;
     supabaseClient.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user));
+}
+
+// ════════════════════════════════════
+//  로그인 / 회원가입 모달
+// ════════════════════════════════════
+
+function initAuthModal() {
+    const modal        = document.getElementById('authModal');
+    const closeBtn     = document.getElementById('closeAuth');
+    const tabs         = document.querySelectorAll('.auth-tab');
+    const loginPanel   = document.getElementById('loginPanel');
+    const signupPanel  = document.getElementById('signupPanel');
+
+    if (!modal) return;
+
+    // ── 탭 전환 ──
+    function switchTab(tabName) {
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+        loginPanel.style.display  = tabName === 'login'  ? 'block' : 'none';
+        signupPanel.style.display = tabName === 'signup' ? 'block' : 'none';
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+    // 패널 내 "로그인 / 회원가입" 텍스트 링크 전환
+    modal.addEventListener('click', (e) => {
+        const link = e.target.closest('.auth-link[data-switch]');
+        if (link) switchTab(link.dataset.switch);
+    });
+
+    // ── 모달 열기 / 닫기 ──
+    closeBtn?.addEventListener('click', _closeAuthModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) _closeAuthModal(); });
+
+    // ── GitHub 로그인 ──
+    document.getElementById('githubLoginBtn')?.addEventListener('click', () => {
+        supabaseClient.auth.signInWithOAuth({ provider: 'github' });
+    });
+
+    // ── 이메일 로그인 ──
+    document.getElementById('emailLoginBtn')?.addEventListener('click', _handleEmailLogin);
+    document.getElementById('loginPassword')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') _handleEmailLogin();
+    });
+
+    // ── 이메일 회원가입 ──
+    document.getElementById('emailSignupBtn')?.addEventListener('click', _handleEmailSignup);
+    document.getElementById('signupPasswordConfirm')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') _handleEmailSignup();
+    });
+}
+
+function _closeAuthModal() {
+    const modal = document.getElementById('authModal');
+    modal?.classList.remove('active');
+}
+
+async function _handleEmailLogin() {
+    const email    = document.getElementById('loginEmail')?.value.trim();
+    const password = document.getElementById('loginPassword')?.value;
+    const btn      = document.getElementById('emailLoginBtn');
+
+    if (!email || !password) return alert('이메일과 비밀번호를 입력해주세요.');
+
+    btn.disabled    = true;
+    btn.textContent = '로그인 중...';
+    try {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        _closeAuthModal();
+    } catch (err) {
+        const msg = err.message === 'Invalid login credentials'
+            ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+            : err.message;
+        alert('로그인 실패: ' + msg);
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = '이메일로 로그인';
+    }
+}
+
+async function _handleEmailSignup() {
+    const email    = document.getElementById('signupEmail')?.value.trim();
+    const name     = document.getElementById('signupName')?.value.trim();
+    const password = document.getElementById('signupPassword')?.value;
+    const confirm  = document.getElementById('signupPasswordConfirm')?.value;
+    const btn      = document.getElementById('emailSignupBtn');
+
+    if (!email || !name || !password) return alert('모든 항목을 입력해주세요.');
+    if (password.length < 8)          return alert('비밀번호는 8자 이상이어야 합니다.');
+    if (password !== confirm)          return alert('비밀번호가 일치하지 않습니다.');
+
+    btn.disabled    = true;
+    btn.textContent = '가입 중...';
+    try {
+        const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: { data: { custom_name: name } },
+        });
+        if (error) throw error;
+
+        // 이미 가입된 이메일 (identities 배열이 비어 있음)
+        if (data.user && data.user.identities?.length === 0) {
+            alert('이미 가입된 이메일입니다. 로그인 탭에서 로그인해주세요.');
+            return;
+        }
+
+        if (data.session) {
+            // 이메일 확인 비활성화 상태 → 즉시 로그인
+            _closeAuthModal();
+            alert(`환영합니다, ${name}님! 🎮`);
+        } else {
+            // 이메일 확인 필요
+            _closeAuthModal();
+            alert('가입 완료! 입력하신 이메일로 인증 링크가 발송되었습니다.\n메일을 확인하고 링크를 클릭하면 로그인할 수 있습니다.');
+        }
+    } catch (err) {
+        alert('회원가입 실패: ' + err.message);
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = '회원가입';
+    }
+}
+
+// 전역에서 모달 열기 (app.js loginBtn 이벤트용)
+window.openAuthModal = (tab = 'login') => {
+    const modal = document.getElementById('authModal');
+    if (!modal) return;
+    // 탭 초기화
+    document.querySelectorAll('.auth-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('loginPanel').style.display  = tab === 'login'  ? 'block' : 'none';
+    document.getElementById('signupPanel').style.display = tab === 'signup' ? 'block' : 'none';
+    modal.classList.add('active');
+};
+
+// ════════════════════════════════════
+//  비밀번호 변경 (이메일 유저 전용)
+// ════════════════════════════════════
+
+function initChangePassword() {
+    document.getElementById('changePasswordBtn')?.addEventListener('click', async () => {
+        const newPw  = document.getElementById('newPasswordInput')?.value;
+        const confirm = document.getElementById('newPasswordConfirm')?.value;
+        const btn    = document.getElementById('changePasswordBtn');
+
+        if (!newPw)            return alert('새 비밀번호를 입력해주세요.');
+        if (newPw.length < 8)  return alert('비밀번호는 8자 이상이어야 합니다.');
+        if (newPw !== confirm)  return alert('비밀번호가 일치하지 않습니다.');
+
+        btn.disabled    = true;
+        btn.textContent = '변경 중...';
+        try {
+            const { error } = await supabaseClient.auth.updateUser({ password: newPw });
+            if (error) throw error;
+            alert('비밀번호가 변경되었습니다.');
+            document.getElementById('newPasswordInput').value  = '';
+            document.getElementById('newPasswordConfirm').value = '';
+        } catch (err) {
+            alert('변경 실패: ' + err.message);
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = '변경하기';
+        }
+    });
 }
 
 // ════════════════════════════════════
