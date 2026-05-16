@@ -158,7 +158,7 @@
 .submit-btn { width: 100%; padding: 1rem; background: #7c3aed; border: none; color: white; border-radius: 8px; cursor: pointer; }
 
 /* Player Modal */
-.player-modal { max-width: 1200px; height: 90vh; display: flex; flex-direction: column; width: 90%; }
+.player-modal { max-width: 1200px; height: 90vh; display: flex; flex-direction: column; width: 90%; overflow: hidden; }
 .player-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
 .header-actions { display: flex; align-items: center; gap: 1rem; }
 
