@@ -3,9 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM 캐시 초기화 (config.js) — 이후 모든 파일에서 DOM.xxx 사용
     initDOMCache();
 
-    // 로그인 / 로그아웃
-    DOM.loginBtn?.addEventListener('click', () =>
-        supabaseClient.auth.signInWithOAuth({ provider: 'github' }));
+    // 로그인 버튼 → auth 모달 열기
+    DOM.loginBtn?.addEventListener('click', () => window.openAuthModal('login'));
+
+    // 로그아웃
     DOM.logoutBtn?.addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
         alert('로그아웃 되었습니다.');
@@ -52,6 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initProfileAvatar();
     initDpad();
+
+    // 인증 모달 초기화 (신규)
+    initAuthModal();
+    initChangePassword();
 
     // 인증 → 완료 후 현재 URL에 맞는 화면으로 라우팅
     initAuth().then(handleRoute);
