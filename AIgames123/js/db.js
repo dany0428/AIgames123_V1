@@ -28,11 +28,18 @@ async function fetchGames(searchTerm = '', tagFilter = '') {
             .range(0, 49);
         if (searchTerm) query = query.ilike('name', `%${searchTerm}%`);
         if (tagFilter)  query = query.ilike('tags', `%${tagFilter}%`);
-
-        const { data, error } = await query;
-        if (error) throw error;
-        renderGames(data, DOM.gameGrid, false);
-        renderTagSidebar(data); // ✅ 별도 DB 호출 없이 같은 데이터로 태그 렌더
+ 
+        // 필터된 게임 목록 + 전체 태그 목록을 병렬 조회
+        // → 사이드바는 항상 전체 태그를 표시하고, 게임 그리드만 필터 적용
+        const [gamesResult, allTagsResult] = await Promise.all([
+            query,
+            supabaseClient.from('games').select('tags'),
+        ]);
+ 
+        if (gamesResult.error) throw gamesResult.error;
+ 
+        renderGames(gamesResult.data, DOM.gameGrid, false);
+        renderTagSidebar(allTagsResult.data || gamesResult.data);
     } catch (err) { console.error('데이터 로드 실패:', err.message); }
 }
 
