@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 패널 — AI Games Arcade</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23dc2626'/><text y='.9em' font-size='80' x='10'>&#x1F6E1;</text></svg>">
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- 접근 검증 화면 -->
+  <div id="accessScreen" class="access-screen">
+    <div class="access-card">
+      <div class="access-icon" id="accessIcon">🔒</div>
+      <h2 id="accessTitle">관리자 인증 중</h2>
+      <p id="accessMsg">권한을 확인하는 중입니다...</p>
+      <div class="access-spinner" id="accessSpinner"></div>
+      <a href="/" id="accessBackBtn" class="back-btn" style="display:none;">← 홈으로 돌아가기</a>
+    </div>
+  </div>
+
+  <!-- 관리자 패널 (인증 성공 시만 표시) -->
+  <div id="adminApp" style="display:none;">
+
+    <header class="admin-header">
+      <div class="admin-brand">
+        <span class="brand-icon">🎮</span>
+        <div>
+          <h1 class="brand-title">AI Games Arcade</h1>
+          <span class="admin-badge">ADMIN PANEL</span>
+        </div>
+      </div>
+      <div class="admin-header-right">
+        <div class="admin-user-info">
+          <span class="admin-user-label">관리자</span>
+          <span class="admin-user-name" id="adminUserName">-</span>
+        </div>
+        <a href="/" class="hdr-btn hdr-btn-outline">← 사이트</a>
+        <button id="adminLogoutBtn" class="hdr-btn hdr-btn-danger">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="admin-body">
+
+      <!-- 통계 카드 -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon">🎮</div>
+          <div class="stat-data">
+            <span class="stat-num" id="statGames">-</span>
+            <span class="stat-lbl">전체 게임</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👁️</div>
+          <div class="stat-data">
+            <span class="stat-num" id="statViews">-</span>
+            <span class="stat-lbl">총 조회수</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👍</div>
+          <div class="stat-data">
+            <span class="stat-num" id="statUpvotes">-</span>
+            <span class="stat-lbl">총 추천수</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-data">
+            <span class="stat-num" id="statLogs">-</span>
+            <span class="stat-lbl">관리 기록</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭 바 -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="games">🎮 게임 관리</button>
+        <button class="tab-btn" data-tab="admins">🛡️ 관리자 목록</button>
+        <button class="tab-btn" data-tab="logs">📋 활동 로그</button>
+      </div>
+
+      <!-- 게임 관리 탭 -->
+      <div class="tab-panel" id="tab-games">
+        <div class="panel-toolbar">
+          <input type="text" class="admin-search" id="gameSearch" placeholder="🔍  게임 이름, 업로더, 태그 검색...">
+          <span class="result-badge" id="gameCountBadge">불러오는 중...</span>
+          <button class="hdr-btn hdr-btn-outline" id="refreshGamesBtn">↺ 새로고침</button>
+        </div>
+        <div class="table-wrap">
+          <table class="admin-table" id="gamesTable">
+            <thead>
+              <tr>
+                <th style="width:70px;">썸네일</th>
+                <th>게임 이름</th>
+                <th>업로더</th>
+                <th>태그</th>
+                <th style="width:72px;">조회수</th>
+                <th style="width:72px;">추천</th>
+                <th style="width:105px;">업로드일</th>
+                <th style="width:80px;">액션</th>
+              </tr>
+            </thead>
+            <tbody id="gamesTableBody">
+              <tr><td colspan="8" class="tbl-loading">불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 관리자 목록 탭 -->
+      <div class="tab-panel" id="tab-admins" style="display:none;">
+        <div class="security-notice">
+          <strong>🔐 보안 안내</strong><br>
+          관리자 추가·제거는 <strong>Supabase 대시보드 SQL 에디터</strong>에서만 가능합니다.
+          클라이언트에서의 권한 조작은 RLS 정책에 의해 서버 수준에서 완전히 차단됩니다.
+        </div>
+        <div class="table-wrap" style="margin-top:1.5rem;">
+          <table class="admin-table">
+            <thead>
+              <tr><th>User ID</th><th>추가일시</th></tr>
+            </thead>
+            <tbody id="adminsTableBody">
+              <tr><td colspan="2" class="tbl-loading">불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 활동 로그 탭 -->
+      <div class="tab-panel" id="tab-logs" style="display:none;">
+        <div class="panel-toolbar">
+          <span class="result-badge" id="logCountBadge">-</span>
+          <button class="hdr-btn hdr-btn-outline" id="refreshLogsBtn">↺ 새로고침</button>
+        </div>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width:150px;">시간</th>
+                <th>관리자 ID</th>
+                <th style="width:130px;">액션</th>
+                <th>대상</th>
+                <th>상세</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr><td colspan="5" class="tbl-loading">탭을 클릭하면 로그가 표시됩니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 삭제 확인 모달 -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-card">
+      <div class="confirm-icon">⚠️</div>
+      <h3 class="confirm-title">게임 삭제 확인</h3>
+      <p class="confirm-msg" id="confirmMsg"></p>
+      <div class="confirm-verify">
+        <label class="confirm-verify-label">되돌릴 수 없습니다. 계속하려면 게임 이름을 입력하세요:</label>
+        <code class="confirm-verify-target" id="confirmVerifyTarget"></code>
+        <input type="text" class="confirm-verify-input" id="confirmVerifyInput" placeholder="게임 이름 입력...">
+        <p class="confirm-mismatch" id="confirmMismatch" style="display:none;">이름이 일치하지 않습니다.</p>
+      </div>
+      <div class="confirm-actions">
+        <button class="hdr-btn hdr-btn-outline" id="confirmCancelBtn">취소</button>
+        <button class="hdr-btn hdr-btn-danger" id="confirmOkBtn" disabled>삭제 확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
