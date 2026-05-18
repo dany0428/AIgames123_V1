@@ -92,23 +92,47 @@ window.deleteGame = async (gameId, event) => {
 // ════════════════════════════════════
 
 window.handleUpvote = async (gameId, currentCount) => {
-    const voteKey = `voted_${gameId}`;
-    if (localStorage.getItem(voteKey)) return alert('이미 이 게임에 추천을 누르셨습니다!');
-
+    const voteKey  = `voted_${gameId}`;
+    const hasVoted = localStorage.getItem(voteKey) === 'up';
+ 
+    // 낙관적 UI 업데이트 (요청 완료 전 즉시 반영)
+    const nextCount = hasVoted
+        ? Math.max(0, (Number(currentCount) || 0) - 1)
+        : (Number(currentCount) || 0) + 1;
+ 
+    if (DOM.upvoteCount) DOM.upvoteCount.textContent = nextCount;
+    if (DOM.upvoteBtn) {
+        DOM.upvoteBtn.classList.toggle('voted', !hasVoted);
+        // 다음 클릭을 위해 현재 count를 nextCount로 갱신
+        DOM.upvoteBtn.onclick = () => handleUpvote(gameId, nextCount);
+    }
+ 
     try {
-        const nextCount = (Number(currentCount) || 0) + 1;
-        const { error } = await supabaseClient.from('games')
-            .update({ upvotes: nextCount }).eq('id', gameId);
+        const { error } = await supabaseClient
+            .from('games')
+            .update({ upvotes: nextCount })
+            .eq('id', gameId);
         if (error) throw error;
-
-        if (DOM.upvoteCount) DOM.upvoteCount.textContent = nextCount;
-        if (DOM.upvoteBtn)   DOM.upvoteBtn.classList.add('voted');
-        localStorage.setItem(voteKey, 'up');
-
-        // 백그라운드 목록 갱신 (UI 블로킹 없이)
-        DOM.profileContent.style.display === 'block' ? fetchMyGames()
+ 
+        // localStorage 토글
+        if (hasVoted) {
+            localStorage.removeItem(voteKey);
+        } else {
+            localStorage.setItem(voteKey, 'up');
+        }
+ 
+        // 백그라운드 목록 갱신
+        DOM.profileContent.style.display === 'block'
+            ? fetchMyGames()
             : fetchGames(DOM.searchInput?.value.trim() || '', currentTag);
+ 
     } catch (err) {
+        // 실패 시 UI 롤백
+        if (DOM.upvoteCount) DOM.upvoteCount.textContent = currentCount;
+        if (DOM.upvoteBtn) {
+            DOM.upvoteBtn.classList.toggle('voted', hasVoted);
+            DOM.upvoteBtn.onclick = () => handleUpvote(gameId, currentCount);
+        }
         alert('추천 업데이트 실패 😢\n원인: ' + err.message);
     }
 };
@@ -393,13 +417,12 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         targetGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#888;padding:2rem;">목록이 비어있습니다. 😢</p>';
         return;
     }
-
-    // DocumentFragment로 한 번에 DOM 반영 (리플로우 최소화)
+ 
     const fragment = document.createDocumentFragment();
     gameList.forEach(game => {
         const card = document.createElement('div');
         card.className = 'game-card';
-
+ 
         const safeUpvotes  = game.upvotes || 0;
         const viewCount    = game.view_count || 0;
         const uploaderId   = game.user_id || null;
@@ -407,32 +430,41 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
         const safeAvatar   = (game.uploader_avatar || '').replace(/'/g, '%27');
         const fileType     = game.file_type || 'html';
-
+ 
         card.onclick = () => openGame(game.id, game.file_url, safeName, viewCount, uploaderId, safeUploader, safeUpvotes, safeAvatar, fileType);
-
+ 
         const thumbnailContent = game.thumbnail_url
             ? `<img src="${game.thumbnail_url}" alt="${game.name}" class="game-thumb-img" loading="lazy">`
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="50"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M15 9v6M12 12h6"/></svg>`;
-
+ 
         const tagsHtml = game.tags
             ? `<div class="card-tags">${game.tags.split(',').slice(0, 3).map(t => `<span class="tag-badge">${t.trim()}</span>`).join('')}</div>`
             : '';
-
+ 
         const profileActionsHtml = isProfile ? `
             <div class="profile-card-actions">
                 <button class="action-btn edit-btn" onclick="openEditModal(${game.id},'${safeName}','${game.tags||''}',event)" title="정보 수정">✏️</button>
                 <button class="action-btn del-btn"  onclick="deleteGame(${game.id},event)" title="게임 삭제">🗑️</button>
             </div>` : '';
-
+ 
         const typeBadge = fileType === 'zip'
             ? `<span class="view-badge" style="background:rgba(16,185,129,0.8);">📦 ZIP</span>`
             : '';
-
+ 
+        // 추천순 정렬 중일 때만 카드에 좋아요 수 배지 표시
+        const upvoteBadge = currentSort === 'upvotes'
+            ? `<span class="view-badge upvote-card-badge">👍 ${safeUpvotes}</span>`
+            : '';
+ 
         card.innerHTML = `
             <div class="game-thumbnail">
                 ${thumbnailContent}
                 ${profileActionsHtml}
-                <div class="card-badges">${typeBadge}<span class="view-badge">👁️ ${viewCount}</span></div>
+                <div class="card-badges">
+                    ${typeBadge}
+                    ${upvoteBadge}
+                    <span class="view-badge">👁️ ${viewCount}</span>
+                </div>
             </div>
             <div class="game-info">
                 <h3 class="game-title">${game.name}</h3>
@@ -440,7 +472,7 @@ function renderGames(gameList, targetGrid, isProfile = false) {
             </div>`;
         fragment.appendChild(card);
     });
-
+ 
     targetGrid.innerHTML = '';
     targetGrid.appendChild(fragment);
 }
