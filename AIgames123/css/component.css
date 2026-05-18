@@ -659,3 +659,21 @@ button, .game-card, .genre-item, .tag-option,
     overflow-y: auto;
   }
 }
+
+/* ════════════════════════════════════
+   👍 UPVOTE CARD BADGE
+   추천순 정렬 시 게임 카드에 표시
+════════════════════════════════════ */
+
+/* 좋아요 배지 — 기본 view-badge에 파란 포인트 */
+.upvote-card-badge {
+  background: rgba(59, 130, 246, 0.75) !important;
+  color: #fff;
+}
+
+/* 좋아요 버튼 — 취소 가능 상태 hover 시 반전 힌트 */
+.vote-btn.upvote.voted:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #f87171;
+}
