@@ -20,7 +20,7 @@
 }
 
 .logo-img {
-  height: 50px;
+  height: 70px;
   width: auto;
   display: block;
   object-fit: contain;
@@ -32,7 +32,7 @@
 }
 
 @media (max-width: 640px) {
-  .logo-img { height: 35px; }
+  .logo-img { height: 48px; }
 }
 
 .nav-left {
