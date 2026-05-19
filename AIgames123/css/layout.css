@@ -20,7 +20,7 @@
 }
 
 .logo-img {
-  height: 36px;
+  height: 36px;   /* 72px 이미지를 절반으로 — 레티나에서 선명 */
   width: auto;
   display: block;
   object-fit: contain;
@@ -32,7 +32,7 @@
 }
 
 @media (max-width: 640px) {
-  .logo-img { height: 28px; }
+  .logo-img { height: 26px; }
 }
 
 .nav-left {
