@@ -13,11 +13,26 @@
 }
 
 .logo {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #a78bfa;
   cursor: pointer;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.logo-img {
+  height: 36px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  transition: opacity 0.2s;
+}
+
+.logo:hover .logo-img {
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .logo-img { height: 28px; }
 }
 
 .nav-left {
