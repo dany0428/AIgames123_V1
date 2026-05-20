@@ -20,13 +20,14 @@ function initDOMCache() {
         'mainContent', 'profileContent', 'publicProfileContent',
         'searchContainer', 'searchInput', 'sectionTitle', 'sortDropdown',
         'gameGrid', 'myGameGrid', 'publicGameGrid', 'genreList',
-        'playerModal', 'gameFrame', 'placeholder', 'deleteGameBtn',
+        'playerModal', 'gameFrame', 'gameScaleWrapper', 'placeholder', 'deleteGameBtn',
         'playerTitle', 'uploaderName', 'uploaderAvatarImg', 'uploaderAvatarFallback',
         'uploaderProfileBtn', 'upvoteBtn', 'upvoteCount',
         'loginBtn', 'logoutBtn', 'uploadBtn', 'userInfo',
         'profileAvatar', 'avatarPreview', 'profileDisplayName',
         'profileNameInput', 'profileEmail', 'statTotalGames', 'statTotalViews',
         'publicProfileName', 'dpadOverlay',
+        'fitBtn', 'exitFsFloatBtn',
     ];
     ids.forEach(id => { DOM[id] = document.getElementById(id); });
 }
