@@ -263,15 +263,21 @@
         <h3 class="player-title" id="playerTitle">Game Title</h3>
         <div class="header-actions">
           <button class="delete-game-btn" id="deleteGameBtn" style="display:none;">삭제</button>
+          <button class="fit-btn" id="fitBtn" title="화면에 맞추기">⊡ 맞추기</button>
           <button class="fullscreen-btn" id="fullscreenBtn">전체화면</button>
           <button class="close-btn" id="closePlayer">&times;</button>
         </div>
       </div>
 
       <div class="game-frame-container">
-        <iframe id="gameFrame"
-          sandbox="allow-scripts allow-pointer-lock allow-same-origin allow-modals"
-          allowfullscreen frameborder="0"></iframe>
+        <!-- 전체화면 해제 플로팅 버튼 — pseudo-fullscreen 중에만 표시 -->
+        <button class="exit-fs-float-btn" id="exitFsFloatBtn">✕ 전체화면 해제</button>
+
+        <div class="game-scale-wrapper" id="gameScaleWrapper">
+          <iframe id="gameFrame"
+            sandbox="allow-scripts allow-pointer-lock allow-same-origin allow-modals"
+            allowfullscreen frameborder="0"></iframe>
+        </div>
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
 
         <div class="dpad-overlay" id="dpadOverlay">
