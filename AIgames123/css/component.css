@@ -174,7 +174,16 @@
 }
 .fullscreen-btn:hover { background-color: #8b5cf6; }
 
-.game-frame-container { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.game-frame-container {
+  flex: 1;
+  min-height: 0;        /* flex child 높이 잘림 방지 — 핵심 수정 */
+  background: #000;
+  position: relative;
+  display: flex;
+  align-items: stretch; /* center → stretch: iframe이 세로로 꽉 참 */
+  justify-content: center;
+  overflow: hidden;
+}
 
 .delete-game-btn {
   padding: 0.5rem 1rem;
@@ -195,9 +204,11 @@
 #gameFrame {
   width: 100%;
   height: 100%;
+  min-height: 0;
   border: none;
   display: none;
   background-color: white;
+  flex-shrink: 0;
 }
 
 .game-placeholder { color: #666; text-align: center; }
@@ -412,6 +423,48 @@ button, .game-card, .genre-item, .tag-option,
 
   .game-thumbnail { height: 120px; }
   .game-title { font-size: 0.85rem; }
+}
+
+/* ════════════════════════════════════
+   📱 CSS 가상 전체화면
+   iOS Safari는 iframe requestFullscreen 미지원
+   → .pseudo-fullscreen 클래스로 헤더/푸터 숨기고
+     iframe이 전체 화면을 채우도록 처리
+════════════════════════════════════ */
+
+/* 오버레이가 화면 전체를 덮도록 */
+.modal-overlay.pseudo-fullscreen-overlay {
+  z-index: 9999;
+  background: #000;
+}
+
+/* 모달 자체를 뷰포트에 꽉 맞춤 */
+.player-modal.pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+/* 전체화면 중 헤더·푸터·D-pad 숨김 */
+.player-modal.pseudo-fullscreen .player-header,
+.player-modal.pseudo-fullscreen .game-footer {
+  display: none !important;
+}
+
+/* 전체화면 중 D-pad는 유지 (게임 조작 필요) */
+.player-modal.pseudo-fullscreen .game-frame-container {
+  flex: 1;
+  height: 100% !important;
+}
+
+/* 전체화면 중 버튼 텍스트를 "해제"로 바꾸는 시각 힌트 */
+.player-modal.pseudo-fullscreen ~ * .fullscreen-btn,
+.fullscreen-exit-hint {
+  display: none;
 }
 
 /* ════════════════════════════════════
@@ -658,22 +711,4 @@ button, .game-card, .genre-item, .tag-option,
     max-height: 80vh;
     overflow-y: auto;
   }
-}
-
-/* ════════════════════════════════════
-   👍 UPVOTE CARD BADGE
-   추천순 정렬 시 게임 카드에 표시
-════════════════════════════════════ */
-
-/* 좋아요 배지 — 기본 view-badge에 파란 포인트 */
-.upvote-card-badge {
-  background: rgba(59, 130, 246, 0.75) !important;
-  color: #fff;
-}
-
-/* 좋아요 버튼 — 취소 가능 상태 hover 시 반전 힌트 */
-.vote-btn.upvote.voted:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #f87171;
 }
