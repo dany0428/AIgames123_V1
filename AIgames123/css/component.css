@@ -222,8 +222,9 @@
   border-color: #ef4444;
 }
 
-/* ── 맞추기 버튼 ── */
+/* ── 맞추기 버튼 — 모바일에서만 표시 ── */
 .fit-btn {
+  display: none;   /* 기본 숨김 */
   padding: 0.5rem 0.8rem;
   background: transparent;
   border: 1px solid #3b2d5a;
@@ -238,6 +239,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 .fit-btn:hover { background: #3b2d5a; color: #fff; }
+
+@media (pointer: coarse), (max-width: 640px) {
+  .fit-btn { display: inline-flex; align-items: center; }
+}
 
 .delete-game-btn {
   padding: 0.5rem 1rem;
