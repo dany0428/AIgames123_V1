@@ -176,14 +176,68 @@
 
 .game-frame-container {
   flex: 1;
-  min-height: 0;        /* flex child 높이 잘림 방지 — 핵심 수정 */
+  min-height: 0;
   background: #000;
   position: relative;
   display: flex;
-  align-items: stretch; /* center → stretch: iframe이 세로로 꽉 참 */
-  justify-content: center;
+  align-items: flex-start;   /* top-left 기준으로 스케일 */
+  justify-content: flex-start;
   overflow: hidden;
 }
+
+/* iframe을 감싸는 스케일 래퍼 — JS가 크기·transform 조정 */
+.game-scale-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── 전체화면 해제 플로팅 버튼 ──
+   pseudo-fullscreen 중 게임 위에 항상 떠있음
+   기본 숨김, JS에서 show/hide */
+.exit-fs-float-btn {
+  display: none;             /* JS가 flex로 변경 */
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 200;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.exit-fs-float-btn:hover,
+.exit-fs-float-btn:active {
+  background: rgba(220, 38, 38, 0.75);
+  border-color: #ef4444;
+}
+
+/* ── 맞추기 버튼 ── */
+.fit-btn {
+  padding: 0.5rem 0.8rem;
+  background: transparent;
+  border: 1px solid #3b2d5a;
+  border-radius: 6px;
+  color: #a78bfa;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.fit-btn:hover { background: #3b2d5a; color: #fff; }
 
 .delete-game-btn {
   padding: 0.5rem 1rem;
@@ -208,7 +262,6 @@
   border: none;
   display: none;
   background-color: white;
-  flex-shrink: 0;
 }
 
 .game-placeholder { color: #666; text-align: center; }
@@ -412,6 +465,7 @@ button, .game-card, .genre-item, .tag-option,
   .player-header { padding: 0.6rem 0.8rem; }
   .player-title { font-size: 0.9rem; }
   .fullscreen-btn { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
+  .fit-btn        { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
   .delete-game-btn { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
 
   .game-footer { padding: 0.5rem 0.8rem; }
@@ -428,17 +482,15 @@ button, .game-card, .genre-item, .tag-option,
 /* ════════════════════════════════════
    📱 CSS 가상 전체화면
    iOS Safari는 iframe requestFullscreen 미지원
-   → .pseudo-fullscreen 클래스로 헤더/푸터 숨기고
-     iframe이 전체 화면을 채우도록 처리
+   → .pseudo-fullscreen 클래스로 모달을 뷰포트에 꽉 채움
+   → 해제는 게임 위 플로팅 버튼(exit-fs-float-btn)으로
 ════════════════════════════════════ */
 
-/* 오버레이가 화면 전체를 덮도록 */
 .modal-overlay.pseudo-fullscreen-overlay {
   z-index: 9999;
   background: #000;
 }
 
-/* 모달 자체를 뷰포트에 꽉 맞춤 */
 .player-modal.pseudo-fullscreen {
   position: fixed !important;
   inset: 0 !important;
@@ -449,22 +501,15 @@ button, .game-card, .genre-item, .tag-option,
   border: none !important;
 }
 
-/* 전체화면 중 헤더·푸터·D-pad 숨김 */
+/* 전체화면 중 헤더·푸터 숨김 (해제는 플로팅 버튼 사용) */
 .player-modal.pseudo-fullscreen .player-header,
 .player-modal.pseudo-fullscreen .game-footer {
   display: none !important;
 }
 
-/* 전체화면 중 D-pad는 유지 (게임 조작 필요) */
 .player-modal.pseudo-fullscreen .game-frame-container {
   flex: 1;
   height: 100% !important;
-}
-
-/* 전체화면 중 버튼 텍스트를 "해제"로 바꾸는 시각 힌트 */
-.player-modal.pseudo-fullscreen ~ * .fullscreen-btn,
-.fullscreen-exit-hint {
-  display: none;
 }
 
 /* ════════════════════════════════════
