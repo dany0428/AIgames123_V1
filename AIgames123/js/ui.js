@@ -219,43 +219,123 @@ function initSidebar() {
 // ════════════════════════════════════
 
 // ════════════════════════════════════
-//  게임 플레이어 (닫기/전체화면)
+//  게임 플레이어 (닫기/전체화면/맞추기)
 // ════════════════════════════════════
 
 function initPlayer() {
     const fullscreenBtn  = document.getElementById('fullscreenBtn');
+    const exitFsFloatBtn = document.getElementById('exitFsFloatBtn');
+    const fitBtn         = document.getElementById('fitBtn');
     const closePlayer    = document.getElementById('closePlayer');
-    const playerModal    = document.querySelector('.player-modal');  // 모달 콘텐츠
-    const modalOverlay   = document.getElementById('playerModal');   // 오버레이
+    const playerModal    = document.querySelector('.player-modal');
+    const modalOverlay   = document.getElementById('playerModal');
+
+    // ── 스케일 상태 ──
+    let currentScale = 1;
+
+    // ── 게임 스케일 조정 ──
+    // iframe 내부 콘텐츠가 컨테이너보다 넓을 때 자동/수동으로 축소
+    function applyScale(scale) {
+        const wrapper   = DOM.gameScaleWrapper;
+        const frame     = DOM.gameFrame;
+        const container = wrapper?.parentElement;
+        if (!wrapper || !frame || !container) return;
+
+        currentScale = scale;
+
+        if (scale >= 1) {
+            // 원본 크기
+            wrapper.style.cssText = 'width:100%; height:100%; overflow:hidden;';
+            frame.style.cssText   = 'width:100%; height:100%; border:none; background:#fff;';
+            if (fitBtn) fitBtn.textContent = '⊡ 맞추기';
+        } else {
+            // 스케일 다운: wrapper를 실제 게임 픽셀 크기로 키우고 transform으로 축소
+            const containerW = container.clientWidth;
+            const containerH = container.clientHeight;
+            const gameW = Math.round(containerW / scale);
+            const gameH = Math.round(containerH / scale);
+
+            wrapper.style.cssText = `
+                width:${gameW}px;
+                height:${gameH}px;
+                transform:scale(${scale});
+                transform-origin:top left;
+                overflow:hidden;
+                flex-shrink:0;
+            `;
+            frame.style.cssText = `
+                width:100%;
+                height:100%;
+                border:none;
+                background:#fff;
+                display:block;
+            `;
+            if (fitBtn) fitBtn.textContent = `⊡ ${Math.round(scale * 100)}%`;
+        }
+    }
+
+    // iframe 로드 후 콘텐츠 너비 자동 감지 (same-origin srcdoc 게임만 가능)
+    function tryAutoScale() {
+        const wrapper   = DOM.gameScaleWrapper;
+        const frame     = DOM.gameFrame;
+        const container = wrapper?.parentElement;
+        if (!wrapper || !frame || !container) return;
+
+        try {
+            const doc = frame.contentDocument;
+            if (!doc?.documentElement) return;
+
+            const contentW = doc.documentElement.scrollWidth || doc.body?.scrollWidth || 0;
+            const containerW = container.clientWidth;
+
+            if (contentW > containerW + 8) {
+                const scale = Math.max(0.3, containerW / contentW);
+                applyScale(parseFloat(scale.toFixed(3)));
+            }
+        } catch {
+            // cross-origin → 자동 감지 불가, 수동 맞추기 버튼 사용
+        }
+    }
+
+    DOM.gameFrame?.addEventListener('load', () => {
+        // 로드 후 약간 대기해서 게임이 DOM 초기화를 마치도록
+        setTimeout(tryAutoScale, 400);
+    });
+
+    // 맞추기 버튼: 100% → 75% → 60% → 50% → 100% 순환
+    const SCALE_STEPS = [1, 0.75, 0.6, 0.5];
+    fitBtn?.addEventListener('click', () => {
+        const idx      = SCALE_STEPS.indexOf(currentScale);
+        const nextScale = SCALE_STEPS[(idx + 1) % SCALE_STEPS.length];
+        applyScale(nextScale);
+    });
 
     // ── 전체화면 ──
-    // iOS Safari는 iframe.requestFullscreen을 지원하지 않으므로
-    // CSS 가상 전체화면(pseudo-fullscreen)으로 처리
     const isMobileLike = () =>
-        window.matchMedia('(pointer: coarse)').matches
-        || navigator.maxTouchPoints > 0
-        || !document.fullscreenEnabled;
+        window.matchMedia('(pointer: coarse)').matches ||
+        navigator.maxTouchPoints > 0 ||
+        !document.fullscreenEnabled;
 
     function enterPseudoFullscreen() {
         playerModal?.classList.add('pseudo-fullscreen');
         modalOverlay?.classList.add('pseudo-fullscreen-overlay');
-        if (fullscreenBtn) fullscreenBtn.textContent = '✕ 해제';
-        document.body.style.overflow = 'hidden';
+        if (fullscreenBtn)  fullscreenBtn.textContent  = '전체화면';
+        if (exitFsFloatBtn) exitFsFloatBtn.style.display = 'flex';
     }
 
     function exitPseudoFullscreen() {
         playerModal?.classList.remove('pseudo-fullscreen');
         modalOverlay?.classList.remove('pseudo-fullscreen-overlay');
-        if (fullscreenBtn) fullscreenBtn.textContent = '전체화면';
+        if (fullscreenBtn)  fullscreenBtn.textContent    = '전체화면';
+        if (exitFsFloatBtn) exitFsFloatBtn.style.display = 'none';
     }
 
     fullscreenBtn?.addEventListener('click', () => {
         if (isMobileLike()) {
-            // 모바일 / iOS: CSS 가상 전체화면 토글
-            const isFs = playerModal?.classList.contains('pseudo-fullscreen');
-            isFs ? exitPseudoFullscreen() : enterPseudoFullscreen();
+            playerModal?.classList.contains('pseudo-fullscreen')
+                ? exitPseudoFullscreen()
+                : enterPseudoFullscreen();
         } else {
-            // 데스크탑: 브라우저 Fullscreen API
             if (!document.fullscreenElement) {
                 const target = document.querySelector('.game-frame-container') || DOM.gameFrame;
                 (target.requestFullscreen || target.webkitRequestFullscreen)?.call(target);
@@ -265,7 +345,10 @@ function initPlayer() {
         }
     });
 
-    // 데스크탑 전체화면 해제(Esc) 감지
+    // 플로팅 해제 버튼 (pseudo-fullscreen 중 항상 보임)
+    exitFsFloatBtn?.addEventListener('click', exitPseudoFullscreen);
+
+    // 데스크탑 전체화면 Esc 감지
     document.addEventListener('fullscreenchange', () => {
         if (!document.fullscreenElement && fullscreenBtn) {
             fullscreenBtn.textContent = '전체화면';
@@ -275,18 +358,19 @@ function initPlayer() {
     // ── 닫기 ──
     function closePlayerModal() {
         exitPseudoFullscreen();
+        applyScale(1);
+        currentScale = 1;
         DOM.playerModal.classList.remove('active');
         document.body.style.overflow = '';
         DOM.gameFrame.srcdoc = '';
         DOM.gameFrame.src    = '';
         DOM.gameFrame.style.display = 'none';
         if (DOM.deleteGameBtn) DOM.deleteGameBtn.style.display = 'none';
-        if (fullscreenBtn) fullscreenBtn.textContent = '전체화면';
     }
 
     closePlayer?.addEventListener('click', closePlayerModal);
 
-    // 가상 전체화면 중 뒤로가기(Android) 처리
+    // Android 뒤로가기 처리
     window.addEventListener('popstate', () => {
         if (playerModal?.classList.contains('pseudo-fullscreen')) {
             exitPseudoFullscreen();
