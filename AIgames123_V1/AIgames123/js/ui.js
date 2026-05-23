@@ -6,7 +6,7 @@ const PRESET_TAGS = [
 ];
 
 // ════════════════════════════════════
-//  공유 태그 선택기 빌더 (중복 코드 제거)
+//  Shared tag-selector builder (no code duplication)
 // ════════════════════════════════════
 
 function buildTagSelector(container) {
@@ -32,7 +32,7 @@ function clearTagSelector(container) {
 }
 
 // ════════════════════════════════════
-//  업로드 모달
+//  Upload modal
 // ════════════════════════════════════
 
 function initUploadModal() {
@@ -46,7 +46,7 @@ function initUploadModal() {
 
     buildTagSelector(tagSelector);
 
-    // ── 파일 타입 탭 전환 ──
+    // File-type tab switching
     let selectedFileType = 'html';
     fileTypeTabs?.addEventListener('click', (e) => {
         const tab = e.target.closest('.file-type-tab');
@@ -54,35 +54,30 @@ function initUploadModal() {
         selectedFileType = tab.dataset.type;
         fileTypeTabs.querySelectorAll('.file-type-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        // accept 속성 변경
-        if (selectedFileType === 'zip') {
-            gameFileInput.accept = '.zip';
-        } else {
-            gameFileInput.accept = '.html';
-        }
+        gameFileInput.accept = selectedFileType === 'zip' ? '.zip' : '.html';
         gameFileInput.value = '';
-        document.getElementById('gameFileName').textContent = '파일을 선택하세요';
+        document.getElementById('gameFileName').textContent = 'Select a file';
     });
 
     if (DOM.uploadBtn) DOM.uploadBtn.onclick = () => {
-        if (!currentUser) return alert('로그인이 필요합니다.');
+        if (!currentUser) return alert('You need to be logged in.');
         uploadModal.classList.add('active');
     };
     document.getElementById('closeUpload').onclick = () => uploadModal.classList.remove('active');
 
     if (!submitGameBtn) return;
     submitGameBtn.onclick = async () => {
-        if (!currentUser) return alert('로그인이 필요합니다!');
+        if (!currentUser) return alert('You need to be logged in!');
         const name      = gameNameInput.value.trim();
         const tags      = getSelectedTags(tagSelector);
         const file      = gameFileInput.files[0];
         const thumbFile = thumbnailFileInput.files[0];
-        if (!name || !file) return alert('게임 이름과 게임 파일은 필수입니다!');
+        if (!name || !file) return alert('Game name and game file are required!');
 
-        submitGameBtn.textContent = '업로드 중...';
+        submitGameBtn.textContent = 'Uploading...';
         submitGameBtn.disabled    = true;
         try {
-            // 파일명 sanitize: 한글·공백·특수문자 → _ (Storage key 오류 방지)
+            // Filename sanitization: strip diacritics & non-word chars to avoid Storage-key errors
             const sanitizeName = (n) => n
                 .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^\w.\-]/g, '_').replace(/_+/g, '_');
@@ -91,14 +86,14 @@ function initUploadModal() {
             let gameUrl;
 
             if (fileType === 'zip') {
-                // ── ZIP 업로드: 파일 그대로 Storage에 저장 ──
+                // ZIP upload: stored as-is
                 const fileName = `${Date.now()}_${sanitizeName(file.name)}`;
                 const { error: uploadErr } = await supabaseClient.storage
                     .from('game-files').upload(fileName, file, { contentType: 'application/zip', upsert: true });
                 if (uploadErr) throw uploadErr;
                 gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
             } else {
-                // ── HTML 업로드 ──
+                // HTML upload
                 const htmlText = await file.text();
                 const blob     = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
                 const fileName = `${Date.now()}_${sanitizeName(file.name)}`;
@@ -108,7 +103,7 @@ function initUploadModal() {
                 gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
             }
 
-            // ── 썸네일 ──
+            // Thumbnail
             let thumbUrl = null;
             if (thumbFile) {
                 const thumbName = `${Date.now()}_thumb_${sanitizeName(thumbFile.name)}`;
@@ -118,9 +113,8 @@ function initUploadModal() {
                 thumbUrl = supabaseClient.storage.from('game-files').getPublicUrl(thumbName).data.publicUrl;
             }
 
-            const uploaderName = currentUser.user_metadata.custom_name
-                || currentUser.user_metadata.preferred_username
-                || currentUser.user_metadata.full_name || '게이머';
+            const m = currentUser.user_metadata || {};
+            const uploaderName = m.custom_name || m.preferred_username || m.full_name || 'Gamer';
 
             const { error: dbErr } = await supabaseClient.from('games').insert([{
                 name,
@@ -132,22 +126,24 @@ function initUploadModal() {
                 upvotes:         0,
                 user_id:         currentUser.id,
                 uploader_name:   uploaderName,
-                uploader_avatar: currentUser.user_metadata.custom_avatar
-                    || currentUser.user_metadata.avatar_url || null,
+                uploader_avatar: m.custom_avatar || m.avatar_url || null,
             }]);
             if (dbErr) throw dbErr;
 
-            alert('업로드 성공!');
+            alert('Upload successful!');
             uploadModal.classList.remove('active');
             gameNameInput.value = '';
             clearTagSelector(tagSelector);
             gameFileInput.value = '';
             thumbnailFileInput.value = '';
-            document.getElementById('gameFileName').textContent = '파일을 선택하세요';
+            document.getElementById('gameFileName').textContent = 'Select a file';
+
+            // Invalidate tag cache — new tags may have been added
+            cache.invalidateTags();
 
             DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
         } catch (err) {
-            alert('오류 발생: ' + err.message);
+            alert('Error: ' + err.message);
         } finally {
             submitGameBtn.textContent = 'Launch Game';
             submitGameBtn.disabled    = false;
@@ -157,15 +153,15 @@ function initUploadModal() {
 
 
 // ════════════════════════════════════
-//  수정 모달
+//  Edit modal
 // ════════════════════════════════════
 
 function initEditModal() {
-    const editModal      = document.getElementById('editModal');
-    const submitEditGame = document.getElementById('submitEditGame');
+    const editModal       = document.getElementById('editModal');
+    const submitEditGame  = document.getElementById('submitEditGame');
     const editTagSelector = document.getElementById('editTagSelector');
 
-    buildTagSelector(editTagSelector); // 공유 빌더 사용 ✅
+    buildTagSelector(editTagSelector);
 
     document.getElementById('closeEdit').onclick = () => editModal.classList.remove('active');
 
@@ -173,33 +169,34 @@ function initEditModal() {
     submitEditGame.onclick = async () => {
         const newName = document.getElementById('editGameName').value.trim();
         const newTags = getSelectedTags(editTagSelector);
-        if (!newName) return alert('게임 이름을 입력해주세요.');
+        if (!newName) return alert('Please enter a game name.');
 
         submitEditGame.disabled    = true;
-        submitEditGame.textContent = '저장 중...';
+        submitEditGame.textContent = 'Saving...';
         try {
             const { error } = await supabaseClient.from('games')
                 .update({ name: newName, tags: newTags }).eq('id', editingGameId);
             if (error) throw error;
-            alert('정보가 수정되었습니다.');
+            alert('Changes saved.');
             editModal.classList.remove('active');
+            cache.invalidateTags();   // tag list may have changed
             fetchMyGames();
         } catch (err) {
-            alert('수정 실패: ' + err.message);
+            alert('Save failed: ' + err.message);
         } finally {
             submitEditGame.disabled    = false;
-            submitEditGame.textContent = '저장하기';
+            submitEditGame.textContent = 'Save';
         }
     };
 }
 
 // ════════════════════════════════════
-//  사이드바
+//  Sidebar
 // ════════════════════════════════════
 
 function initSidebar() {
-    const menuBtn     = document.getElementById('menuBtn');
-    const sidebar     = document.getElementById('sidebar');
+    const menuBtn      = document.getElementById('menuBtn');
+    const sidebar      = document.getElementById('sidebar');
     const closeSidebar = document.getElementById('closeSidebar');
     if (!sidebar) return;
 
@@ -215,11 +212,7 @@ function initSidebar() {
 }
 
 // ════════════════════════════════════
-//  게임 플레이어 (닫기/전체화면)
-// ════════════════════════════════════
-
-// ════════════════════════════════════
-//  게임 플레이어 (닫기/전체화면/맞추기)
+//  Game player (close / fullscreen / fit)
 // ════════════════════════════════════
 
 function initPlayer() {
@@ -230,11 +223,11 @@ function initPlayer() {
     const playerModal    = document.querySelector('.player-modal');
     const modalOverlay   = document.getElementById('playerModal');
 
-    // ── 스케일 상태 ──
+    // Scale state
     let currentScale = 1;
 
-    // ── 게임 스케일 조정 ──
-    // iframe 내부 콘텐츠가 컨테이너보다 넓을 때 자동/수동으로 축소
+    // Scale-adjust helper: when iframe content is wider than container,
+    // scale down via CSS transform.
     function applyScale(scale) {
         const wrapper   = DOM.gameScaleWrapper;
         const frame     = DOM.gameFrame;
@@ -244,12 +237,10 @@ function initPlayer() {
         currentScale = scale;
 
         if (scale >= 1) {
-            // 원본 크기
             wrapper.style.cssText = 'width:100%; height:100%; overflow:hidden;';
             frame.style.cssText   = 'width:100%; height:100%; border:none; background:#fff;';
-            if (fitBtn) fitBtn.textContent = '⊡ 맞추기';
+            if (fitBtn) fitBtn.textContent = '⊡ Fit';
         } else {
-            // 스케일 다운: wrapper를 실제 게임 픽셀 크기로 키우고 transform으로 축소
             const containerW = container.clientWidth;
             const containerH = container.clientHeight;
             const gameW = Math.round(containerW / scale);
@@ -274,7 +265,7 @@ function initPlayer() {
         }
     }
 
-    // iframe 로드 후 콘텐츠 너비 자동 감지 (same-origin srcdoc 게임만 가능)
+    // Auto-scale based on iframe content width (works only for same-origin srcdoc games)
     function tryAutoScale() {
         const wrapper   = DOM.gameScaleWrapper;
         const frame     = DOM.gameFrame;
@@ -285,7 +276,7 @@ function initPlayer() {
             const doc = frame.contentDocument;
             if (!doc?.documentElement) return;
 
-            const contentW = doc.documentElement.scrollWidth || doc.body?.scrollWidth || 0;
+            const contentW   = doc.documentElement.scrollWidth || doc.body?.scrollWidth || 0;
             const containerW = container.clientWidth;
 
             if (contentW > containerW + 8) {
@@ -293,24 +284,24 @@ function initPlayer() {
                 applyScale(parseFloat(scale.toFixed(3)));
             }
         } catch {
-            // cross-origin → 자동 감지 불가, 수동 맞추기 버튼 사용
+            // cross-origin: cannot auto-measure, user can press the Fit button
         }
     }
 
     DOM.gameFrame?.addEventListener('load', () => {
-        // 로드 후 약간 대기해서 게임이 DOM 초기화를 마치도록
+        // Slight delay so the game can finish its own DOM init first
         setTimeout(tryAutoScale, 400);
     });
 
-    // 맞추기 버튼: 100% → 75% → 60% → 50% → 100% 순환
+    // Fit button cycle: 100% → 75% → 60% → 50% → 100%
     const SCALE_STEPS = [1, 0.75, 0.6, 0.5];
     fitBtn?.addEventListener('click', () => {
-        const idx      = SCALE_STEPS.indexOf(currentScale);
+        const idx       = SCALE_STEPS.indexOf(currentScale);
         const nextScale = SCALE_STEPS[(idx + 1) % SCALE_STEPS.length];
         applyScale(nextScale);
     });
 
-    // ── 전체화면 ──
+    // Fullscreen
     const isMobileLike = () =>
         window.matchMedia('(pointer: coarse)').matches ||
         navigator.maxTouchPoints > 0 ||
@@ -319,14 +310,14 @@ function initPlayer() {
     function enterPseudoFullscreen() {
         playerModal?.classList.add('pseudo-fullscreen');
         modalOverlay?.classList.add('pseudo-fullscreen-overlay');
-        if (fullscreenBtn)  fullscreenBtn.textContent  = '전체화면';
+        if (fullscreenBtn)  fullscreenBtn.textContent    = 'Fullscreen';
         if (exitFsFloatBtn) exitFsFloatBtn.style.display = 'flex';
     }
 
     function exitPseudoFullscreen() {
         playerModal?.classList.remove('pseudo-fullscreen');
         modalOverlay?.classList.remove('pseudo-fullscreen-overlay');
-        if (fullscreenBtn)  fullscreenBtn.textContent    = '전체화면';
+        if (fullscreenBtn)  fullscreenBtn.textContent    = 'Fullscreen';
         if (exitFsFloatBtn) exitFsFloatBtn.style.display = 'none';
     }
 
@@ -345,17 +336,15 @@ function initPlayer() {
         }
     });
 
-    // 플로팅 해제 버튼 (pseudo-fullscreen 중 항상 보임)
     exitFsFloatBtn?.addEventListener('click', exitPseudoFullscreen);
 
-    // 데스크탑 전체화면 Esc 감지
     document.addEventListener('fullscreenchange', () => {
         if (!document.fullscreenElement && fullscreenBtn) {
-            fullscreenBtn.textContent = '전체화면';
+            fullscreenBtn.textContent = 'Fullscreen';
         }
     });
 
-    // ── 닫기 ──
+    // Close player — also revokes blob URLs from ZIP loader (memory leak fix)
     function closePlayerModal() {
         exitPseudoFullscreen();
         applyScale(1);
@@ -366,11 +355,12 @@ function initPlayer() {
         DOM.gameFrame.src    = '';
         DOM.gameFrame.style.display = 'none';
         if (DOM.deleteGameBtn) DOM.deleteGameBtn.style.display = 'none';
+        if (typeof _revokePlayerBlobUrls === 'function') _revokePlayerBlobUrls();
     }
 
     closePlayer?.addEventListener('click', closePlayerModal);
 
-    // Android 뒤로가기 처리
+    // Android back-button handling
     window.addEventListener('popstate', () => {
         if (playerModal?.classList.contains('pseudo-fullscreen')) {
             exitPseudoFullscreen();
@@ -379,7 +369,7 @@ function initPlayer() {
 }
 
 // ════════════════════════════════════
-//  파일 입력 레이블
+//  File input labels
 // ════════════════════════════════════
 
 function initFileInputs() {
@@ -391,7 +381,7 @@ function initFileInputs() {
 }
 
 // ════════════════════════════════════
-//  검색 디바운스
+//  Search debounce
 // ════════════════════════════════════
 
 function initSearch() {
@@ -404,7 +394,10 @@ function initSearch() {
 }
 
 // ════════════════════════════════════
-//  모바일 가상 D-pad
+//  Mobile virtual D-pad
+//  — uses Pointer Events to unify mouse + touch in 3 listeners per button
+//    instead of the original 5 (touchstart/touchend/touchcancel/
+//    mousedown/mouseup/mouseleave).
 // ════════════════════════════════════
 
 const KEY_CODES = { ArrowUp:38, ArrowDown:40, ArrowLeft:37, ArrowRight:39, Space:32, Enter:13, Escape:27 };
@@ -420,28 +413,41 @@ function initDpad() {
             const opts = { key, code, keyCode: KEY_CODES[code] || 0, bubbles: true, cancelable: true };
             DOM.gameFrame.contentWindow?.dispatchEvent(new KeyboardEvent(type, opts));
             DOM.gameFrame.contentWindow?.document.dispatchEvent(new KeyboardEvent(type, opts));
-        } catch (_) { /* cross-origin 무시 */ }
+        } catch (_) { /* cross-origin — ignore */ }
     }
 
-    DOM.dpadOverlay.querySelectorAll('[data-key]').forEach(btn => {
-        const { key, code } = btn.dataset;
-        const press   = e => { e.preventDefault(); btn.classList.add('pressed');    sendKey('keydown', key, code); };
-        const release = e => { e.preventDefault(); btn.classList.remove('pressed'); sendKey('keyup',   key, code); };
-        btn.addEventListener('touchstart',  press,   { passive: false });
-        btn.addEventListener('touchend',    release, { passive: false });
-        btn.addEventListener('touchcancel', release, { passive: false });
-        btn.addEventListener('mousedown',   press);
-        btn.addEventListener('mouseup',     release);
-        btn.addEventListener('mouseleave',  release);
+    // Delegate pointer events on the overlay for single-listener efficiency
+    const pressed = new Map();  // pointerId → btn
+
+    DOM.dpadOverlay.addEventListener('pointerdown', (e) => {
+        const btn = e.target.closest('[data-key]');
+        if (!btn) return;
+        e.preventDefault();
+        btn.setPointerCapture?.(e.pointerId);
+        btn.classList.add('pressed');
+        pressed.set(e.pointerId, btn);
+        sendKey('keydown', btn.dataset.key, btn.dataset.code);
     });
+
+    const release = (e) => {
+        const btn = pressed.get(e.pointerId);
+        if (!btn) return;
+        btn.classList.remove('pressed');
+        sendKey('keyup', btn.dataset.key, btn.dataset.code);
+        pressed.delete(e.pointerId);
+    };
+
+    DOM.dpadOverlay.addEventListener('pointerup',     release);
+    DOM.dpadOverlay.addEventListener('pointercancel', release);
+    DOM.dpadOverlay.addEventListener('pointerleave',  release);
 }
 
 // ════════════════════════════════════
-//  프로필 아바타 업로드
+//  Profile avatar upload
 // ════════════════════════════════════
 
 async function uploadAvatar(file) {
-    if (!currentUser) throw new Error('로그인이 필요합니다.');
+    if (!currentUser) throw new Error('You need to be logged in.');
     const ext      = file.name.split('.').pop();
     const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
 
@@ -457,10 +463,10 @@ async function uploadAvatar(file) {
     if (DOM.profileAvatar) DOM.profileAvatar.src = publicUrl;
     if (DOM.avatarPreview) DOM.avatarPreview.src = publicUrl;
 
-    // 게임 목록 아바타 동기화 (백그라운드)
+    // Sync avatar on the user's games (background)
     supabaseClient.from('games').update({ uploader_avatar: publicUrl })
         .eq('user_id', currentUser.id)
-        .then(({ error }) => { if (error) console.warn('아바타 동기화 실패:', error.message); });
+        .then(({ error }) => { if (error) console.warn('Avatar sync failed:', error.message); });
 
     updateAuthUI(data.user);
     return publicUrl;
@@ -476,14 +482,14 @@ function initProfileAvatar() {
         headerInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !currentUser) return;
-            if (headerOverlay) headerOverlay.textContent = '업로드 중...';
+            if (headerOverlay) headerOverlay.textContent = 'Uploading...';
             try {
                 await uploadAvatar(file);
-                alert('프로필 사진이 변경되었습니다! 🎉');
+                alert('Profile picture updated! 🎉');
             } catch (err) {
-                alert('업로드 실패: ' + err.message);
+                alert('Upload failed: ' + err.message);
             } finally {
-                if (headerOverlay) headerOverlay.textContent = '사진 변경';
+                if (headerOverlay) headerOverlay.textContent = 'Change photo';
                 headerInput.value = '';
             }
         });
@@ -504,20 +510,20 @@ function initProfileAvatar() {
 
     const saveBtn = document.getElementById('saveAvatarBtn');
     saveBtn?.addEventListener('click', async () => {
-        if (!selectedFile) return alert('먼저 사진을 선택해주세요.');
-        if (!currentUser) return alert('로그인이 필요합니다.');
+        if (!selectedFile) return alert('Please choose a photo first.');
+        if (!currentUser) return alert('You need to be logged in.');
         saveBtn.disabled    = true;
-        saveBtn.textContent = '저장 중...';
+        saveBtn.textContent = 'Saving...';
         try {
             await uploadAvatar(selectedFile);
             selectedFile = null;
             if (fileInput) fileInput.value = '';
-            alert('프로필 사진이 저장되었습니다! 🎉');
+            alert('Profile picture saved! 🎉');
         } catch (err) {
-            alert('업로드 실패: ' + err.message);
+            alert('Upload failed: ' + err.message);
         } finally {
             saveBtn.disabled    = false;
-            saveBtn.textContent = '저장하기';
+            saveBtn.textContent = 'Save';
         }
     });
 }
