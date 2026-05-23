@@ -12,8 +12,23 @@
        statically (e.g. during local dev) where HTTP headers
        aren't applied. Some directives (frame-ancestors, HSTS,
        X-Frame-Options) ONLY work via real headers, hence vercel.json.
+
+       NOTE on CSP relaxations:
+       The `srcdoc` iframe used to load user-uploaded games INHERITS
+       the parent page's CSP (per HTML spec). User games legitimately
+       use inline <script>, inline event handlers, eval (Unity/Godot
+       wasm loaders), Google Fonts, etc. So script-src and style-src
+       have to permit those, otherwise no third-party game loads.
+       Defense-in-depth that REMAINS effective:
+         - object-src 'none'      (no <object>/<embed>/Flash plugins)
+         - base-uri 'self'        (game cannot retarget app's <base>)
+         - frame-ancestors 'self' (clickjacking protection)
+         - frame-src 'self' blob: (game cannot embed arbitrary iframes)
+         - upgrade-insecure-requests (no http:// resources)
+         - The iframe sandbox (no allow-same-origin) is what truly
+           isolates games from the parent app; CSP is a secondary layer.
        ════════════════════════════════════════════════════════ -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://bpaqjmwzdxdgitlwmamp.supabase.co https://*.githubusercontent.com https://avatars.githubusercontent.com; font-src 'self' data:; connect-src 'self' https://bpaqjmwzdxdgitlwmamp.supabase.co wss://bpaqjmwzdxdgitlwmamp.supabase.co; frame-src 'self' blob:; media-src 'self' blob: https://bpaqjmwzdxdgitlwmamp.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://bpaqjmwzdxdgitlwmamp.supabase.co wss://bpaqjmwzdxdgitlwmamp.supabase.co https:; frame-src 'self' blob:; media-src 'self' blob: data: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
