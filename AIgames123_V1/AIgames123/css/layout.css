@@ -27,9 +27,7 @@
   transition: opacity 0.2s;
 }
 
-.logo:hover .logo-img {
-  opacity: 0.85;
-}
+.logo:hover .logo-img { opacity: 0.85; }
 
 @media (max-width: 640px) {
   .logo-img { height: 35px; }
@@ -94,14 +92,7 @@
 
 .section-title { margin-bottom: 1.5rem; color: #a78bfa; }
 
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-.section-header .section-title { margin-bottom: 0; }
+/* NOTE: .section-header rules are consolidated in component.css to avoid duplication. */
 
 /* ── Game Grid ── */
 .game-grid {
@@ -121,6 +112,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .hamburger:hover { transform: scale(1.1); color: #c4b5fd; }
+.hamburger svg { display: block; }
 
 /* ── Sidebar ── */
 .sidebar {
@@ -202,22 +194,14 @@
   padding-bottom: 0.8rem;
 }
 
-.profile-avatar-container {
-  position: relative;
-  cursor: pointer;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-/* ── Hamburger button ── */
-.hamburger svg { display: block; }
+/* NOTE: .profile-avatar-container is consolidated in component.css. */
 
 /* ════════════════════════════════════
    📱 MOBILE RESPONSIVE
 ════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* Navbar: 2줄 레이아웃 */
+  /* Navbar: two-line layout */
   .navbar {
     flex-wrap: wrap;
     padding: 0.6rem 1rem;
@@ -226,7 +210,7 @@
 
   .nav-left { flex: 1; }
 
-  /* 검색창을 두 번째 줄에 full-width로 */
+  /* Search input on second row, full width */
   .search-container {
     order: 3;
     flex: 0 0 100%;
@@ -236,22 +220,19 @@
 
   .nav-right { gap: 0.4rem; }
 
-  /* 로고 축소 */
   .logo { font-size: 1.05rem; }
 
-  /* 버튼 축소 */
   .upload-btn { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
 
-  /* 게임 그리드: 2열 고정 */
+  /* Game grid: fixed 2 columns */
   .game-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.8rem;
   }
 
-  /* 메인 패딩 축소 */
   .main-content { padding: 1rem; }
 
-  /* 프로필 헤더: 세로 정렬 */
+  /* Profile header: stack vertically */
   .profile-header-card {
     flex-direction: column;
     text-align: center;
@@ -270,7 +251,6 @@
 
   .profile-settings-card { padding: 1.2rem; }
 
-  /* 섹션 헤더 */
   .section-header { gap: 0.6rem; }
 }
 
