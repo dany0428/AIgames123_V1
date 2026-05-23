@@ -1,50 +1,55 @@
+// ════════════════════════════════════════════════════════
+//  app.js — AI Games Arcade entry point
+//  Wires DOM events on load; delegates module initialization to ui.js/auth.js.
+// ════════════════════════════════════════════════════════
+
 document.addEventListener('DOMContentLoaded', () => {
 
-    // DOM 캐시 초기화 (config.js) — 이후 모든 파일에서 DOM.xxx 사용
+    // Cache DOM nodes once (defined in config.js) — all later modules read via DOM.xxx
     initDOMCache();
 
-    // 로그인 버튼 → auth 모달 열기
+    // Login button → open auth modal
     DOM.loginBtn?.addEventListener('click', () => window.openAuthModal('login'));
 
-    // 로그아웃
+    // Logout
     DOM.logoutBtn?.addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
-        alert('로그아웃 되었습니다.');
+        alert('Logged out.');
         window.location.href = '/';
     });
 
-    // 로고 클릭 → 메인, 유저 이름 클릭 → 프로필
+    // Logo → main; user name → profile
     document.getElementById('homeLogo')?.addEventListener('click', showMainContent);
     DOM.userInfo?.addEventListener('click', showProfileContent);
 
-    // 정렬 드롭다운
+    // Sort dropdown
     DOM.sortDropdown?.addEventListener('change', () => {
         currentSort = DOM.sortDropdown.value;
         fetchGames(DOM.searchInput?.value.trim() || '', currentTag);
     });
 
-    // 닉네임 저장
+    // Save display name
     document.getElementById('saveProfileBtn')?.addEventListener('click', async (e) => {
         const btn     = e.currentTarget;
         const newName = DOM.profileNameInput?.value.trim();
-        if (!newName) return alert('닉네임을 입력해주세요.');
+        if (!newName) return alert('Please enter a display name.');
         btn.disabled    = true;
-        btn.textContent = '저장 중...';
+        btn.textContent = 'Saving...';
         try {
             const { data, error } = await supabaseClient.auth.updateUser({ data: { custom_name: newName } });
             if (error) throw error;
-            alert('닉네임이 성공적으로 변경되었습니다!');
+            alert('Display name updated successfully!');
             updateAuthUI(data.user);
             showProfileContent();
         } catch (err) {
-            alert('변경 실패: ' + err.message);
+            alert('Update failed: ' + err.message);
         } finally {
             btn.disabled    = false;
-            btn.textContent = '저장하기';
+            btn.textContent = 'Save';
         }
     });
 
-    // UI 모듈 초기화
+    // Module initialization (ui.js)
     initUploadModal();
     initEditModal();
     initSidebar();
@@ -54,10 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initProfileAvatar();
     initDpad();
 
-    // 인증 모달 초기화 (신규)
+    // Auth modal (auth.js)
     initAuthModal();
     initChangePassword();
 
-    // 인증 → 완료 후 현재 URL에 맞는 화면으로 라우팅
+    // Bootstrap auth, then route to the URL's view.
+    // OPTIMIZATION: initAuth() internally calls updateAuthUI(null) with a bootstrap
+    // flag that suppresses an initial _renderMain(), so only the .then(handleRoute)
+    // below renders the grid once instead of twice.
     initAuth().then(handleRoute);
 });
