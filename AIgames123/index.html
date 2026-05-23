@@ -5,13 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- ════════════════════════════════════════════════════════
+       Security headers (backup — primary copies are in vercel.json).
+       The meta tag form is honored by the browser when serving
+       statically (e.g. during local dev) where HTTP headers
+       aren't applied. Some directives (frame-ancestors, HSTS,
+       X-Frame-Options) ONLY work via real headers, hence vercel.json.
+       ════════════════════════════════════════════════════════ -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://bpaqjmwzdxdgitlwmamp.supabase.co https://*.githubusercontent.com https://avatars.githubusercontent.com; font-src 'self' data:; connect-src 'self' https://bpaqjmwzdxdgitlwmamp.supabase.co wss://bpaqjmwzdxdgitlwmamp.supabase.co; frame-src 'self' blob:; media-src 'self' blob: https://bpaqjmwzdxdgitlwmamp.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
   <title>AIgames123</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/component.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <!-- ════════════════════════════════════════════════════════
+       CDN scripts pinned to specific versions (required for SRI).
+       SECURITY HARDENING TODO (do this in your deploy pipeline):
+         1. Generate SRI hashes locally with:
+              curl -sL "<URL>" | openssl dgst -sha384 -binary | openssl base64 -A
+         2. Add to each <script>:  integrity="sha384-..." crossorigin="anonymous"
+         3. The CSP above can then be tightened with 'strict-dynamic'.
+       Without SRI, a compromised jsDelivr could serve malicious code.
+       ════════════════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
@@ -274,8 +296,19 @@
         <button class="exit-fs-float-btn" id="exitFsFloatBtn">✕ Exit Fullscreen</button>
 
         <div class="game-scale-wrapper" id="gameScaleWrapper">
+          <!-- ════════════════════════════════════════════════════════
+               SANDBOX HARDENING:
+               `allow-same-origin` has been REMOVED. With srcdoc-loaded
+               game HTML, having both `allow-scripts` and `allow-same-origin`
+               causes the iframe to inherit the embedder's origin per HTML
+               spec — meaning user-uploaded game JS could read/write the
+               parent's DOM, cookies, and localStorage. Removing it forces
+               an opaque origin so games are properly isolated.
+               Blob-URL assets inside srcdoc still work fine (blobs don't
+               require same-origin for `<img src=>`, `<script src=>`, etc).
+               ════════════════════════════════════════════════════════ -->
           <iframe id="gameFrame"
-            sandbox="allow-scripts allow-pointer-lock allow-same-origin allow-modals"
+            sandbox="allow-scripts allow-pointer-lock allow-modals allow-forms allow-popups"
             allowfullscreen frameborder="0"></iframe>
         </div>
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
