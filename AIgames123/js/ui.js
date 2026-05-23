@@ -74,6 +74,45 @@ function initUploadModal() {
         const thumbFile = thumbnailFileInput.files[0];
         if (!name || !file) return alert('Game name and game file are required!');
 
+        // ════════════════════════════════════════════════════════
+        // Input validation (client-side; matched by Storage policies)
+        // ════════════════════════════════════════════════════════
+        if (name.length > SECURITY.MAX_GAME_NAME_LEN) {
+            return alert(`Game name is too long (max ${SECURITY.MAX_GAME_NAME_LEN} chars).`);
+        }
+        if (/[\x00-\x1f]/.test(name)) {
+            return alert('Game name contains invalid characters.');
+        }
+        if (tags.length > SECURITY.MAX_TAG_LIST_LEN) {
+            return alert('Too many tags selected.');
+        }
+
+        // File-size cap: Supabase Storage will also enforce its own bucket
+        // limit, but rejecting client-side gives a better error than a 413.
+        if (file.size > SECURITY.MAX_GAME_FILE_BYTES) {
+            return alert(`Game file is too large (max ${SECURITY.MAX_GAME_FILE_BYTES / 1024 / 1024} MB).`);
+        }
+
+        // File-type vs extension consistency check — defense in depth.
+        // (The actual bytes are what get served; this just catches typos.)
+        const ext = file.name.toLowerCase().split('.').pop();
+        if (selectedFileType === 'zip' && ext !== 'zip') {
+            return alert('Selected file type is ZIP, but the file is not a .zip.');
+        }
+        if (selectedFileType === 'html' && ext !== 'html' && ext !== 'htm') {
+            return alert('Selected file type is HTML, but the file is not an .html.');
+        }
+
+        if (thumbFile) {
+            if (thumbFile.size > SECURITY.MAX_THUMB_BYTES) {
+                return alert(`Thumbnail is too large (max ${SECURITY.MAX_THUMB_BYTES / 1024 / 1024} MB).`);
+            }
+            // Verify magic bytes — `accept="image/*"` is trivially bypassable
+            // by spoofing the Content-Type header.
+            const ok = await isRealImageFile(thumbFile);
+            if (!ok) return alert('Thumbnail must be a real PNG, JPEG, GIF, or WebP image.');
+        }
+
         submitGameBtn.textContent = 'Uploading...';
         submitGameBtn.disabled    = true;
         try {
@@ -448,11 +487,28 @@ function initDpad() {
 
 async function uploadAvatar(file) {
     if (!currentUser) throw new Error('You need to be logged in.');
-    const ext      = file.name.split('.').pop();
+
+    // ════════════════════════════════════════════════════════
+    // Validate: real image (magic bytes), size cap, safe extension.
+    // The `accept="image/*"` attribute on the input is trivially
+    // bypassable, so all three checks happen JS-side regardless.
+    // ════════════════════════════════════════════════════════
+    if (file.size > SECURITY.MAX_AVATAR_BYTES) {
+        throw new Error(`Avatar is too large (max ${SECURITY.MAX_AVATAR_BYTES / 1024 / 1024} MB).`);
+    }
+    const ok = await isRealImageFile(file);
+    if (!ok) throw new Error('Avatar must be a real PNG, JPEG, GIF, or WebP image.');
+
+    // Whitelist extension — the storage key must not contain attacker-controlled
+    // characters that could land in a Storage URL path. (Same rationale as
+    // sanitizeName in the game-upload flow.)
+    const SAFE_EXT = { png: 'png', jpg: 'jpg', jpeg: 'jpg', gif: 'gif', webp: 'webp' };
+    const rawExt   = (file.name.split('.').pop() || '').toLowerCase();
+    const ext      = SAFE_EXT[rawExt] || 'png';
     const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
 
     const { error: upErr } = await supabaseClient.storage
-        .from('game-files').upload(fileName, file, { upsert: true });
+        .from('game-files').upload(fileName, file, { upsert: true, contentType: file.type || 'image/*' });
     if (upErr) throw upErr;
 
     const { data: { publicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);

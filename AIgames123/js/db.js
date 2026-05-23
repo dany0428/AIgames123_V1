@@ -162,14 +162,32 @@ window.deleteGame = async (gameId, event) => {
 };
 
 // ════════════════════════════════════
-//  Upvote — fully optimistic, no list re-fetch on success
+//  Upvote — server-side single-vote enforcement
+//
+//  SECURITY: the old localStorage-only flag was trivially bypassable
+//  (clear storage → upvote infinitely). This version calls a server-
+//  side RPC `toggle_upvote(game_id)` that:
+//    • Requires auth.uid() (rejected for anonymous)
+//    • Inserts/deletes a row in `game_upvotes(user_id, game_id)`
+//      with UNIQUE(user_id, game_id), so each user can upvote a
+//      game exactly once.
+//    • Returns the resulting upvote count atomically.
+//
+//  If the RPC does not exist yet (migration not applied), falls back
+//  to the optimistic-UI behavior so the app keeps working.
 // ════════════════════════════════════
 
 window.handleUpvote = async (gameId, currentCount) => {
+    if (!currentUser) {
+        alert('Please log in to upvote.');
+        window.openAuthModal?.('login');
+        return;
+    }
+
     const voteKey  = `voted_${gameId}`;
     const hasVoted = localStorage.getItem(voteKey) === 'up';
 
-    // Optimistic UI update
+    // Optimistic UI update (rolled back on error)
     const nextCount = hasVoted
         ? Math.max(0, (Number(currentCount) || 0) - 1)
         : (Number(currentCount) || 0) + 1;
@@ -180,24 +198,36 @@ window.handleUpvote = async (gameId, currentCount) => {
         DOM.upvoteBtn.onclick = () => handleUpvote(gameId, nextCount);
     }
 
-    // Update the cached row so a list re-render shows the new count
     const cached = cache._gameListCache.find(g => String(g.id) === String(gameId));
     if (cached) cached.upvotes = nextCount;
 
     try {
-        const { error } = await supabaseClient
-            .from('games')
-            .update({ upvotes: nextCount })
-            .eq('id', gameId);
-        if (error) throw error;
+        const { data, error } = await supabaseClient
+            .rpc('toggle_upvote', { game_id: gameId });
 
-        // Toggle localStorage flag
+        if (error) {
+            // Fallback path: RPC missing → use old read-modify-write
+            // (still vulnerable to multi-vote bypass — migrate the SQL).
+            if (/function .*toggle_upvote.* does not exist/i.test(error.message)) {
+                console.warn('toggle_upvote RPC missing — falling back to legacy UPDATE. Apply the SQL migration to enforce one-vote-per-user.');
+                const { error: legacyErr } = await supabaseClient
+                    .from('games')
+                    .update({ upvotes: nextCount })
+                    .eq('id', gameId);
+                if (legacyErr) throw legacyErr;
+            } else {
+                throw error;
+            }
+        }
+
+        // Sync the badge with the authoritative count if RPC returned one
+        if (typeof data === 'number') {
+            if (DOM.upvoteCount) DOM.upvoteCount.textContent = data;
+            if (cached) cached.upvotes = data;
+        }
+
         if (hasVoted) localStorage.removeItem(voteKey);
         else          localStorage.setItem(voteKey, 'up');
-
-        // NOTE: intentionally NOT re-fetching the list here.
-        // The local cache is in sync; the next natural fetchGames()
-        // (search, sort change, etc.) will pull authoritative counts.
     } catch (err) {
         // Rollback UI
         if (DOM.upvoteCount) DOM.upvoteCount.textContent = currentCount;
@@ -685,9 +715,42 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
     DOM.gameFrame.srcdoc = `${viewportMeta}<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#333;">Loading game...</div>`;
 
-    // View-count update + game-file fetch in parallel
+    // ════════════════════════════════════════════════════════
+    // URL validation: rejects javascript:, data:, http:, URLs pointing
+    // at this app's own origin (sandbox-escape vector), and anything
+    // outside the Supabase storage bucket. Without this check, an
+    // attacker who can write to `games.file_url` (e.g. via the broad
+    // "누구나 조회수 증가 가능" RLS policy) could redirect the player
+    // iframe to malicious content.
+    // ════════════════════════════════════════════════════════
+    try {
+        assertSafeGameUrl(url);
+    } catch (err) {
+        DOM.gameFrame.srcdoc = `${viewportMeta}<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:red;font-family:sans-serif;padding:2rem;text-align:center;">Refused to load game: ${_esc(err.message)}</div>`;
+        console.error('Blocked game load:', err.message, url);
+        return;
+    }
+
+    // View-count update + game-file fetch in parallel.
+    // Uses the `increment_view_count` RPC for an atomic SQL-side
+    // increment (avoids the read-modify-write race that lets two
+    // concurrent viewers overwrite each other's increment). If the
+    // RPC doesn't exist yet, falls back to the legacy UPDATE so the
+    // page keeps working until the migration is applied.
+    const incrementCall = supabaseClient
+        .rpc('increment_view_count', { game_id: id })
+        .then(({ error }) => {
+            if (error && /function .*increment_view_count.* does not exist/i.test(error.message)) {
+                return supabaseClient
+                    .from('games')
+                    .update({ view_count: currentViewCount + 1 })
+                    .eq('id', id);
+            }
+            return { error };
+        });
+
     const [, gameResult] = await Promise.allSettled([
-        supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id),
+        incrementCall,
         fetch(url).then(r => { if (!r.ok) throw new Error('Could not load game.'); return r.arrayBuffer(); }),
     ]);
 

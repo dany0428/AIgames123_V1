@@ -259,6 +259,12 @@ async function _handleEmailLogin() {
     const btn      = document.getElementById('emailLoginBtn');
 
     if (!email || !password) return alert('Please enter your email and password.');
+    if (!SECURITY.EMAIL_REGEX.test(email)) {
+        return alert('That email address looks malformed.');
+    }
+    if (password.length > SECURITY.MAX_PASSWORD_LEN) {
+        return alert(`Password is too long (max ${SECURITY.MAX_PASSWORD_LEN} chars).`);
+    }
 
     btn.disabled    = true;
     btn.textContent = 'Logging in...';
@@ -267,14 +273,33 @@ async function _handleEmailLogin() {
         if (error) throw error;
         _closeAuthModal();
     } catch (err) {
+        // Avoid leaking whether the email exists — generic message for any auth error
         const msg = err.message === 'Invalid login credentials'
             ? 'Invalid email or password.'
-            : err.message;
-        alert('Login failed: ' + msg);
+            : 'Login failed. Please try again.';
+        console.warn('Login error:', err.message);
+        alert(msg);
     } finally {
         btn.disabled    = false;
         btn.textContent = 'Login with Email';
     }
+}
+
+// Password policy:
+//   - 8+ chars (configurable in SECURITY)
+//   - at least one letter AND one digit (cheap baseline against trivial picks)
+//   - rejects super-long inputs (bcrypt 72-byte truncation + DoS)
+function _validatePassword(pw) {
+    if (typeof pw !== 'string' || pw.length < SECURITY.MIN_PASSWORD_LEN) {
+        return `Password must be at least ${SECURITY.MIN_PASSWORD_LEN} characters.`;
+    }
+    if (pw.length > SECURITY.MAX_PASSWORD_LEN) {
+        return `Password is too long (max ${SECURITY.MAX_PASSWORD_LEN} characters).`;
+    }
+    if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) {
+        return 'Password must contain at least one letter and one number.';
+    }
+    return null;
 }
 
 async function _handleEmailSignup() {
@@ -285,8 +310,20 @@ async function _handleEmailSignup() {
     const btn      = document.getElementById('emailSignupBtn');
 
     if (!email || !name || !password) return alert('Please fill out all fields.');
-    if (password.length < 8)          return alert('Password must be at least 8 characters.');
-    if (password !== confirm)         return alert('Passwords do not match.');
+    if (!SECURITY.EMAIL_REGEX.test(email)) {
+        return alert('That email address looks malformed.');
+    }
+    if (name.length > SECURITY.MAX_DISPLAY_NAME_LEN) {
+        return alert(`Display name is too long (max ${SECURITY.MAX_DISPLAY_NAME_LEN} chars).`);
+    }
+    // Reject control chars and HTML markers in display name — defense in depth
+    // (rendering paths escape via _esc, but invisible/control bytes are pointless).
+    if (/[\x00-\x1f<>"']/.test(name)) {
+        return alert('Display name contains invalid characters.');
+    }
+    const pwErr = _validatePassword(password);
+    if (pwErr) return alert(pwErr);
+    if (password !== confirm) return alert('Passwords do not match.');
 
     btn.disabled    = true;
     btn.textContent = 'Signing up...';
@@ -343,7 +380,8 @@ function initChangePassword() {
         const btn     = document.getElementById('changePasswordBtn');
 
         if (!newPw)            return alert('Please enter a new password.');
-        if (newPw.length < 8)  return alert('Password must be at least 8 characters.');
+        const pwErr = _validatePassword(newPw);
+        if (pwErr) return alert(pwErr);
         if (newPw !== confirm) return alert('Passwords do not match.');
 
         btn.disabled    = true;
