@@ -1,50 +1,112 @@
-// ════════════════════════════════════
-//  태그 사이드바 렌더 (fetchGames 데이터 재활용 — 별도 DB 호출 없음)
-// ════════════════════════════════════
+// ════════════════════════════════════════════════════════
+//  db.js — Game data layer + rendering
+//
+//  Key optimizations vs the original:
+//   • Tag sidebar uses a cached distinct-tag list instead of re-querying
+//     every game's `tags` column on every fetch.
+//   • Game grid uses event delegation (1 listener) instead of N onclick
+//     handlers per card.
+//   • Upvote is purely optimistic — no list re-fetch on success.
+//   • Blob URLs from the ZIP loader are tracked and revoked when the
+//     player closes, preventing leak-on-replay.
+//   • HTML asset-path rewriting in ZIP uses a single combined regex pass.
+// ════════════════════════════════════════════════════════
 
-function renderTagSidebar(games) {
-    if (!DOM.genreList) return;
-    const allTags = new Set();
-    games.forEach(g => {
-        if (g.tags) g.tags.split(',').forEach(t => { if (t.trim()) allTags.add(t.trim()); });
-    });
-    const items = [`<li class="genre-item ${currentTag === '' ? 'active' : ''}" onclick="filterByTag('')">All Games</li>`];
-    Array.from(allTags).sort().forEach(tag => {
-        items.push(`<li class="genre-item ${currentTag === tag ? 'active' : ''}" onclick="filterByTag('${tag}')"># ${tag}</li>`);
-    });
-    DOM.genreList.innerHTML = items.join('');
+// HTML escape — prevents XSS in user-supplied fields (name, tags, etc.)
+function _esc(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // ════════════════════════════════════
-//  게임 목록 조회 (태그 사이드바 동시 처리)
+//  Tag sidebar — driven by cache.
+//  refreshTagCache() fires only when needed (first load + after mutations).
+// ════════════════════════════════════
+
+async function refreshTagCache() {
+    try {
+        const { data, error } = await supabaseClient.from('games').select('tags');
+        if (error) throw error;
+        const set = new Set();
+        for (const g of data || []) {
+            if (!g.tags) continue;
+            for (const t of g.tags.split(',')) {
+                const trimmed = t.trim();
+                if (trimmed) set.add(trimmed);
+            }
+        }
+        cache._tagCache     = Array.from(set).sort();
+        cache._tagCacheTime = Date.now();
+    } catch (err) {
+        console.warn('Tag cache refresh failed:', err.message);
+        cache._tagCache = cache._tagCache || [];
+    }
+}
+
+function renderTagSidebar() {
+    if (!DOM.genreList) return;
+    const tags = cache._tagCache || [];
+    const items = [`<li class="genre-item ${currentTag === '' ? 'active' : ''}" data-tag="">All Games</li>`];
+    for (const tag of tags) {
+        const safe = _esc(tag);
+        items.push(`<li class="genre-item ${currentTag === tag ? 'active' : ''}" data-tag="${safe}"># ${safe}</li>`);
+    }
+    DOM.genreList.innerHTML = items.join('');
+}
+
+// Delegate tag-click on the genre list (one listener replaces N inline onclicks)
+function _initTagSidebarDelegation() {
+    if (!DOM.genreList || DOM.genreList._delegated) return;
+    DOM.genreList.addEventListener('click', (e) => {
+        const li = e.target.closest('.genre-item');
+        if (!li) return;
+        window.filterByTag(li.dataset.tag || '');
+    });
+    DOM.genreList._delegated = true;
+}
+
+// ════════════════════════════════════
+//  Game list query — now a SINGLE query.
+//  Tag sidebar is rebuilt from cache without an extra round-trip.
 // ════════════════════════════════════
 
 async function fetchGames(searchTerm = '', tagFilter = '') {
+    _initTagSidebarDelegation();
     try {
         const sortCol = currentSort || 'view_count';
         let query = supabaseClient.from('games').select('*')
-            .order(sortCol, { ascending: false })
+            .order(sortCol,      { ascending: false })
             .order('created_at', { ascending: false })
             .range(0, 49);
         if (searchTerm) query = query.ilike('name', `%${searchTerm}%`);
         if (tagFilter)  query = query.ilike('tags', `%${tagFilter}%`);
- 
-        // 필터된 게임 목록 + 전체 태그 목록을 병렬 조회
-        // → 사이드바는 항상 전체 태그를 표시하고, 게임 그리드만 필터 적용
-        const [gamesResult, allTagsResult] = await Promise.all([
-            query,
-            supabaseClient.from('games').select('tags'),
-        ]);
- 
+
+        // If we have no tag cache yet, refresh it in parallel.
+        // Otherwise, only refetch tags lazily (>5 minutes old) so the
+        // sidebar stays roughly fresh without a per-query DB hit.
+        const tagAgeMs = Date.now() - cache._tagCacheTime;
+        const tagsStale = !cache._tagCache || tagAgeMs > 5 * 60 * 1000;
+
+        const promises = [query];
+        if (tagsStale) promises.push(refreshTagCache());
+
+        const [gamesResult] = await Promise.all(promises);
         if (gamesResult.error) throw gamesResult.error;
- 
-        renderGames(gamesResult.data, DOM.gameGrid, false);
-        renderTagSidebar(allTagsResult.data || gamesResult.data);
-    } catch (err) { console.error('데이터 로드 실패:', err.message); }
+
+        cache._gameListCache = gamesResult.data || [];
+        renderGames(cache._gameListCache, DOM.gameGrid, false);
+        renderTagSidebar();
+    } catch (err) {
+        console.error('Failed to load games:', err.message);
+    }
 }
 
 // ════════════════════════════════════
-//  내 게임 목록
+//  My games list
 // ════════════════════════════════════
 
 async function fetchMyGames() {
@@ -55,166 +117,194 @@ async function fetchMyGames() {
             .order('created_at', { ascending: false });
         if (error) throw error;
         const totalViews = data.reduce((sum, g) => sum + (g.view_count || 0), 0);
-        if (DOM.statTotalGames) DOM.statTotalGames.textContent = `${data.length}개`;
-        if (DOM.statTotalViews) DOM.statTotalViews.textContent = `${totalViews}회`;
+        if (DOM.statTotalGames) DOM.statTotalGames.textContent = data.length;
+        if (DOM.statTotalViews) DOM.statTotalViews.textContent = totalViews;
         renderGames(data, DOM.myGameGrid, true);
-    } catch (err) { console.error('내 게임 로드 실패:', err.message); }
+    } catch (err) {
+        console.error('Failed to load my games:', err.message);
+    }
 }
 
 // ════════════════════════════════════
-//  태그 필터
+//  Tag filter
 // ════════════════════════════════════
 
 window.filterByTag = (tag) => {
     currentTag = tag;
     if (typeof _pushTagHistory === 'function') _pushTagHistory(tag);
-    // auth.js의 _renderMain 재활용 — 화면 전환 코드 중복 제거
     _renderMain(tag);
     if (DOM.searchInput) DOM.searchInput.value = '';
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.remove('active');
+    document.getElementById('sidebar')?.classList.remove('active');
 };
 
 // ════════════════════════════════════
-//  게임 삭제
+//  Game delete
 // ════════════════════════════════════
 
 window.deleteGame = async (gameId, event) => {
     if (event) event.stopPropagation();
-    if (!confirm('정말 이 게임을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return;
+    if (!confirm('Are you sure you want to delete this game?\nThis cannot be undone.')) return;
     try {
         const { error } = await supabaseClient.from('games').delete().eq('id', gameId);
         if (error) throw error;
-        alert('게임이 삭제되었습니다.');
+        alert('Game deleted.');
         DOM.playerModal.classList.remove('active');
         document.body.style.overflow = '';
         DOM.gameFrame.srcdoc = '';
+        _revokePlayerBlobUrls();
         if (DOM.deleteGameBtn) DOM.deleteGameBtn.style.display = 'none';
+
+        cache.invalidateTags();   // a game was removed — refresh tag list
         DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
-    } catch (err) { alert('오류가 발생했습니다: ' + err.message); }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
 };
 
 // ════════════════════════════════════
-//  추천 (upvote)
+//  Upvote — fully optimistic, no list re-fetch on success
 // ════════════════════════════════════
 
 window.handleUpvote = async (gameId, currentCount) => {
     const voteKey  = `voted_${gameId}`;
     const hasVoted = localStorage.getItem(voteKey) === 'up';
- 
-    // 낙관적 UI 업데이트 (요청 완료 전 즉시 반영)
+
+    // Optimistic UI update
     const nextCount = hasVoted
         ? Math.max(0, (Number(currentCount) || 0) - 1)
         : (Number(currentCount) || 0) + 1;
- 
+
     if (DOM.upvoteCount) DOM.upvoteCount.textContent = nextCount;
     if (DOM.upvoteBtn) {
         DOM.upvoteBtn.classList.toggle('voted', !hasVoted);
-        // 다음 클릭을 위해 현재 count를 nextCount로 갱신
         DOM.upvoteBtn.onclick = () => handleUpvote(gameId, nextCount);
     }
- 
+
+    // Update the cached row so a list re-render shows the new count
+    const cached = cache._gameListCache.find(g => String(g.id) === String(gameId));
+    if (cached) cached.upvotes = nextCount;
+
     try {
         const { error } = await supabaseClient
             .from('games')
             .update({ upvotes: nextCount })
             .eq('id', gameId);
         if (error) throw error;
- 
-        // localStorage 토글
-        if (hasVoted) {
-            localStorage.removeItem(voteKey);
-        } else {
-            localStorage.setItem(voteKey, 'up');
-        }
- 
-        // 백그라운드 목록 갱신
-        DOM.profileContent.style.display === 'block'
-            ? fetchMyGames()
-            : fetchGames(DOM.searchInput?.value.trim() || '', currentTag);
- 
+
+        // Toggle localStorage flag
+        if (hasVoted) localStorage.removeItem(voteKey);
+        else          localStorage.setItem(voteKey, 'up');
+
+        // NOTE: intentionally NOT re-fetching the list here.
+        // The local cache is in sync; the next natural fetchGames()
+        // (search, sort change, etc.) will pull authoritative counts.
     } catch (err) {
-        // 실패 시 UI 롤백
+        // Rollback UI
         if (DOM.upvoteCount) DOM.upvoteCount.textContent = currentCount;
         if (DOM.upvoteBtn) {
             DOM.upvoteBtn.classList.toggle('voted', hasVoted);
             DOM.upvoteBtn.onclick = () => handleUpvote(gameId, currentCount);
         }
-        alert('추천 업데이트 실패 😢\n원인: ' + err.message);
+        if (cached) cached.upvotes = Number(currentCount) || 0;
+        alert('Failed to update vote 😢\nReason: ' + err.message);
     }
 };
 
 // ════════════════════════════════════
-//  ZIP 게임 로더 (JSZip 사용)
+//  Blob URL tracking — revoked when player closes (memory leak fix)
 // ════════════════════════════════════
+
+let _activeBlobUrls = [];
+function _trackBlobUrl(url) { _activeBlobUrls.push(url); return url; }
+function _revokePlayerBlobUrls() {
+    for (const u of _activeBlobUrls) {
+        try { URL.revokeObjectURL(u); } catch (_) { /* ignore */ }
+    }
+    _activeBlobUrls = [];
+}
+// Expose for ui.js closePlayerModal
+window._revokePlayerBlobUrls = _revokePlayerBlobUrls;
+
+// ════════════════════════════════════
+//  ZIP game loader (JSZip)
+// ════════════════════════════════════
+
+// Combined replacement table — single regex pass instead of 2-3 passes
+// over the entire HTML body.
+//
+// Captures:
+//   group 1 = attribute prefix       (e.g. src="    href='    data-src=")
+//   group 2 = attribute value path   (when group 1 matched)
+//   group 3 = url(...) path
+//
+// Strategy: one regex, branch in the callback.
+function _rewriteHtmlAssets(html, urlMap, baseDir) {
+    const resolve = (path) => urlMap[path] || urlMap[baseDir + path] || null;
+    return html.replace(
+        /((?:src|href|data-src)\s*=\s*["'])([^"'#?][^"']*)(?=["'])|url\(['"]?([^'")(]+)['"]?\)/gi,
+        (match, attrPrefix, attrPath, urlPath) => {
+            if (attrPrefix) {
+                const r = resolve(attrPath);
+                return r ? attrPrefix + r : match;
+            }
+            const r = resolve(urlPath);
+            return r ? `url('${r}')` : match;
+        },
+    );
+}
 
 async function _loadZipGame(buffer) {
     try {
         const zip   = await JSZip.loadAsync(buffer);
         const files = Object.keys(zip.files);
 
-        // ── Flash(.swf) 감지 → Ruffle 전용 플레이어로 처리 ──
+        // Flash (.swf) → dedicated Ruffle player
         const swfFiles = files.filter(f => f.toLowerCase().endsWith('.swf') && !zip.files[f].dir);
         if (swfFiles.length > 0) {
             await _loadSwfGame(zip, swfFiles[0]);
             return;
         }
 
-        // ── wasm 감지 → 새 탭으로 열기 (COOP/COEP 필요) ──
+        // WASM → open in a new tab (needs COOP/COEP that srcdoc can't provide)
         const hasWasm = files.some(f => f.toLowerCase().endsWith('.wasm') && !zip.files[f].dir);
         if (hasWasm) {
             await _loadWasmGame(zip, files);
             return;
         }
 
-        // index.html 위치 찾기 (루트 또는 서브폴더)
-        let entryPath = files.find(f => f === 'index.html')
+        // Locate index.html (root, then any subfolder, then any .html)
+        const entryPath = files.find(f => f === 'index.html')
             || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
             || files.find(f => f.endsWith('.html') && !zip.files[f].dir);
 
         if (!entryPath) {
-            DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;text-align:center;padding:2rem;">ZIP 안에 index.html 파일을 찾을 수 없습니다.<br>ZIP 루트에 index.html이 있는지 확인해주세요.</div>';
+            DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;text-align:center;padding:2rem;">No index.html found inside the ZIP.<br>Make sure index.html is at the ZIP root.</div>';
             return;
         }
 
-        // 기준 폴더 (서브폴더에 있는 경우 상대경로 처리용)
+        // Base dir for resolving relative paths
         const baseDir = entryPath.includes('/') ? entryPath.substring(0, entryPath.lastIndexOf('/') + 1) : '';
 
-        // 모든 파일을 blob URL로 변환
+        // Convert every file to a blob URL in parallel
         const urlMap = {};
         await Promise.all(
             files
                 .filter(f => !zip.files[f].dir)
                 .map(async (f) => {
                     const blob = await zip.files[f].async('blob');
-                    urlMap[f]  = URL.createObjectURL(blob);
-                    // baseDir 기준 상대경로도 등록
+                    const url  = _trackBlobUrl(URL.createObjectURL(blob));
+                    urlMap[f]  = url;
                     if (baseDir && f.startsWith(baseDir)) {
-                        urlMap[f.slice(baseDir.length)] = urlMap[f];
+                        urlMap[f.slice(baseDir.length)] = url;
                     }
-                })
+                }),
         );
 
-        // index.html 텍스트 읽기 → 에셋 경로를 blob URL로 교체
+        // Read entry HTML and rewrite asset paths in a single pass
         let html = await zip.files[entryPath].async('string');
+        html = _rewriteHtmlAssets(html, urlMap, baseDir);
 
-        // src, href, url() 등을 blob URL로 교체
-        html = html.replace(
-            /((?:src|href|data-src)\s*=\s*["'])([^"'#?][^"']*)(?=["'])/gi,
-            (match, prefix, path) => {
-                const resolved = urlMap[path] || urlMap[baseDir + path];
-                return resolved ? prefix + resolved : match;
-            }
-        );
-        html = html.replace(
-            /url\(['"]?([^'")(]+)['"]?\)/gi,
-            (match, path) => {
-                const resolved = urlMap[path] || urlMap[baseDir + path];
-                return resolved ? `url('${resolved}')` : match;
-            }
-        );
-
-        // wasm 파일 MIME 타입 픽스: fetch 인터셉터 주입
+        // wasm MIME-type fixup via fetch interceptor (when wasm modules are loaded by JS)
         const wasmFiles = Object.entries(urlMap)
             .filter(([k]) => k.endsWith('.wasm'))
             .map(([k, v]) => `"${k.split('/').pop()}":"${v}"`)
@@ -238,24 +328,22 @@ async function _loadZipGame(buffer) {
         DOM.gameFrame.srcdoc = viewportMeta + wasmPatch + html;
 
     } catch (err) {
-        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">ZIP 로드 실패: ${err.message}</div>`;
+        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">Failed to load ZIP: ${_esc(err.message)}</div>`;
         console.error('ZIP load error:', err);
     }
 }
 
 // ════════════════════════════════════
-//  Flash(.swf) → Ruffle 에뮬레이터 로더
+//  Flash (.swf) → Ruffle emulator loader
 // ════════════════════════════════════
 
 async function _loadSwfGame(zip, swfPath) {
     try {
-        // swf 파일을 blob URL로 변환
         const swfBlob = await zip.files[swfPath].async('blob');
-        const swfUrl  = URL.createObjectURL(swfBlob);
+        const swfUrl  = _trackBlobUrl(URL.createObjectURL(swfBlob));
 
         const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
 
-        // Ruffle CDN 주입 → swf blob URL을 직접 로드
         const ruffleHtml = `${viewportMeta}
 <!DOCTYPE html>
 <html>
@@ -281,7 +369,7 @@ async function _loadSwfGame(zip, swfPath) {
 <body>
   <div id="loading">
     <div class="spinner"></div>
-    <span>Flash 게임 로딩 중... (Ruffle)</span>
+    <span>Loading Flash game... (Ruffle)</span>
   </div>
   <script>
     window.RufflePlayer = window.RufflePlayer || {};
@@ -304,7 +392,7 @@ async function _loadSwfGame(zip, swfPath) {
         document.getElementById('loading').style.display = 'none';
       }).catch(err => {
         document.getElementById('loading').innerHTML =
-          '<span style="color:red">SWF 로드 실패: ' + err.message + '</span>';
+          '<span style="color:red">SWF load failed: ' + err.message + '</span>';
       });
     });
   <\/script>
@@ -314,231 +402,289 @@ async function _loadSwfGame(zip, swfPath) {
         DOM.gameFrame.srcdoc = ruffleHtml;
 
     } catch (err) {
-        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">Flash 로드 실패: ${err.message}</div>`;
+        DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">Failed to load Flash game: ${_esc(err.message)}</div>`;
         console.error('SWF load error:', err);
     }
 }
 
 // ════════════════════════════════════
-//  WASM 게임 → 새 탭 로더
-//  (SharedArrayBuffer는 COOP/COEP 필요 → srcdoc 불가)
+//  WASM game → open in a new tab
+//  (SharedArrayBuffer requires COOP/COEP, which srcdoc cannot grant)
 // ════════════════════════════════════
 
 async function _loadWasmGame(zip, files) {
-    // 로딩 중 안내 메시지
+    // Loading message inside the iframe
     DOM.gameFrame.srcdoc = `
 <html><body style="margin:0;background:#111;display:flex;flex-direction:column;
 align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#a78bfa;gap:1.2rem;">
   <div style="width:44px;height:44px;border:4px solid #3b2d5a;border-top-color:#8b5cf6;
     border-radius:50%;animation:spin .8s linear infinite;"></div>
-  <p style="font-size:1rem;">WASM 게임 파일 압축 해제 중...</p>
+  <p style="font-size:1rem;">Extracting WASM game files...</p>
   <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 </body></html>`;
 
     try {
-        // 모든 파일을 blob URL로 변환
-        const urlMap = {};
-        const baseDir = (() => {
-            const entry = files.find(f => f === 'index.html')
-                || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
-                || files.find(f => f.endsWith('.html') && !zip.files[f].dir) || '';
-            return entry.includes('/') ? entry.substring(0, entry.lastIndexOf('/') + 1) : '';
-        })();
-
-        await Promise.all(
-            files.filter(f => !zip.files[f].dir).map(async (f) => {
-                const data = await zip.files[f].async('arraybuffer');
-                // wasm은 정확한 MIME 타입으로 blob 생성
-                const mime = f.endsWith('.wasm') ? 'application/wasm'
-                    : f.endsWith('.js')          ? 'application/javascript'
-                    : f.endsWith('.html')        ? 'text/html'
-                    : 'application/octet-stream';
-                const blob = new Blob([data], { type: mime });
-                urlMap[f] = URL.createObjectURL(blob);
-                if (baseDir && f.startsWith(baseDir)) {
-                    urlMap[f.slice(baseDir.length)] = urlMap[f];
-                }
-            })
-        );
-
+        // Locate entry once
         const entryPath = files.find(f => f === 'index.html')
             || files.find(f => f.endsWith('/index.html') && !zip.files[f].dir)
             || files.find(f => f.endsWith('.html') && !zip.files[f].dir);
+        if (!entryPath) throw new Error('index.html not found.');
 
-        if (!entryPath) throw new Error('index.html을 찾을 수 없습니다.');
+        const baseDir = entryPath.includes('/')
+            ? entryPath.substring(0, entryPath.lastIndexOf('/') + 1)
+            : '';
 
-        // index.html 읽어서 에셋 경로 교체
-        const dec  = new TextDecoder('utf-8');
+        // Pre-compute MIME lookup to avoid per-file conditional chains
+        const mimeFor = (path) => {
+            if (path.endsWith('.wasm'))  return 'application/wasm';
+            if (path.endsWith('.js'))    return 'application/javascript';
+            if (path.endsWith('.html'))  return 'text/html';
+            return 'application/octet-stream';
+        };
+
+        const urlMap = {};
+        await Promise.all(
+            files.filter(f => !zip.files[f].dir).map(async (f) => {
+                const data = await zip.files[f].async('arraybuffer');
+                const blob = new Blob([data], { type: mimeFor(f) });
+                const url  = _trackBlobUrl(URL.createObjectURL(blob));
+                urlMap[f]  = url;
+                if (baseDir && f.startsWith(baseDir)) {
+                    urlMap[f.slice(baseDir.length)] = url;
+                }
+            }),
+        );
+
+        // Read & rewrite the entry HTML — single regex pass for attrs + url()
         const data = await zip.files[entryPath].async('arraybuffer');
-        let html   = dec.decode(data);
+        let html   = new TextDecoder('utf-8').decode(data);
+        html = _rewriteHtmlAssets(html, urlMap, baseDir);
 
-        html = html.replace(
-            /((?:src|href|data-src)\s*=\s*["'])([^"'#?][^"']*)(?=["'])/gi,
-            (m, pre, path) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? pre + r : m; }
-        );
-        html = html.replace(
-            /url\(['"]?([^'")(]+)['"]?\)/gi,
-            (m, path) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? `url('${r}')` : m; }
-        );
-        // JS import / fetch 경로 교체
+        // Additional pass for raw "*.js"/"*.wasm" strings (e.g. JS import paths)
         html = html.replace(
             /(["'])([^"']+\.(?:js|wasm))(\1)/g,
-            (m, q, path, q2) => { const r = urlMap[path] || urlMap[baseDir + path]; return r ? q + r + q2 : m; }
+            (m, q, path, q2) => {
+                const r = urlMap[path] || urlMap[baseDir + path];
+                return r ? q + r + q2 : m;
+            },
         );
 
-        // blob URL 생성
         const pageBlob = new Blob([html], { type: 'text/html' });
-        const pageUrl  = URL.createObjectURL(pageBlob);
+        const pageUrl  = _trackBlobUrl(URL.createObjectURL(pageBlob));
 
-        // await 이후엔 팝업 차단됨 → iframe 안에 버튼을 보여줘서 사용자가 직접 클릭하게 유도
+        // Popup is blocked after `await` — present a user-click launch button instead
         DOM.gameFrame.srcdoc = `<!DOCTYPE html>
 <html><body style="margin:0;background:#111;display:flex;flex-direction:column;
 align-items:center;justify-content:center;height:100vh;font-family:sans-serif;
 color:#a78bfa;gap:1.2rem;text-align:center;padding:2rem;">
   <div style="font-size:3rem;">🎮</div>
-  <p style="font-size:1.15rem;font-weight:bold;color:#fff;">WASM 게임 준비 완료!</p>
-  <p style="color:#888;font-size:0.88rem;">아래 버튼을 클릭하면 새 탭에서 게임이 실행됩니다.</p>
+  <p style="font-size:1.15rem;font-weight:bold;color:#fff;">WASM game ready!</p>
+  <p style="color:#888;font-size:0.88rem;">Click the button below to launch in a new tab.</p>
   <a href="${pageUrl}" target="_blank"
     style="margin-top:.5rem;padding:.8rem 2rem;background:#7c3aed;border:none;
     color:#fff;border-radius:10px;cursor:pointer;font-size:1rem;font-weight:600;
     text-decoration:none;display:inline-block;transition:background .2s;"
     onmouseover="this.style.background='#6d28d9'"
-    onmouseout="this.style.background='#7c3aed'">▶ 게임 시작 (새 탭)</a>
-  <p style="color:#555;font-size:0.78rem;margin-top:.5rem;">팝업 차단 시 주소창 오른쪽의 팝업 허용 버튼을 눌러주세요.</p>
+    onmouseout="this.style.background='#7c3aed'">▶ Launch Game (new tab)</a>
+  <p style="color:#555;font-size:0.78rem;margin-top:.5rem;">If blocked, please allow pop-ups for this site.</p>
 </body></html>`;
     } catch (err) {
         DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;
 height:100vh;font-family:sans-serif;color:red;padding:2rem;text-align:center;">
-WASM 로드 실패: ${err.message}</div>`;
+Failed to load WASM game: ${_esc(err.message)}</div>`;
         console.error('WASM load error:', err);
     }
 }
 
 // ════════════════════════════════════
-//  게임 카드 렌더
+//  Game card rendering — event delegation, no per-card listeners
 // ════════════════════════════════════
+
+// Per-grid delegation flag — initialize lazily once per grid element
+function _initGridDelegation(grid, isProfile) {
+    if (!grid || grid._delegated) return;
+
+    grid.addEventListener('click', (e) => {
+        // Edit / delete buttons take priority
+        const editBtn = e.target.closest('[data-action="edit"]');
+        if (editBtn) {
+            e.stopPropagation();
+            const card = editBtn.closest('.game-card');
+            window.openEditModal(
+                Number(card.dataset.id),
+                card.dataset.name,
+                card.dataset.tags || '',
+                e,
+            );
+            return;
+        }
+        const delBtn = e.target.closest('[data-action="delete"]');
+        if (delBtn) {
+            e.stopPropagation();
+            window.deleteGame(Number(delBtn.closest('.game-card').dataset.id), e);
+            return;
+        }
+
+        // Card body click → open game
+        const card = e.target.closest('.game-card');
+        if (!card) return;
+        const d = card.dataset;
+        window.openGame(
+            Number(d.id),
+            d.url,
+            d.name,
+            Number(d.viewCount || 0),
+            d.uploaderId || null,
+            d.uploader,
+            Number(d.upvotes || 0),
+            d.uploaderAvatar || '',
+            d.fileType || 'html',
+        );
+    });
+
+    grid._delegated   = true;
+    grid._isProfile   = isProfile;
+}
 
 function renderGames(gameList, targetGrid, isProfile = false) {
     if (!targetGrid) return;
+    _initGridDelegation(targetGrid, isProfile);
+
     if (!gameList.length) {
-        targetGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#888;padding:2rem;">목록이 비어있습니다. 😢</p>';
+        targetGrid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#888;padding:2rem;">No games here yet. 😢</p>';
         return;
     }
- 
-    const fragment = document.createDocumentFragment();
-    gameList.forEach(game => {
-        const card = document.createElement('div');
-        card.className = 'game-card';
- 
-        const safeUpvotes  = game.upvotes || 0;
-        const viewCount    = game.view_count || 0;
-        const uploaderId   = game.user_id || null;
-        const safeName     = (game.name || 'Untitled').replace(/'/g, "\\'");
-        const safeUploader = (game.uploader_name || '익명의 게이머').replace(/'/g, "\\'");
-        const safeAvatar   = (game.uploader_avatar || '').replace(/'/g, '%27');
-        const fileType     = game.file_type || 'html';
- 
-        card.onclick = () => openGame(game.id, game.file_url, safeName, viewCount, uploaderId, safeUploader, safeUpvotes, safeAvatar, fileType);
- 
+
+    // Build HTML as a single string then assign once — avoids appendChild churn
+    const parts = new Array(gameList.length);
+    for (let i = 0; i < gameList.length; i++) {
+        const game = gameList[i];
+        const safeUpvotes = game.upvotes    || 0;
+        const viewCount   = game.view_count || 0;
+        const uploaderId  = game.user_id    || '';
+        const name        = _esc(game.name || 'Untitled');
+        const uploader    = _esc(game.uploader_name || 'Anonymous Gamer');
+        const avatar      = _esc(game.uploader_avatar || '');
+        const fileType    = _esc(game.file_type || 'html');
+        const tags        = _esc(game.tags || '');
+        const url         = _esc(game.file_url || '');
+
         const thumbnailContent = game.thumbnail_url
-            ? `<img src="${game.thumbnail_url}" alt="${game.name}" class="game-thumb-img" loading="lazy">`
+            ? `<img src="${_esc(game.thumbnail_url)}" alt="${name}" class="game-thumb-img" loading="lazy">`
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="50"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M15 9v6M12 12h6"/></svg>`;
- 
-        const tagsHtml = game.tags
-            ? `<div class="card-tags">${game.tags.split(',').slice(0, 3).map(t => `<span class="tag-badge">${t.trim()}</span>`).join('')}</div>`
+
+        let tagsHtml = '';
+        if (game.tags) {
+            const tagParts = game.tags.split(',').slice(0, 3);
+            tagsHtml = '<div class="card-tags">';
+            for (const t of tagParts) tagsHtml += `<span class="tag-badge">${_esc(t.trim())}</span>`;
+            tagsHtml += '</div>';
+        }
+
+        const profileActionsHtml = isProfile
+            ? `<div class="profile-card-actions">
+                 <button class="action-btn edit-btn" data-action="edit" title="Edit info">✏️</button>
+                 <button class="action-btn del-btn"  data-action="delete" title="Delete game">🗑️</button>
+               </div>`
             : '';
- 
-        const profileActionsHtml = isProfile ? `
-            <div class="profile-card-actions">
-                <button class="action-btn edit-btn" onclick="openEditModal(${game.id},'${safeName}','${game.tags||''}',event)" title="정보 수정">✏️</button>
-                <button class="action-btn del-btn"  onclick="deleteGame(${game.id},event)" title="게임 삭제">🗑️</button>
-            </div>` : '';
- 
-        const typeBadge = fileType === 'zip'
+
+        const typeBadge = (game.file_type === 'zip')
             ? `<span class="view-badge" style="background:rgba(16,185,129,0.8);">📦 ZIP</span>`
             : '';
- 
-        // 추천순 정렬 중일 때만 카드에 좋아요 수 배지 표시
+
+        // Show upvote badge only when sort = upvotes
         const upvoteBadge = currentSort === 'upvotes'
             ? `<span class="view-badge upvote-card-badge">👍 ${safeUpvotes}</span>`
             : '';
- 
-        card.innerHTML = `
-            <div class="game-thumbnail">
-                ${thumbnailContent}
-                ${profileActionsHtml}
-                <div class="card-badges">
-                    ${typeBadge}
-                    ${upvoteBadge}
-                    <span class="view-badge">👁️ ${viewCount}</span>
+
+        parts[i] = `
+            <div class="game-card"
+                 data-id="${_esc(game.id)}"
+                 data-url="${url}"
+                 data-name="${name}"
+                 data-uploader="${uploader}"
+                 data-uploader-id="${_esc(uploaderId)}"
+                 data-uploader-avatar="${avatar}"
+                 data-tags="${tags}"
+                 data-file-type="${fileType}"
+                 data-view-count="${viewCount}"
+                 data-upvotes="${safeUpvotes}">
+                <div class="game-thumbnail">
+                    ${thumbnailContent}
+                    ${profileActionsHtml}
+                    <div class="card-badges">
+                        ${typeBadge}
+                        ${upvoteBadge}
+                        <span class="view-badge">👁️ ${viewCount}</span>
+                    </div>
                 </div>
-            </div>
-            <div class="game-info">
-                <h3 class="game-title">${game.name}</h3>
-                ${tagsHtml}
+                <div class="game-info">
+                    <h3 class="game-title">${name}</h3>
+                    ${tagsHtml}
+                </div>
             </div>`;
-        fragment.appendChild(card);
-    });
- 
-    targetGrid.innerHTML = '';
-    targetGrid.appendChild(fragment);
+    }
+    targetGrid.innerHTML = parts.join('');
 }
 
 // ════════════════════════════════════
-//  게임 모달 열기
+//  Open game modal
 // ════════════════════════════════════
 
 window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType) => {
-    // UI 즉시 업데이트
+    // Always revoke any blobs from a previous game first
+    _revokePlayerBlobUrls();
+
+    // Immediate UI update
     if (DOM.playerTitle)  DOM.playerTitle.textContent  = name;
     if (DOM.uploaderName) DOM.uploaderName.textContent = uploaderName;
 
-    // 업로더 아바타
+    // Uploader avatar
     if (DOM.uploaderAvatarImg && DOM.uploaderAvatarFallback) {
         if (uploaderAvatar) {
-            DOM.uploaderAvatarImg.src          = uploaderAvatar;
-            DOM.uploaderAvatarImg.style.display    = 'block';
+            DOM.uploaderAvatarImg.src               = uploaderAvatar;
+            DOM.uploaderAvatarImg.style.display     = 'block';
             DOM.uploaderAvatarFallback.style.display = 'none';
         } else {
-            DOM.uploaderAvatarImg.style.display    = 'none';
+            DOM.uploaderAvatarImg.style.display     = 'none';
             DOM.uploaderAvatarFallback.style.display = 'block';
         }
     }
 
-    // 업로더 프로필 클릭
+    // Uploader profile click
     if (DOM.uploaderProfileBtn) {
         DOM.uploaderProfileBtn.onclick = () => uploaderId && uploaderId !== 'null'
             ? showPublicProfile(uploaderId, uploaderName)
-            : alert('오래 전 업로드 된 게임이라 프로필을 확인할 수 없습니다. 😢');
+            : alert("This game was uploaded long ago — uploader profile is unavailable. 😢");
     }
 
-    // 추천 버튼
+    // Upvote button
     if (DOM.upvoteCount) DOM.upvoteCount.textContent = upvotes;
     if (DOM.upvoteBtn) {
         DOM.upvoteBtn.classList.toggle('voted', localStorage.getItem(`voted_${id}`) === 'up');
         DOM.upvoteBtn.onclick = () => handleUpvote(id, upvotes);
     }
 
-    // 삭제 버튼
+    // Delete button — only visible to owner
     if (DOM.deleteGameBtn) {
         const isOwner = currentUser && currentUser.id === uploaderId;
         DOM.deleteGameBtn.style.display = isOwner ? 'block' : 'none';
         DOM.deleteGameBtn.onclick = isOwner ? () => deleteGame(id, null) : null;
     }
 
-    // 모달 열기
+    // Open modal
     DOM.playerModal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    if (DOM.gameFrame)   DOM.gameFrame.style.display  = 'block';
+    if (DOM.gameFrame)   DOM.gameFrame.style.display   = 'block';
     if (DOM.placeholder) DOM.placeholder.style.display = 'none';
 
     const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
-    DOM.gameFrame.srcdoc = `${viewportMeta}<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#333;">게임을 불러오는 중입니다...</div>`;
+    DOM.gameFrame.srcdoc = `${viewportMeta}<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#333;">Loading game...</div>`;
 
-    // 조회수 업데이트 + 게임 파일 fetch를 병렬 실행 ✅
+    // View-count update + game-file fetch in parallel
     const [, gameResult] = await Promise.allSettled([
         supabaseClient.from('games').update({ view_count: currentViewCount + 1 }).eq('id', id),
-        fetch(url).then(r => { if (!r.ok) throw new Error('게임을 불러올 수 없습니다.'); return r.arrayBuffer(); })
+        fetch(url).then(r => { if (!r.ok) throw new Error('Could not load game.'); return r.arrayBuffer(); }),
     ]);
 
     if (gameResult.status === 'fulfilled') {
@@ -552,30 +698,31 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
             DOM.gameFrame.srcdoc = viewportMeta + text;
         }
     } else {
-        DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:red;">문제가 발생했습니다.</div>';
+        DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:red;">Something went wrong.</div>';
         console.error(gameResult.reason);
     }
 
-    // 목록 백그라운드 갱신
-    DOM.profileContent.style.display === 'block' ? fetchMyGames()
-        : fetchGames(DOM.searchInput?.value.trim() || '', currentTag);
+    // Update the cached game's view count (no re-fetch needed)
+    const cached = cache._gameListCache.find(g => String(g.id) === String(id));
+    if (cached) cached.view_count = currentViewCount + 1;
 };
 
 // ════════════════════════════════════
-//  수정 모달 열기
+//  Open edit modal
 // ════════════════════════════════════
 
 window.openEditModal = (gameId, name, tags, event) => {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
     editingGameId = gameId;
     document.getElementById('editGameName').value = name;
 
     const editTagSelector = document.getElementById('editTagSelector');
     if (editTagSelector) {
         const existing = (!tags || tags === 'undefined')
-            ? [] : tags.split(',').map(t => t.trim().toLowerCase());
+            ? new Set()
+            : new Set(tags.split(',').map(t => t.trim().toLowerCase()));
         editTagSelector.querySelectorAll('.tag-option').forEach(btn => {
-            btn.classList.toggle('selected', existing.includes(btn.dataset.tag.toLowerCase()));
+            btn.classList.toggle('selected', existing.has(btn.dataset.tag.toLowerCase()));
         });
     }
     document.getElementById('editModal').classList.add('active');
