@@ -256,6 +256,52 @@ function _revokePlayerBlobUrls() {
 window._revokePlayerBlobUrls = _revokePlayerBlobUrls;
 
 // ════════════════════════════════════
+//  Game-side defensive shim
+//
+//  Because we allow `same-origin` on the game iframe (required for
+//  localStorage to work), the game's JS technically shares an origin
+//  with the parent app. This shim is prepended to every game's HTML
+//  to raise the bar for trivial exfiltration of parent state.
+//
+//  It IS NOT a true security boundary — a determined attacker can
+//  always recover references to the parent. The genuine protection
+//  is the iframe sandbox + careful policy on what we put in
+//  parent localStorage. Move games to a separate origin if you need
+//  a real boundary.
+// ════════════════════════════════════
+const _GAME_DEFENSIVE_SHIM = `<script>
+(function(){
+  'use strict';
+  try {
+    // Sever the most obvious parent-access paths. Games very rarely
+    // need to call window.parent, and never need to read it from inside
+    // an embedded play context, so we replace these with the iframe's
+    // own window. Anything that tries to walk up to the embedder will
+    // just loop back to itself.
+    var w = window;
+    try { Object.defineProperty(w, 'parent', { get:function(){ return w; }, configurable:false }); } catch(e){}
+    try { Object.defineProperty(w, 'top',    { get:function(){ return w; }, configurable:false }); } catch(e){}
+    try { Object.defineProperty(w, 'opener', { get:function(){ return null; }, configurable:false }); } catch(e){}
+
+    // Suppress noisy 'storage' events that fire in the iframe when the
+    // parent app writes to localStorage. (Same origin → events propagate.)
+    // Games that listen for storage events for THEIR OWN keys still work
+    // because the shim only filters out keys that don't look game-owned;
+    // here we filter parent-app keys with a known prefix.
+    var PARENT_KEY_PREFIXES = ['sb-', 'voted_', 'uploaderSync:'];
+    w.addEventListener('storage', function(e){
+      for (var i=0; i<PARENT_KEY_PREFIXES.length; i++) {
+        if (e.key && e.key.indexOf(PARENT_KEY_PREFIXES[i]) === 0) {
+          e.stopImmediatePropagation();
+          return;
+        }
+      }
+    }, true);
+  } catch (e) { /* shim failure is non-fatal — game still loads */ }
+})();
+<\/script>`;
+
+// ════════════════════════════════════
 //  ZIP game loader (JSZip)
 // ════════════════════════════════════
 
@@ -355,7 +401,7 @@ async function _loadZipGame(buffer) {
 <\/script>` : '';
 
         const viewportMeta = '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">';
-        DOM.gameFrame.srcdoc = viewportMeta + wasmPatch + html;
+        DOM.gameFrame.srcdoc = viewportMeta + _GAME_DEFENSIVE_SHIM + wasmPatch + html;
 
     } catch (err) {
         DOM.gameFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:red;padding:2rem;">Failed to load ZIP: ${_esc(err.message)}</div>`;
@@ -762,7 +808,9 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
             await _loadZipGame(buffer);
         } else {
             const text = new TextDecoder('utf-8').decode(buffer);
-            DOM.gameFrame.srcdoc = viewportMeta + text;
+            // Shim is prepended BEFORE the game's HTML so its IIFE runs
+            // before any game script touches window.parent / storage events.
+            DOM.gameFrame.srcdoc = viewportMeta + _GAME_DEFENSIVE_SHIM + text;
         }
     } else {
         DOM.gameFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:red;">Something went wrong.</div>';
