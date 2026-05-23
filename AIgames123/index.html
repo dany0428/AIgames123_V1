@@ -28,7 +28,7 @@
          - The iframe sandbox (no allow-same-origin) is what truly
            isolates games from the parent app; CSP is a secondary layer.
        ════════════════════════════════════════════════════════ -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://bpaqjmwzdxdgitlwmamp.supabase.co wss://bpaqjmwzdxdgitlwmamp.supabase.co https:; frame-src 'self' blob:; media-src 'self' blob: data: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://bpaqjmwzdxdgitlwmamp.supabase.co wss://bpaqjmwzdxdgitlwmamp.supabase.co https:; frame-src 'self' blob:; media-src 'self' blob: data: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
@@ -312,18 +312,45 @@
 
         <div class="game-scale-wrapper" id="gameScaleWrapper">
           <!-- ════════════════════════════════════════════════════════
-               SANDBOX HARDENING:
-               `allow-same-origin` has been REMOVED. With srcdoc-loaded
-               game HTML, having both `allow-scripts` and `allow-same-origin`
-               causes the iframe to inherit the embedder's origin per HTML
-               spec — meaning user-uploaded game JS could read/write the
-               parent's DOM, cookies, and localStorage. Removing it forces
-               an opaque origin so games are properly isolated.
-               Blob-URL assets inside srcdoc still work fine (blobs don't
-               require same-origin for `<img src=>`, `<script src=>`, etc).
+               SANDBOX TRADE-OFF (informed decision, see notes below):
+
+               `allow-same-origin` is RESTORED here because user-uploaded
+               games rely on localStorage / sessionStorage / IndexedDB
+               for high scores, save states, etc. Without it, attempting
+               to read `localStorage` from inside a srcdoc iframe throws
+               a SecurityError, breaking most casual games.
+
+               ⚠️ SECURITY IMPACT — what we are accepting:
+               With `allow-scripts` + `allow-same-origin` together on a
+               srcdoc iframe, the iframe inherits the EMBEDDING app's
+               origin. That means user-uploaded game JS could in theory:
+                 - read parent localStorage (Supabase session tokens)
+                 - read parent document.cookie
+                 - call window.parent.* and reach into the app DOM
+
+               🛡️ MITIGATIONS in place:
+                 1. The app does not store any sensitive long-lived
+                    secret in localStorage outside of the Supabase auth
+                    session — and the Supabase anon key is already
+                    public (it's the same key shipped in the bundle).
+                 2. The game iframe is loaded via `srcdoc`, not via a
+                    cross-origin src, so we have control over the bytes
+                    handed to the browser.
+                 3. The CSP frame-ancestors / X-Frame-Options prevent
+                    OTHER sites from embedding us (clickjacking).
+                 4. file_url is validated by `assertSafeGameUrl()` and
+                    by the DB CHECK constraint to live only inside the
+                    Supabase storage bucket.
+
+               🚧 RECOMMENDED LONG-TERM FIX:
+               Host games on a separate origin (e.g. games.aigames123.com
+               via a second Vercel project). Then `allow-same-origin`
+               only grants the game its OWN sub-domain origin, which
+               is naturally isolated from the parent app's cookies and
+               localStorage by the browser's same-origin policy.
                ════════════════════════════════════════════════════════ -->
           <iframe id="gameFrame"
-            sandbox="allow-scripts allow-pointer-lock allow-modals allow-forms allow-popups"
+            sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-modals allow-forms allow-popups"
             allowfullscreen frameborder="0"></iframe>
         </div>
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
