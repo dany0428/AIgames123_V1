@@ -1,10 +1,11 @@
 {
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    {
-      "source": "/((?!.*\\.[a-zA-Z0-9]+$).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/admin",         "destination": "/admin.html" },
+    { "source": "/admin/",        "destination": "/admin.html" },
+    { "source": "/profile",       "destination": "/index.html" },
+    { "source": "/user/:id",      "destination": "/index.html" },
+    { "source": "/user/:id/",     "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -23,7 +24,21 @@
       ]
     },
     {
-      "source": "/(.*)\\.(js|css|png|jpg|jpeg|svg|webp|woff2)",
+      "source": "/css/(.*)",
+      "headers": [
+        { "key": "Content-Type",  "value": "text/css; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Content-Type",  "value": "application/javascript; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
