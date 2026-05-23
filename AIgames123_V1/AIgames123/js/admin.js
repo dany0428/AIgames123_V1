@@ -1,13 +1,14 @@
 // ════════════════════════════════════════════════════════
-//  admin.js — AI Games Arcade 관리자 패널
+//  admin.js — AI Games Arcade Admin Panel
 //
-//  보안 원칙:
-//   1. 인증: Supabase 세션 (auth.uid() 존재 여부)
-//   2. 권한: admins 테이블 DB 조회 — RLS가 본인 레코드만 허용
-//      → 클라이언트가 admins 테이블을 위조할 수 없음
-//   3. 삭제 등 파괴적 작업은 Supabase RLS "admin delete" 정책이 서버에서 재검증
-//   4. 모든 관리 작업은 admin_logs 테이블에 기록
-//   5. 삭제 시 게임 이름 직접 입력으로 이중 확인
+//  Security model:
+//   1. Authentication: Supabase session (auth.uid() presence)
+//   2. Authorization:  DB lookup against `admins` table — RLS allows only
+//                      the caller's own row → clients cannot forge admin status.
+//   3. Destructive actions are re-verified by Supabase RLS "admin delete"
+//      policy on the server.
+//   4. Every admin action is recorded in `admin_logs`.
+//   5. Deletions require typing the game name to confirm (double-check).
 // ════════════════════════════════════════════════════════
 
 'use strict';
@@ -16,7 +17,7 @@ let _adminUser = null;
 let _allGames  = [];
 
 // ────────────────────────────────────
-//  HTML 이스케이프 (XSS 방지)
+//  HTML escape (XSS protection)
 // ────────────────────────────────────
 
 function esc(str) {
@@ -29,7 +30,7 @@ function esc(str) {
 }
 
 // ────────────────────────────────────
-//  접근 검증 — 2단계
+//  Access check — 2 stages
 // ────────────────────────────────────
 
 async function checkAdminAccess() {
@@ -40,35 +41,35 @@ async function checkAdminAccess() {
     const backBtn = document.getElementById('accessBackBtn');
 
     try {
-        // 1단계: 로그인 세션 확인
+        // Stage 1: session check
         const { data: { session }, error: sErr } = await supabaseClient.auth.getSession();
         if (sErr || !session) {
-            _showAccessDenied(icon, title, msg, backBtn, '로그인이 필요합니다.', spinner);
+            _showAccessDenied(icon, title, msg, backBtn, 'Login required.', spinner);
             return false;
         }
         _adminUser = session.user;
 
-        // 2단계: DB admins 테이블에서 권한 확인
-        //   RLS "self check only" 정책 덕분에
-        //   본인 레코드만 조회 가능 → 다른 유저 레코드 위조 불가
+        // Stage 2: admins-table membership check.
+        // The "self check only" RLS policy guarantees this query can only
+        // return the caller's own row, so other users' rows cannot be forged.
         const { data, error: aErr } = await supabaseClient
             .from('admins')
             .select('user_id, added_at')
             .eq('user_id', _adminUser.id)
-            .maybeSingle();   // 없으면 null 반환 (에러 아님)
+            .maybeSingle();   // returns null if no row (not an error)
 
         if (aErr) {
             console.error('Admin check error:', aErr.message);
-            _showAccessDenied(icon, title, msg, backBtn, '권한 확인 중 오류가 발생했습니다.', spinner);
+            _showAccessDenied(icon, title, msg, backBtn, 'Error verifying permissions.', spinner);
             return false;
         }
 
         if (!data) {
-            _showAccessDenied(icon, title, msg, backBtn, '관리자 권한이 없습니다.', spinner);
+            _showAccessDenied(icon, title, msg, backBtn, 'You do not have admin privileges.', spinner);
             return false;
         }
 
-        // 인증 성공
+        // Access granted
         spinner.style.display = 'none';
         document.getElementById('accessScreen').style.display = 'none';
         document.getElementById('adminApp').style.display     = 'block';
@@ -82,7 +83,7 @@ async function checkAdminAccess() {
         return true;
 
     } catch (err) {
-        _showAccessDenied(icon, title, msg, backBtn, '예기치 못한 오류: ' + err.message, spinner);
+        _showAccessDenied(icon, title, msg, backBtn, 'Unexpected error: ' + err.message, spinner);
         return false;
     }
 }
@@ -90,13 +91,13 @@ async function checkAdminAccess() {
 function _showAccessDenied(icon, title, msg, backBtn, reason, spinner) {
     spinner.style.display = 'none';
     icon.textContent      = '🚫';
-    title.textContent     = '접근 불가';
+    title.textContent     = 'Access Denied';
     msg.textContent       = reason;
     backBtn.style.display = 'inline-block';
 }
 
 // ────────────────────────────────────
-//  관리 작업 로깅
+//  Action logging
 // ────────────────────────────────────
 
 async function logAction(action, targetType, targetId, details = {}) {
@@ -107,11 +108,11 @@ async function logAction(action, targetType, targetId, details = {}) {
         target_id:   String(targetId),
         details,
     }]);
-    if (error) console.warn('로그 기록 실패:', error.message);
+    if (error) console.warn('Log write failed:', error.message);
 }
 
 // ────────────────────────────────────
-//  통계 로드
+//  Stats loader
 // ────────────────────────────────────
 
 async function loadStats() {
@@ -135,12 +136,12 @@ async function loadStats() {
 }
 
 // ────────────────────────────────────
-//  게임 목록
+//  Games list
 // ────────────────────────────────────
 
 async function loadGames() {
     document.getElementById('gamesTableBody').innerHTML =
-        '<tr><td colspan="8" class="tbl-loading">불러오는 중...</td></tr>';
+        '<tr><td colspan="8" class="tbl-loading">Loading...</td></tr>';
 
     const { data, error } = await supabaseClient
         .from('games')
@@ -149,7 +150,7 @@ async function loadGames() {
 
     if (error) {
         document.getElementById('gamesTableBody').innerHTML =
-            `<tr><td colspan="8" class="tbl-error">로드 실패: ${esc(error.message)}</td></tr>`;
+            `<tr><td colspan="8" class="tbl-error">Load failed: ${esc(error.message)}</td></tr>`;
         return;
     }
 
@@ -161,10 +162,10 @@ function _renderGamesTable(games) {
     const badge = document.getElementById('gameCountBadge');
     const tbody = document.getElementById('gamesTableBody');
 
-    badge.textContent = `총 ${games.length}개`;
+    badge.textContent = `${games.length} total`;
 
     if (!games.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="tbl-empty">게임이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="tbl-empty">No games found.</td></tr>';
         return;
     }
 
@@ -176,11 +177,12 @@ function _renderGamesTable(games) {
         const tags = (g.tags || '').split(',').filter(Boolean)
             .map(t => `<span class="tbl-tag">${esc(t.trim())}</span>`).join('');
 
-        const date = new Date(g.created_at).toLocaleDateString('ko-KR', {
+        const date = new Date(g.created_at).toLocaleDateString('en-US', {
             year: 'numeric', month: '2-digit', day: '2-digit',
         });
 
-        // data-* 속성으로 전달 (onclick 인라인 함수 대신 이벤트 위임 사용)
+        // game id + name are carried via data-* attrs; click is bound by delegation
+        // (see _initGamesTableEvents) — avoids one onclick listener per row.
         return `
             <tr data-game-id="${esc(String(g.id))}" data-game-name="${esc(g.name)}">
               <td>${thumb}</td>
@@ -191,13 +193,13 @@ function _renderGamesTable(games) {
               <td class="tbl-num">${(g.upvotes    || 0).toLocaleString()}</td>
               <td class="tbl-date">${date}</td>
               <td>
-                <button class="tbl-del-btn" data-action="delete-game">삭제</button>
+                <button class="tbl-del-btn" data-action="delete-game">Delete</button>
               </td>
             </tr>`;
     }).join('');
 }
 
-// 이벤트 위임 — 테이블에서 삭제 버튼 클릭 감지
+// Event delegation — single listener on tbody catches all delete-button clicks
 function _initGamesTableEvents() {
     document.getElementById('gamesTableBody').addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action="delete-game"]');
@@ -209,7 +211,7 @@ function _initGamesTableEvents() {
     });
 }
 
-// 검색 필터
+// Search filter — client-side, runs over the cached _allGames list
 function _filterGames(q) {
     const query = q.toLowerCase().trim();
     const filtered = query
@@ -221,12 +223,12 @@ function _filterGames(q) {
     _renderGamesTable(filtered);
     if (query) {
         document.getElementById('gameCountBadge').textContent =
-            `${filtered.length} / ${_allGames.length}개`;
+            `${filtered.length} of ${_allGames.length}`;
     }
 }
 
 // ────────────────────────────────────
-//  삭제 확인 모달 (이름 재입력 방식)
+//  Delete confirmation modal (name re-entry)
 // ────────────────────────────────────
 
 let _pendingDeleteId   = null;
@@ -236,7 +238,7 @@ function _openDeleteConfirm(gameId, gameName) {
     _pendingDeleteId   = gameId;
     _pendingDeleteName = gameName;
 
-    document.getElementById('confirmMsg').textContent          = `업로더의 게임 데이터가 영구적으로 삭제됩니다.`;
+    document.getElementById('confirmMsg').textContent          = `The uploader's game data will be permanently deleted.`;
     document.getElementById('confirmVerifyTarget').textContent = gameName;
     document.getElementById('confirmVerifyInput').value        = '';
     document.getElementById('confirmOkBtn').disabled           = true;
@@ -261,10 +263,10 @@ async function _executeDelete() {
 
     const okBtn = document.getElementById('confirmOkBtn');
     okBtn.disabled    = true;
-    okBtn.textContent = '삭제 중...';
+    okBtn.textContent = 'Deleting...';
 
     try {
-        // Supabase RLS "admin delete" 정책이 서버에서 권한 재검증
+        // RLS "admin delete" re-verifies privileges on the server side
         const { error } = await supabaseClient
             .from('games')
             .delete()
@@ -272,16 +274,16 @@ async function _executeDelete() {
 
         if (error) throw error;
 
-        // 삭제 기록
+        // Audit log
         await logAction('DELETE_GAME', 'game', gameId, { name: gameName });
 
         await Promise.all([loadGames(), loadStats()]);
 
     } catch (err) {
-        alert('삭제 실패: ' + err.message);
+        alert('Delete failed: ' + err.message);
     } finally {
         okBtn.disabled    = false;
-        okBtn.textContent = '삭제 확인';
+        okBtn.textContent = 'Confirm Delete';
     }
 }
 
@@ -311,38 +313,38 @@ function _initConfirmModal() {
 }
 
 // ────────────────────────────────────
-//  관리자 목록
+//  Admins list
 // ────────────────────────────────────
 
 async function loadAdmins() {
     const tbody = document.getElementById('adminsTableBody');
-    tbody.innerHTML = '<tr><td colspan="2" class="tbl-loading">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" class="tbl-loading">Loading...</td></tr>';
 
-    // RLS: 본인 레코드만 반환됨
+    // RLS returns only the caller's own row
     const { data, error } = await supabaseClient
         .from('admins')
         .select('user_id, added_at');
 
     if (error || !data?.length) {
-        tbody.innerHTML = '<tr><td colspan="2" class="tbl-empty">데이터 없음</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2" class="tbl-empty">No data</td></tr>';
         return;
     }
 
     tbody.innerHTML = data.map(a => `
         <tr>
           <td><code class="uid-code">${esc(a.user_id)}</code></td>
-          <td class="tbl-date">${new Date(a.added_at).toLocaleString('ko-KR')}</td>
+          <td class="tbl-date">${new Date(a.added_at).toLocaleString('en-US')}</td>
         </tr>`).join('');
 }
 
 // ────────────────────────────────────
-//  활동 로그
+//  Activity logs
 // ────────────────────────────────────
 
 async function loadLogs() {
     const tbody  = document.getElementById('logsTableBody');
     const badge  = document.getElementById('logCountBadge');
-    tbody.innerHTML = '<tr><td colspan="5" class="tbl-loading">불러오는 중...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="tbl-loading">Loading...</td></tr>';
 
     const { data, error } = await supabaseClient
         .from('admin_logs')
@@ -351,20 +353,20 @@ async function loadLogs() {
         .limit(300);
 
     if (error) {
-        tbody.innerHTML = `<tr><td colspan="5" class="tbl-error">로드 실패: ${esc(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="tbl-error">Load failed: ${esc(error.message)}</td></tr>`;
         return;
     }
 
     const logs = data || [];
-    badge.textContent = `최근 ${logs.length}건`;
+    badge.textContent = `Last ${logs.length}`;
 
     if (!logs.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="tbl-empty">로그 없음</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="tbl-empty">No logs</td></tr>';
         return;
     }
 
     const ACTION_META = {
-        DELETE_GAME: { label: '🗑️ 게임 삭제', color: '#ef4444' },
+        DELETE_GAME: { label: '🗑️ Delete Game', color: '#ef4444' },
     };
 
     tbody.innerHTML = logs.map(l => {
@@ -372,7 +374,7 @@ async function loadLogs() {
         const details = l.details ? esc(JSON.stringify(l.details)) : '-';
         return `
             <tr>
-              <td class="tbl-date">${new Date(l.created_at).toLocaleString('ko-KR')}</td>
+              <td class="tbl-date">${new Date(l.created_at).toLocaleString('en-US')}</td>
               <td><code class="uid-code short">${esc((l.admin_id || '').slice(0, 12))}…</code></td>
               <td><span class="log-action" style="color:${meta.color};">${meta.label}</span></td>
               <td class="tbl-small">${esc(l.target_type || '-')} / ${esc(l.target_id || '-')}</td>
@@ -382,7 +384,7 @@ async function loadLogs() {
 }
 
 // ────────────────────────────────────
-//  탭 전환
+//  Tab switching — admins/logs load on first activation only
 // ────────────────────────────────────
 
 function _initTabs() {
@@ -397,7 +399,7 @@ function _initTabs() {
             btn.classList.add('active');
             document.getElementById(`tab-${name}`).style.display = 'block';
 
-            // 탭 첫 진입 시 데이터 로드
+            // lazy-load tab data on first entry
             if (name === 'admins' && !adminsLoaded) { loadAdmins(); adminsLoaded = true; }
             if (name === 'logs'   && !logsLoaded)   { loadLogs();   logsLoaded   = true; }
         });
@@ -405,7 +407,7 @@ function _initTabs() {
 }
 
 // ────────────────────────────────────
-//  초기화
+//  Boot
 // ────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -416,24 +418,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     _initConfirmModal();
     _initGamesTableEvents();
 
-    // 로그아웃
+    // Logout
     document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
-        if (!confirm('로그아웃 하시겠습니까?')) return;
+        if (!confirm('Log out?')) return;
         await supabaseClient.auth.signOut();
         window.location.href = '/';
     });
 
-    // 검색
+    // Search (debounced 200ms)
     let _searchTimer;
     document.getElementById('gameSearch').addEventListener('input', (e) => {
         clearTimeout(_searchTimer);
         _searchTimer = setTimeout(() => _filterGames(e.target.value), 200);
     });
 
-    // 새로고침 버튼
+    // Refresh buttons
     document.getElementById('refreshGamesBtn').addEventListener('click', loadGames);
     document.getElementById('refreshLogsBtn').addEventListener('click', loadLogs);
 
-    // 데이터 초기 로드
+    // Initial data load (parallel)
     await Promise.all([loadStats(), loadGames()]);
 });
