@@ -588,7 +588,11 @@ function renderGames(gameList, targetGrid, isProfile = false) {
                </div>`
             : '';
 
-        const typeBadge = (game.file_type === 'zip')
+        // ZIP file-type badge: shown ONLY on the user's own profile grid,
+        // i.e. when renderGames was called with isProfile=true (myGameGrid).
+        // The public main grid (gameGrid) and other users' profile grids
+        // (publicGameGrid) never show this badge.
+        const typeBadge = (isProfile && game.file_type === 'zip')
             ? `<span class="view-badge" style="background:rgba(16,185,129,0.8);">📦 ZIP</span>`
             : '';
 
