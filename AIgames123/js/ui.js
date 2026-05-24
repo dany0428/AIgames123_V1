@@ -502,6 +502,112 @@ function initSearch() {
 
 const KEY_CODES = { ArrowUp:38, ArrowDown:40, ArrowLeft:37, ArrowRight:39, Space:32, Enter:13, Escape:27 };
 
+// ════════════════════════════════════
+//  Virtual analog joystick
+//
+//  Pointer-driven knob inside a circular base. Maps the stick's
+//  displacement vector to arrow-key events so games designed for
+//  keyboard input "just work" with the joystick.
+//
+//  Behavior:
+//   • Touch the base anywhere → stick jumps to that point (instant start)
+//   • Drag → stick follows finger, clamped within base radius
+//   • Release → stick eases back to center, all keys released
+//   • A direction key fires when displacement passes DEAD_ZONE (35%)
+//     and releases when it drops back below it. Diagonals fire both.
+// ════════════════════════════════════
+function initJoystick() {
+    const base  = document.getElementById('joystickBase');
+    const stick = document.getElementById('joystickStick');
+    if (!base || !stick || !DOM.gameFrame) return;
+    const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+
+    const DEAD_ZONE = 0.35;   // 0–1 fraction of max radius before a direction is "on"
+    const MAX_RATIO = 0.65;   // stick can travel up to this fraction of base radius
+
+    let activePointerId = null;
+    let baseRect = null;       // cached on pointerdown for fast updates
+    const heldKeys = new Set(); // {'ArrowUp','ArrowLeft',…} currently pressed
+
+    function sendKey(type, key) {
+        try {
+            const opts = { key, code: key, keyCode: KEY_CODES[key] || 0, bubbles: true, cancelable: true };
+            DOM.gameFrame.contentWindow?.dispatchEvent(new KeyboardEvent(type, opts));
+            DOM.gameFrame.contentWindow?.document.dispatchEvent(new KeyboardEvent(type, opts));
+        } catch (_) { /* cross-origin — ignore */ }
+    }
+
+    function setKey(key, shouldBeDown) {
+        const isDown = heldKeys.has(key);
+        if (shouldBeDown && !isDown) { heldKeys.add(key);    sendKey('keydown', key); }
+        else if (!shouldBeDown && isDown) { heldKeys.delete(key); sendKey('keyup',   key); }
+    }
+
+    function releaseAllKeys() {
+        for (const k of Array.from(heldKeys)) setKey(k, false);
+    }
+
+    function updateStick(clientX, clientY) {
+        if (!baseRect) return;
+        const cx = baseRect.left + baseRect.width  / 2;
+        const cy = baseRect.top  + baseRect.height / 2;
+        const radius = baseRect.width / 2;
+        const maxDist = radius * MAX_RATIO;
+
+        let dx = clientX - cx;
+        let dy = clientY - cy;
+        const dist = Math.hypot(dx, dy);
+
+        // Clamp to maxDist
+        if (dist > maxDist) {
+            const k = maxDist / dist;
+            dx *= k; dy *= k;
+        }
+
+        stick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+        // Compute normalized displacement (0–1)
+        const nx = dx / maxDist;
+        const ny = dy / maxDist;
+
+        // Update key states — fire opposing directions independently so
+        // diagonal input (up+right etc.) works naturally.
+        setKey('ArrowLeft',  nx < -DEAD_ZONE);
+        setKey('ArrowRight', nx >  DEAD_ZONE);
+        setKey('ArrowUp',    ny < -DEAD_ZONE);
+        setKey('ArrowDown',  ny >  DEAD_ZONE);
+    }
+
+    base.addEventListener('pointerdown', (e) => {
+        if (activePointerId !== null) return;
+        e.preventDefault();
+        activePointerId = e.pointerId;
+        baseRect = base.getBoundingClientRect();
+        base.setPointerCapture(e.pointerId);
+        base.classList.add('active');
+        updateStick(e.clientX, e.clientY);
+    });
+
+    base.addEventListener('pointermove', (e) => {
+        if (e.pointerId !== activePointerId) return;
+        e.preventDefault();
+        updateStick(e.clientX, e.clientY);
+    });
+
+    const endDrag = (e) => {
+        if (e.pointerId !== activePointerId) return;
+        activePointerId = null;
+        baseRect = null;
+        base.classList.remove('active');
+        stick.style.transform = '';   // snap back to center via CSS transition
+        releaseAllKeys();
+    };
+    base.addEventListener('pointerup',     endDrag);
+    base.addEventListener('pointercancel', endDrag);
+    base.addEventListener('pointerleave',  endDrag);
+}
+
 function initDpad() {
     if (!DOM.dpadOverlay || !DOM.gameFrame) return;
     const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;

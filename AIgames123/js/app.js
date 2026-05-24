@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSearch();
     initProfileAvatar();
     initDpad();
+    initJoystick();
 
     // Auth modal (auth.js)
     initAuthModal();
