@@ -173,6 +173,19 @@
 .form-label { display: block; margin-bottom: 0.5rem; color: #a78bfa; font-size: 0.9rem; font-weight: 500; }
 .form-input { width: 100%; padding: 0.75rem; border-radius: 8px; background: #0f0a1a; border: 2px solid #3b2d5a; color: white; }
 
+/* Textarea variant — used for game descriptions. Inherits .form-input styling
+   but allows multi-line input with vertical resize. */
+.form-textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+.form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+}
+
 .file-input-wrapper { border: 2px dashed #3b2d5a; padding: 2rem; text-align: center; position: relative; }
 .file-input-wrapper input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
@@ -182,6 +195,28 @@
 .player-modal { max-width: 1200px; height: 90vh; display: flex; flex-direction: column; width: 90%; overflow: hidden; }
 .player-header { padding: 1rem; border-bottom: 1px solid #3b2d5a; display: flex; justify-content: space-between; align-items: center; }
 .header-actions { display: flex; align-items: center; gap: 1rem; }
+
+/* Game description block inside the player modal — appears below the title,
+   above the iframe. `white-space: pre-wrap` preserves the user's line breaks
+   while still letting the browser word-wrap long lines. `max-height + scroll`
+   prevents huge descriptions from squashing the game frame. */
+.game-description {
+  padding: 0.8rem 1rem;
+  background: #0f0a1a;
+  border-bottom: 1px solid #3b2d5a;
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.game-description::-webkit-scrollbar { width: 6px; }
+.game-description::-webkit-scrollbar-thumb { background: #3b2d5a; border-radius: 3px; }
+/* Hide description entirely in pseudo-fullscreen so the game gets all the space */
+.player-modal.pseudo-fullscreen .game-description { display: none !important; }
 
 .fullscreen-btn {
   padding: 0.5rem 1rem;
