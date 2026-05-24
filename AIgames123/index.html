@@ -327,8 +327,6 @@
         </div>
       </div>
 
-      <!-- Game description — populated by openGame(), hidden when blank. -->
-      <div class="game-description" id="gameDescription" style="display:none;"></div>
 
       <div class="game-frame-container">
         <!-- Exit-pseudo-fullscreen floating button — only visible during pseudo-fullscreen -->
@@ -409,6 +407,10 @@
           <button class="vote-btn upvote" id="upvoteBtn">👍 <span id="upvoteCount">0</span></button>
         </div>
       </div>
+
+      <!-- Game description — appears below the uploader/vote footer.
+           Populated by openGame() and hidden when blank. -->
+      <div class="game-description" id="gameDescription" style="display:none;"></div>
     </div>
   </div>
 
