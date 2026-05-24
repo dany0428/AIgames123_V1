@@ -39,6 +39,7 @@ function initUploadModal() {
     const uploadModal        = document.getElementById('uploadModal');
     const submitGameBtn      = document.getElementById('submitGame');
     const gameNameInput      = document.getElementById('gameName');
+    const gameDescInput      = document.getElementById('gameDescription_upload');   // NEW
     const gameFileInput      = document.getElementById('gameFileInput');
     const thumbnailFileInput = document.getElementById('thumbnailFileInput');
     const tagSelector        = document.getElementById('tagSelector');
@@ -60,57 +61,72 @@ function initUploadModal() {
     });
 
     if (DOM.uploadBtn) DOM.uploadBtn.onclick = () => {
-        if (!currentUser) return alert('You need to be logged in.');
+        if (!currentUser) { notify.warn('Please log in first.'); return; }
         uploadModal.classList.add('active');
     };
     document.getElementById('closeUpload').onclick = () => uploadModal.classList.remove('active');
 
     if (!submitGameBtn) return;
     submitGameBtn.onclick = async () => {
-        if (!currentUser) return alert('You need to be logged in!');
-        const name      = gameNameInput.value.trim();
-        const tags      = getSelectedTags(tagSelector);
-        const file      = gameFileInput.files[0];
-        const thumbFile = thumbnailFileInput.files[0];
-        if (!name || !file) return alert('Game name and game file are required!');
+        if (!currentUser) { notify.warn('Please log in first.'); return; }
+        const name        = gameNameInput.value.trim();
+        const description = (gameDescInput?.value || '').trim();   // NEW
+        const tags        = getSelectedTags(tagSelector);
+        const file        = gameFileInput.files[0];
+        let thumbFile     = thumbnailFileInput.files[0];
+        if (!name || !file) { notify.warn('Game name and game file are required.'); return; }
 
         // ════════════════════════════════════════════════════════
         // Input validation (client-side; matched by Storage policies)
         // ════════════════════════════════════════════════════════
         if (name.length > SECURITY.MAX_GAME_NAME_LEN) {
-            return alert(`Game name is too long (max ${SECURITY.MAX_GAME_NAME_LEN} chars).`);
+            notify.warn(`Game name is too long (max ${SECURITY.MAX_GAME_NAME_LEN} chars).`); return;
         }
         if (/[\x00-\x1f]/.test(name)) {
-            return alert('Game name contains invalid characters.');
+            notify.warn('Game name contains invalid characters.'); return;
+        }
+        if (description.length > SECURITY.MAX_DESCRIPTION_LEN) {
+            notify.warn(`Description is too long (max ${SECURITY.MAX_DESCRIPTION_LEN} characters).`); return;
         }
         if (tags.length > SECURITY.MAX_TAG_LIST_LEN) {
-            return alert('Too many tags selected.');
+            notify.warn('Too many tags selected.'); return;
         }
 
         // File-size cap: Supabase Storage will also enforce its own bucket
         // limit, but rejecting client-side gives a better error than a 413.
         if (file.size > SECURITY.MAX_GAME_FILE_BYTES) {
-            return alert(`Game file is too large (max ${SECURITY.MAX_GAME_FILE_BYTES / 1024 / 1024} MB).`);
+            notify.warn(`Game file is too large (max ${SECURITY.MAX_GAME_FILE_BYTES / 1024 / 1024} MB).`); return;
         }
 
         // File-type vs extension consistency check — defense in depth.
         // (The actual bytes are what get served; this just catches typos.)
         const ext = file.name.toLowerCase().split('.').pop();
         if (selectedFileType === 'zip' && ext !== 'zip') {
-            return alert('Selected file type is ZIP, but the file is not a .zip.');
+            notify.warn('Selected file type is ZIP, but the file is not a .zip.'); return;
         }
         if (selectedFileType === 'html' && ext !== 'html' && ext !== 'htm') {
-            return alert('Selected file type is HTML, but the file is not an .html.');
+            notify.warn('Selected file type is HTML, but the file is not an .html.'); return;
         }
 
         if (thumbFile) {
             if (thumbFile.size > SECURITY.MAX_THUMB_BYTES) {
-                return alert(`Thumbnail is too large (max ${SECURITY.MAX_THUMB_BYTES / 1024 / 1024} MB).`);
+                notify.warn(`Thumbnail is too large (max ${SECURITY.MAX_THUMB_BYTES / 1024 / 1024} MB).`); return;
             }
             // Verify magic bytes — `accept="image/*"` is trivially bypassable
             // by spoofing the Content-Type header.
             const ok = await isRealImageFile(thumbFile);
-            if (!ok) return alert('Thumbnail must be a real PNG, JPEG, GIF, or WebP image.');
+            if (!ok) { notify.warn('Thumbnail must be a real PNG, JPEG, GIF, or WebP image.'); return; }
+
+            // Compress: scales down to ≤800x800 and re-encodes as WebP at q=0.85.
+            // Animated GIFs are passed through unchanged. Tiny files are skipped.
+            // If compression fails (browser limit / unsupported codec) the
+            // original is used.
+            const compressed = await compressImage(thumbFile, 'thumbnail');
+            if (compressed !== thumbFile) {
+                const saved = ((1 - compressed.size / thumbFile.size) * 100).toFixed(0);
+                console.info(`Thumbnail compressed: ${thumbFile.size} → ${compressed.size} bytes (${saved}% smaller)`);
+                thumbFile = compressed;
+            }
         }
 
         submitGameBtn.textContent = 'Uploading...';
@@ -157,6 +173,7 @@ function initUploadModal() {
 
             const { error: dbErr } = await supabaseClient.from('games').insert([{
                 name,
+                description:     description || null,
                 file_url:        gameUrl,
                 file_type:       fileType,
                 thumbnail_url:   thumbUrl,
@@ -169,9 +186,10 @@ function initUploadModal() {
             }]);
             if (dbErr) throw dbErr;
 
-            alert('Upload successful!');
+            notify.success('Upload successful! 🎉');
             uploadModal.classList.remove('active');
             gameNameInput.value = '';
+            if (gameDescInput) gameDescInput.value = '';
             clearTagSelector(tagSelector);
             gameFileInput.value = '';
             thumbnailFileInput.value = '';
@@ -182,7 +200,7 @@ function initUploadModal() {
 
             DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
         } catch (err) {
-            alert('Error: ' + err.message);
+            notify.error(friendlyError(err, 'Upload failed.'), err);
         } finally {
             submitGameBtn.textContent = 'Launch Game';
             submitGameBtn.disabled    = false;
@@ -207,21 +225,31 @@ function initEditModal() {
     if (!submitEditGame) return;
     submitEditGame.onclick = async () => {
         const newName = document.getElementById('editGameName').value.trim();
+        const newDesc = (document.getElementById('editGameDescription')?.value || '').trim();
         const newTags = getSelectedTags(editTagSelector);
-        if (!newName) return alert('Please enter a game name.');
+        if (!newName) { notify.warn('Please enter a game name.'); return; }
+        if (newDesc.length > SECURITY.MAX_DESCRIPTION_LEN) {
+            notify.warn(`Description is too long (max ${SECURITY.MAX_DESCRIPTION_LEN} characters).`);
+            return;
+        }
 
         submitEditGame.disabled    = true;
         submitEditGame.textContent = 'Saving...';
         try {
             const { error } = await supabaseClient.from('games')
-                .update({ name: newName, tags: newTags }).eq('id', editingGameId);
+                .update({
+                    name: newName,
+                    description: newDesc || null,
+                    tags: newTags,
+                })
+                .eq('id', editingGameId);
             if (error) throw error;
-            alert('Changes saved.');
+            notify.success('Changes saved.');
             editModal.classList.remove('active');
             cache.invalidateTags();   // tag list may have changed
             fetchMyGames();
         } catch (err) {
-            alert('Save failed: ' + err.message);
+            notify.error(friendlyError(err, 'Could not save changes.'), err);
         } finally {
             submitEditGame.disabled    = false;
             submitEditGame.textContent = 'Save';
@@ -499,16 +527,25 @@ async function uploadAvatar(file) {
     const ok = await isRealImageFile(file);
     if (!ok) throw new Error('Avatar must be a real PNG, JPEG, GIF, or WebP image.');
 
+    // Compress avatar: 256×256 max, WebP. Saves a lot of bandwidth
+    // since avatars render at small sizes throughout the site.
+    // Animated GIF avatars pass through unchanged.
+    const compressed = await compressImage(file, 'avatar');
+    const uploadFile = compressed;
+    if (compressed !== file) {
+        console.info(`Avatar compressed: ${file.size} → ${compressed.size} bytes`);
+    }
+
     // Whitelist extension — the storage key must not contain attacker-controlled
     // characters that could land in a Storage URL path. (Same rationale as
-    // sanitizeName in the game-upload flow.)
-    const SAFE_EXT = { png: 'png', jpg: 'jpg', jpeg: 'jpg', gif: 'gif', webp: 'webp' };
-    const rawExt   = (file.name.split('.').pop() || '').toLowerCase();
-    const ext      = SAFE_EXT[rawExt] || 'png';
+    // sanitizeName in the game-upload flow.) Pick based on the compressed
+    // file's MIME, not the original name.
+    const MIME_EXT = { 'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif' };
+    const ext      = MIME_EXT[uploadFile.type] || 'webp';
     const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
 
     const { error: upErr } = await supabaseClient.storage
-        .from('game-files').upload(fileName, file, { upsert: true, contentType: file.type || 'image/*' });
+        .from('game-files').upload(fileName, uploadFile, { upsert: true, contentType: uploadFile.type || 'image/webp' });
     if (upErr) throw upErr;
 
     const { data: { publicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
@@ -541,9 +578,9 @@ function initProfileAvatar() {
             if (headerOverlay) headerOverlay.textContent = 'Uploading...';
             try {
                 await uploadAvatar(file);
-                alert('Profile picture updated! 🎉');
+                notify.success('Profile picture updated! 🎉');
             } catch (err) {
-                alert('Upload failed: ' + err.message);
+                notify.error(friendlyError(err, 'Could not update profile picture.'), err);
             } finally {
                 if (headerOverlay) headerOverlay.textContent = 'Change photo';
                 headerInput.value = '';
@@ -566,17 +603,17 @@ function initProfileAvatar() {
 
     const saveBtn = document.getElementById('saveAvatarBtn');
     saveBtn?.addEventListener('click', async () => {
-        if (!selectedFile) return alert('Please choose a photo first.');
-        if (!currentUser) return alert('You need to be logged in.');
+        if (!selectedFile) { notify.warn('Please choose a photo first.'); return; }
+        if (!currentUser) { notify.warn('Please log in first.'); return; }
         saveBtn.disabled    = true;
         saveBtn.textContent = 'Saving...';
         try {
             await uploadAvatar(selectedFile);
             selectedFile = null;
             if (fileInput) fileInput.value = '';
-            alert('Profile picture saved! 🎉');
+            notify.success('Profile picture saved! 🎉');
         } catch (err) {
-            alert('Upload failed: ' + err.message);
+            notify.error(friendlyError(err, 'Could not save profile picture.'), err);
         } finally {
             saveBtn.disabled    = false;
             saveBtn.textContent = 'Save';
