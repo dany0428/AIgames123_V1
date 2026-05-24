@@ -147,7 +147,7 @@ window.deleteGame = async (gameId, event) => {
     try {
         const { error } = await supabaseClient.from('games').delete().eq('id', gameId);
         if (error) throw error;
-        alert('Game deleted.');
+        notify.success('Game deleted.');
         DOM.playerModal.classList.remove('active');
         document.body.style.overflow = '';
         DOM.gameFrame.srcdoc = '';
@@ -157,7 +157,7 @@ window.deleteGame = async (gameId, event) => {
         cache.invalidateTags();   // a game was removed — refresh tag list
         DOM.profileContent.style.display === 'block' ? fetchMyGames() : fetchGames();
     } catch (err) {
-        alert('Error: ' + err.message);
+        notify.error(friendlyError(err, 'Could not delete game.'), err);
     }
 };
 
@@ -179,7 +179,7 @@ window.deleteGame = async (gameId, event) => {
 
 window.handleUpvote = async (gameId, currentCount) => {
     if (!currentUser) {
-        alert('Please log in to upvote.');
+        notify.warn('Please log in to upvote.');
         window.openAuthModal?.('login');
         return;
     }
@@ -236,7 +236,7 @@ window.handleUpvote = async (gameId, currentCount) => {
             DOM.upvoteBtn.onclick = () => handleUpvote(gameId, currentCount);
         }
         if (cached) cached.upvotes = Number(currentCount) || 0;
-        alert('Failed to update vote 😢\nReason: ' + err.message);
+        notify.error(friendlyError(err, 'Could not update your vote.'), err);
     }
 };
 
@@ -590,6 +590,7 @@ function _initGridDelegation(grid, isProfile) {
                 Number(card.dataset.id),
                 card.dataset.name,
                 card.dataset.tags || '',
+                card.dataset.description || '',
                 e,
             );
             return;
@@ -615,6 +616,7 @@ function _initGridDelegation(grid, isProfile) {
             Number(d.upvotes || 0),
             d.uploaderAvatar || '',
             d.fileType || 'html',
+            d.description || '',
         );
     });
 
@@ -644,6 +646,7 @@ function renderGames(gameList, targetGrid, isProfile = false) {
         const fileType    = _esc(game.file_type || 'html');
         const tags        = _esc(game.tags || '');
         const url         = _esc(game.file_url || '');
+        const description = _esc(game.description || '');
 
         const thumbnailContent = game.thumbnail_url
             ? `<img src="${_esc(game.thumbnail_url)}" alt="${name}" class="game-thumb-img" loading="lazy">`
@@ -686,6 +689,7 @@ function renderGames(gameList, targetGrid, isProfile = false) {
                  data-uploader-id="${_esc(uploaderId)}"
                  data-uploader-avatar="${avatar}"
                  data-tags="${tags}"
+                 data-description="${description}"
                  data-file-type="${fileType}"
                  data-view-count="${viewCount}"
                  data-upvotes="${safeUpvotes}">
@@ -711,13 +715,27 @@ function renderGames(gameList, targetGrid, isProfile = false) {
 //  Open game modal
 // ════════════════════════════════════
 
-window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType) => {
+window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description) => {
     // Always revoke any blobs from a previous game first
     _revokePlayerBlobUrls();
 
     // Immediate UI update
     if (DOM.playerTitle)  DOM.playerTitle.textContent  = name;
     if (DOM.uploaderName) DOM.uploaderName.textContent = uploaderName;
+
+    // Game description — shown below the title; hidden when empty.
+    // textContent (not innerHTML) is XSS-safe; we set white-space:pre-wrap
+    // via CSS so user line breaks render naturally.
+    if (DOM.gameDescription) {
+        const desc = (description || '').trim();
+        if (desc) {
+            DOM.gameDescription.textContent = desc;
+            DOM.gameDescription.style.display = 'block';
+        } else {
+            DOM.gameDescription.textContent = '';
+            DOM.gameDescription.style.display = 'none';
+        }
+    }
 
     // Uploader avatar
     if (DOM.uploaderAvatarImg && DOM.uploaderAvatarFallback) {
@@ -735,7 +753,7 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     if (DOM.uploaderProfileBtn) {
         DOM.uploaderProfileBtn.onclick = () => uploaderId && uploaderId !== 'null'
             ? showPublicProfile(uploaderId, uploaderName)
-            : alert("This game was uploaded long ago — uploader profile is unavailable. 😢");
+            : notify.warn('This game was uploaded long ago — uploader profile is unavailable.');
     }
 
     // Upvote button
@@ -826,10 +844,13 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
 //  Open edit modal
 // ════════════════════════════════════
 
-window.openEditModal = (gameId, name, tags, event) => {
+window.openEditModal = (gameId, name, tags, description, event) => {
     if (event) event.stopPropagation();
     editingGameId = gameId;
     document.getElementById('editGameName').value = name;
+
+    const descInput = document.getElementById('editGameDescription');
+    if (descInput) descInput.value = description || '';
 
     const editTagSelector = document.getElementById('editTagSelector');
     if (editTagSelector) {
