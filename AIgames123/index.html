@@ -378,24 +378,24 @@
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
 
         <div class="dpad-overlay" id="dpadOverlay">
-          <!-- D-pad (digital, discrete directions) -->
-          <div class="dpad-wrap">
-            <div class="dpad-container">
-              <button class="dpad-btn dpad-up"    data-key="ArrowUp"    data-code="ArrowUp">▲</button>
-              <button class="dpad-btn dpad-left"  data-key="ArrowLeft"  data-code="ArrowLeft">◀</button>
-              <div class="dpad-center"></div>
-              <button class="dpad-btn dpad-right" data-key="ArrowRight" data-code="ArrowRight">▶</button>
-              <button class="dpad-btn dpad-down"  data-key="ArrowDown"  data-code="ArrowDown">▼</button>
+          <!-- Left-side controller: D-pad OR joystick.
+               JS swaps which one is visible via .show-joystick / .show-dpad
+               classes on the parent. Only one renders at a time, so they
+               occupy the same slot regardless of which mode is active. -->
+          <div class="controller-left">
+            <div class="dpad-wrap">
+              <div class="dpad-container">
+                <button class="dpad-btn dpad-up"    data-key="ArrowUp"    data-code="ArrowUp">▲</button>
+                <button class="dpad-btn dpad-left"  data-key="ArrowLeft"  data-code="ArrowLeft">◀</button>
+                <div class="dpad-center"></div>
+                <button class="dpad-btn dpad-right" data-key="ArrowRight" data-code="ArrowRight">▶</button>
+                <button class="dpad-btn dpad-down"  data-key="ArrowDown"  data-code="ArrowDown">▼</button>
+              </div>
             </div>
-          </div>
-
-          <!-- Analog joystick (continuous, drag-based).
-               Translates stick position into arrow-key events so games
-               that listen for arrow keys "just work" with both controllers.
-               Useful for finer/diagonal control than the digital D-pad. -->
-          <div class="joystick-wrap" id="joystickWrap">
-            <div class="joystick-base" id="joystickBase">
-              <div class="joystick-stick" id="joystickStick"></div>
+            <div class="joystick-wrap" id="joystickWrap">
+              <div class="joystick-base" id="joystickBase">
+                <div class="joystick-stick" id="joystickStick"></div>
+              </div>
             </div>
           </div>
 
