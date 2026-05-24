@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logout
     DOM.logoutBtn?.addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
-        alert('Logged out.');
+        notify.success('Logged out.');
         window.location.href = '/';
     });
 
@@ -32,17 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveProfileBtn')?.addEventListener('click', async (e) => {
         const btn     = e.currentTarget;
         const newName = DOM.profileNameInput?.value.trim();
-        if (!newName) return alert('Please enter a display name.');
+        if (!newName) return notify.warn('Please enter a display name.');
         btn.disabled    = true;
         btn.textContent = 'Saving...';
         try {
             const { data, error } = await supabaseClient.auth.updateUser({ data: { custom_name: newName } });
             if (error) throw error;
-            alert('Display name updated successfully!');
+            notify.success('Display name updated!');
             updateAuthUI(data.user);
             showProfileContent();
         } catch (err) {
-            alert('Update failed: ' + err.message);
+            notify.error(friendlyError(err, 'Could not update display name.'), err);
         } finally {
             btn.disabled    = false;
             btn.textContent = 'Save';
