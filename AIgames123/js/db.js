@@ -723,16 +723,18 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     if (DOM.playerTitle)  DOM.playerTitle.textContent  = name;
     if (DOM.uploaderName) DOM.uploaderName.textContent = uploaderName;
 
-    // Game description — shown below the title; hidden when empty.
-    // textContent (not innerHTML) is XSS-safe; we set white-space:pre-wrap
-    // via CSS so user line breaks render naturally.
+    // Game description — body goes into #gameDescriptionBody; the parent
+    // wrapper (#gameDescription) is shown/hidden as a unit so the
+    // "Description" label disappears when there's nothing to show.
+    // textContent (not innerHTML) is XSS-safe; CSS white-space:pre-wrap
+    // makes line breaks render naturally.
     if (DOM.gameDescription) {
         const desc = (description || '').trim();
         if (desc) {
-            DOM.gameDescription.textContent = desc;
+            if (DOM.gameDescriptionBody) DOM.gameDescriptionBody.textContent = desc;
             DOM.gameDescription.style.display = 'block';
         } else {
-            DOM.gameDescription.textContent = '';
+            if (DOM.gameDescriptionBody) DOM.gameDescriptionBody.textContent = '';
             DOM.gameDescription.style.display = 'none';
         }
     }
