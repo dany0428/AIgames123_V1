@@ -409,8 +409,12 @@
       </div>
 
       <!-- Game description — appears below the uploader/vote footer.
-           Populated by openGame() and hidden when blank. -->
-      <div class="game-description" id="gameDescription" style="display:none;"></div>
+           The label is always visible. The body is populated by
+           openGame() and the whole block hides when there's no text. -->
+      <div class="game-description" id="gameDescription" style="display:none;">
+        <div class="game-description-label">Description</div>
+        <div class="game-description-body" id="gameDescriptionBody"></div>
+      </div>
     </div>
   </div>
 
