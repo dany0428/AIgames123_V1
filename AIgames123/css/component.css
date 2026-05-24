@@ -197,26 +197,58 @@
 .header-actions { display: flex; align-items: center; gap: 1rem; }
 
 /* Game description block inside the player modal — appears at the BOTTOM,
-   below the uploader profile and vote footer. `white-space: pre-wrap`
-   preserves the user's line breaks while still letting the browser
-   word-wrap long lines. `max-height + scroll` prevents huge descriptions
-   from pushing the modal beyond the viewport. */
+   below the uploader profile and vote footer.
+
+   Layout:
+     - Outer wrapper provides background, border, and vertical sizing.
+     - Inner content has extra horizontal padding (max-width capped) so
+       long text doesn't run flush against the modal edges.
+     - A centered "Description" label sits above the body text.
+   `white-space: pre-wrap` preserves the user's line breaks while still
+   letting the browser word-wrap long lines. */
 .game-description {
-  padding: 0.8rem 1rem;
+  padding: 0.9rem 0;
   background: #0f0a1a;
   border-top: 1px solid #3b2d5a;
   color: #cbd5e1;
   font-size: 0.88rem;
   line-height: 1.55;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  max-height: 140px;
+  max-height: 180px;
   overflow-y: auto;
   flex-shrink: 0;
 }
 .game-description::-webkit-scrollbar { width: 6px; }
 .game-description::-webkit-scrollbar-thumb { background: #3b2d5a; border-radius: 3px; }
+
+/* "Description" header — small, centered, muted */
+.game-description-label {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 0.55rem;
+  padding: 0 2rem;
+}
+
+/* Body — indented on both sides so it reads centered in the modal,
+   and the actual user text is left-aligned within that column. */
+.game-description-body {
+  padding: 0 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Tighter padding on narrow screens */
+@media (max-width: 600px) {
+  .game-description-label,
+  .game-description-body { padding: 0 1rem; }
+}
+
 /* Hide description entirely in pseudo-fullscreen so the game gets all the space */
 .player-modal.pseudo-fullscreen .game-description { display: none !important; }
 
