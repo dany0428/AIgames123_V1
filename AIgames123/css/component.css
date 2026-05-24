@@ -546,22 +546,30 @@ button, .game-card, .genre-item, .tag-option,
 @media (max-width: 640px) {
   .player-modal {
     width: 100% !important;
+    /* dvh handles iOS Safari's dynamic viewport (address bar showing/hiding).
+       Fallback to vh for older browsers. */
+    height: 100vh !important;
     height: 100dvh !important;
     max-width: 100% !important;
+    max-height: none !important;
     border-radius: 0 !important;
     border-left: none !important;
     border-right: none !important;
+    border-top: none !important;
+    /* Respect notch on iPhone */
+    padding-top: env(safe-area-inset-top);
   }
 
   .modal-overlay { align-items: flex-start; }
 
-  .player-header { padding: 0.6rem 0.8rem; }
+  .player-header { padding: 0.5rem 0.6rem; flex-shrink: 0; }
   .player-title { font-size: 0.9rem; }
   .fullscreen-btn { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
   .fit-btn        { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
   .delete-game-btn { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
+  .header-actions { gap: 0.4rem; }
 
-  .game-footer { padding: 0.5rem 0.8rem; }
+  .game-footer { padding: 0.5rem 0.8rem; flex-shrink: 0; }
   .uploader-name { font-size: 0.85rem; }
   .uploader-avatar { width: 32px; height: 32px; font-size: 1rem; }
   .vote-btn { padding: 6px 10px; font-size: 0.8rem; }
@@ -570,6 +578,10 @@ button, .game-card, .genre-item, .tag-option,
 
   .game-thumbnail { height: 120px; }
   .game-title { font-size: 0.85rem; }
+
+  /* Description gets less height on phones so the game has more room */
+  .game-description { max-height: 100px; padding: 0.6rem 0; }
+  .game-description-label { margin-bottom: 0.35rem; font-size: 0.68rem; }
 }
 
 /* ════════════════════════════════════
@@ -595,7 +607,8 @@ button, .game-card, .genre-item, .tag-option,
 }
 
 .player-modal.pseudo-fullscreen .player-header,
-.player-modal.pseudo-fullscreen .game-footer {
+.player-modal.pseudo-fullscreen .game-footer,
+.player-modal.pseudo-fullscreen .game-description {
   display: none !important;
 }
 
@@ -608,51 +621,80 @@ button, .game-card, .genre-item, .tag-option,
    🕹️ VIRTUAL D-PAD
 ════════════════════════════════════ */
 
+/* ════════════════════════════════════
+   🕹️ VIRTUAL D-PAD
+   Mobile-only controller that overlays the game frame.
+
+   Two modes:
+     - `.active` is set when touchscreen + game is loaded
+     - User can toggle visibility with the floating toggle button
+       so the lower portion of the game is reachable when needed.
+   ════════════════════════════════════ */
+
 .dpad-overlay {
   display: none;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 180px;
-  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+  height: 160px;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+  /* The overlay itself is transparent to pointers — only the button
+     elements inside should receive taps. This lets the user interact
+     with parts of the game showing through between buttons. */
   pointer-events: none;
   z-index: 50;
   flex-direction: row;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 0 1.2rem 1rem;
+  padding: 0 1rem 0.9rem;
   gap: 1rem;
+  /* Respect iPhone home indicator / safe area */
+  padding-bottom: max(0.9rem, env(safe-area-inset-bottom));
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .dpad-overlay.active { display: flex; }
 
-.dpad-wrap { pointer-events: auto; }
+/* Hidden state: user tapped the toggle to dismiss the D-pad.
+   Still in DOM (active), just visually pushed off and made non-interactive. */
+.dpad-overlay.active.hidden {
+  opacity: 0;
+  transform: translateY(100%);
+  pointer-events: none !important;
+}
+
+/* `.dpad-wrap` and `.dpad-actions-wrap` only need pointer events on the
+   actual buttons, not on the entire wrapping area. Setting them to none
+   here means the gap between buttons doesn't capture taps meant for the
+   game underneath. */
+.dpad-wrap         { pointer-events: none; }
+.dpad-actions-wrap { pointer-events: none; }
 
 .dpad-container {
   display: grid;
-  grid-template-columns: repeat(3, 52px);
-  grid-template-rows: repeat(3, 52px);
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
   gap: 4px;
 }
 
 .dpad-btn {
-  width: 52px;
-  height: 52px;
-  background: rgba(139, 92, 246, 0.55);
-  border: 2px solid rgba(167, 139, 250, 0.6);
+  width: 48px;
+  height: 48px;
+  background: rgba(139, 92, 246, 0.45);
+  border: 2px solid rgba(167, 139, 250, 0.55);
   border-radius: 10px;
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  touch-action: manipulation;
+  touch-action: none;          /* prevent scroll/zoom while panning on dpad */
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   transition: background 0.1s;
-  pointer-events: auto;
+  pointer-events: auto;        /* only buttons catch taps, not their wrapper */
 }
 
 .dpad-btn:active, .dpad-btn.pressed {
@@ -676,28 +718,63 @@ button, .game-card, .genre-item, .tag-option,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  pointer-events: auto;
 }
 
 .dpad-action {
-  padding: 10px 18px;
-  background: rgba(99, 102, 241, 0.55);
-  border: 2px solid rgba(167, 139, 250, 0.6);
+  padding: 9px 16px;
+  background: rgba(99, 102, 241, 0.45);
+  border: 2px solid rgba(167, 139, 250, 0.55);
   border-radius: 20px;
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   transition: background 0.1s;
   white-space: nowrap;
+  pointer-events: auto;
 }
 
 .dpad-action:active, .dpad-action.pressed {
   background: rgba(124, 58, 237, 0.9);
 }
+
+/* Floating button that toggles the D-pad — visible only on touch devices
+   when a game is loaded. Sits in the top-right of the game frame so it
+   doesn't fight the close/fullscreen buttons in the modal header. */
+.dpad-toggle-btn {
+  display: none;
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  z-index: 60;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.dpad-toggle-btn:active { background: rgba(124, 58, 237, 0.85); }
+.dpad-overlay.active ~ .dpad-toggle-btn,
+.game-frame-container .dpad-toggle-btn.visible { display: flex; }
+
+/* When the D-pad is hidden, position the toggle button lower since the
+   D-pad overlay isn't reserving the bottom area. */
+.dpad-overlay.active.hidden ~ .dpad-toggle-btn {
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
 
 /* ════════════════════════════════════
    📁 FILE TYPE TABS
