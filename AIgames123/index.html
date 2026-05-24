@@ -393,6 +393,12 @@
             <button class="dpad-action" data-key="Escape" data-code="Escape">ESC</button>
           </div>
         </div>
+
+        <!-- Floating D-pad toggle (mobile-only).
+             Lets the user dismiss the controller to reach the lower part of
+             the game when it's not needed. JS toggles `.hidden` on the
+             dpad-overlay and updates this button's icon. -->
+        <button class="dpad-toggle-btn" id="dpadToggleBtn" type="button" aria-label="Toggle on-screen controller" title="Toggle controller">🎮</button>
       </div>
 
       <div class="game-footer">
