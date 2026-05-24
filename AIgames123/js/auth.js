@@ -258,12 +258,12 @@ async function _handleEmailLogin() {
     const password = document.getElementById('loginPassword')?.value;
     const btn      = document.getElementById('emailLoginBtn');
 
-    if (!email || !password) return alert('Please enter your email and password.');
+    if (!email || !password) { notify.warn('Please enter your email and password.'); return; }
     if (!SECURITY.EMAIL_REGEX.test(email)) {
-        return alert('That email address looks malformed.');
+        notify.warn('That email address looks malformed.'); return;
     }
     if (password.length > SECURITY.MAX_PASSWORD_LEN) {
-        return alert(`Password is too long (max ${SECURITY.MAX_PASSWORD_LEN} chars).`);
+        notify.warn(`Password is too long (max ${SECURITY.MAX_PASSWORD_LEN} chars).`); return;
     }
 
     btn.disabled    = true;
@@ -274,11 +274,7 @@ async function _handleEmailLogin() {
         _closeAuthModal();
     } catch (err) {
         // Avoid leaking whether the email exists — generic message for any auth error
-        const msg = err.message === 'Invalid login credentials'
-            ? 'Invalid email or password.'
-            : 'Login failed. Please try again.';
-        console.warn('Login error:', err.message);
-        alert(msg);
+        notify.error(friendlyError(err, 'Login failed.'), err);
     } finally {
         btn.disabled    = false;
         btn.textContent = 'Login with Email';
@@ -309,21 +305,21 @@ async function _handleEmailSignup() {
     const confirm  = document.getElementById('signupPasswordConfirm')?.value;
     const btn      = document.getElementById('emailSignupBtn');
 
-    if (!email || !name || !password) return alert('Please fill out all fields.');
+    if (!email || !name || !password) { notify.warn('Please fill out all fields.'); return; }
     if (!SECURITY.EMAIL_REGEX.test(email)) {
-        return alert('That email address looks malformed.');
+        notify.warn('That email address looks malformed.'); return;
     }
     if (name.length > SECURITY.MAX_DISPLAY_NAME_LEN) {
-        return alert(`Display name is too long (max ${SECURITY.MAX_DISPLAY_NAME_LEN} chars).`);
+        notify.warn(`Display name is too long (max ${SECURITY.MAX_DISPLAY_NAME_LEN} chars).`); return;
     }
     // Reject control chars and HTML markers in display name — defense in depth
     // (rendering paths escape via _esc, but invisible/control bytes are pointless).
     if (/[\x00-\x1f<>"']/.test(name)) {
-        return alert('Display name contains invalid characters.');
+        notify.warn('Display name contains invalid characters.'); return;
     }
     const pwErr = _validatePassword(password);
-    if (pwErr) return alert(pwErr);
-    if (password !== confirm) return alert('Passwords do not match.');
+    if (pwErr) { notify.warn(pwErr); return; }
+    if (password !== confirm) { notify.warn('Passwords do not match.'); return; }
 
     btn.disabled    = true;
     btn.textContent = 'Signing up...';
@@ -337,21 +333,21 @@ async function _handleEmailSignup() {
 
         // Email already registered (empty identities array)
         if (data.user && data.user.identities?.length === 0) {
-            alert('This email is already registered. Please log in using the Login tab.');
+            notify.warn('This email is already registered. Please log in using the Login tab.');
             return;
         }
 
         if (data.session) {
             // Email confirmation disabled → user is logged in immediately
             _closeAuthModal();
-            alert(`Welcome, ${name}! 🎮`);
+            notify.success(`Welcome, ${name}! 🎮`);
         } else {
             // Email confirmation required
             _closeAuthModal();
-            alert('Account created! A verification link has been sent to your email.\nClick the link to complete sign-in.');
+            notify.success('Account created! Check your email for a verification link.', { duration: 6000 });
         }
     } catch (err) {
-        alert('Signup failed: ' + err.message);
+        notify.error(friendlyError(err, 'Sign-up failed.'), err);
     } finally {
         btn.disabled    = false;
         btn.textContent = 'Sign Up';
@@ -379,21 +375,21 @@ function initChangePassword() {
         const confirm = document.getElementById('newPasswordConfirm')?.value;
         const btn     = document.getElementById('changePasswordBtn');
 
-        if (!newPw)            return alert('Please enter a new password.');
+        if (!newPw) { notify.warn('Please enter a new password.'); return; }
         const pwErr = _validatePassword(newPw);
-        if (pwErr) return alert(pwErr);
-        if (newPw !== confirm) return alert('Passwords do not match.');
+        if (pwErr) { notify.warn(pwErr); return; }
+        if (newPw !== confirm) { notify.warn('Passwords do not match.'); return; }
 
         btn.disabled    = true;
         btn.textContent = 'Updating...';
         try {
             const { error } = await supabaseClient.auth.updateUser({ password: newPw });
             if (error) throw error;
-            alert('Password updated successfully.');
+            notify.success('Password updated.');
             document.getElementById('newPasswordInput').value   = '';
             document.getElementById('newPasswordConfirm').value = '';
         } catch (err) {
-            alert('Update failed: ' + err.message);
+            notify.error(friendlyError(err, 'Could not update password.'), err);
         } finally {
             btn.disabled    = false;
             btn.textContent = 'Change';
