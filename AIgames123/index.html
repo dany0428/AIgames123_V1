@@ -378,6 +378,7 @@
         <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
 
         <div class="dpad-overlay" id="dpadOverlay">
+          <!-- D-pad (digital, discrete directions) -->
           <div class="dpad-wrap">
             <div class="dpad-container">
               <button class="dpad-btn dpad-up"    data-key="ArrowUp"    data-code="ArrowUp">▲</button>
@@ -387,6 +388,17 @@
               <button class="dpad-btn dpad-down"  data-key="ArrowDown"  data-code="ArrowDown">▼</button>
             </div>
           </div>
+
+          <!-- Analog joystick (continuous, drag-based).
+               Translates stick position into arrow-key events so games
+               that listen for arrow keys "just work" with both controllers.
+               Useful for finer/diagonal control than the digital D-pad. -->
+          <div class="joystick-wrap" id="joystickWrap">
+            <div class="joystick-base" id="joystickBase">
+              <div class="joystick-stick" id="joystickStick"></div>
+            </div>
+          </div>
+
           <div class="dpad-actions-wrap">
             <button class="dpad-action" data-key=" "      data-code="Space">Jump</button>
             <button class="dpad-action" data-key="Enter"  data-code="Enter">OK</button>
