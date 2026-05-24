@@ -199,15 +199,15 @@
 /* Game description block inside the player modal — appears at the BOTTOM,
    below the uploader profile and vote footer.
 
-   Layout:
-     - Outer wrapper provides background, border, and vertical sizing.
-     - Inner content has extra horizontal padding (max-width capped) so
-       long text doesn't run flush against the modal edges.
-     - A centered "Description" label sits above the body text.
+   Layout: left-aligned with the uploader profile above it. The footer uses
+   padding 1rem 1.5rem and the uploader-profile inside it adds another 12px,
+   so the description's left edge matches the avatar's left edge by using
+   the same combined offset.
+
    `white-space: pre-wrap` preserves the user's line breaks while still
    letting the browser word-wrap long lines. */
 .game-description {
-  padding: 0.9rem 0;
+  padding: 0.9rem 0 1rem;
   background: #0f0a1a;
   border-top: 1px solid #3b2d5a;
   color: #cbd5e1;
@@ -220,33 +220,35 @@
 .game-description::-webkit-scrollbar { width: 6px; }
 .game-description::-webkit-scrollbar-thumb { background: #3b2d5a; border-radius: 3px; }
 
-/* "Description" header — small, centered, muted */
+/* "Description" header — small, left-aligned to match the uploader profile */
 .game-description-label {
-  text-align: center;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #a78bfa;
-  margin-bottom: 0.55rem;
-  padding: 0 2rem;
+  margin-bottom: 0.5rem;
+  padding-left: calc(1.5rem + 12px);   /* footer padding + uploader-profile padding */
+  padding-right: 1.5rem;
 }
 
-/* Body — indented on both sides so it reads centered in the modal,
-   and the actual user text is left-aligned within that column. */
+/* Body — left-aligned with the uploader avatar above it */
 .game-description-body {
-  padding: 0 2rem;
-  max-width: 720px;
-  margin: 0 auto;
+  padding-left: calc(1.5rem + 12px);
+  padding-right: 1.5rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* Tighter padding on narrow screens */
+/* Narrow screens: footer padding shrinks to 0.5rem 0.8rem (see media query
+   above near .game-footer). Match that here. */
 @media (max-width: 600px) {
   .game-description-label,
-  .game-description-body { padding: 0 1rem; }
+  .game-description-body {
+    padding-left: calc(0.8rem + 12px);
+    padding-right: 0.8rem;
+  }
 }
 
 /* Hide description entirely in pseudo-fullscreen so the game gets all the space */
