@@ -280,7 +280,7 @@ async function _executeDelete() {
         await Promise.all([loadGames(), loadStats()]);
 
     } catch (err) {
-        alert('Delete failed: ' + err.message);
+        notify.error(friendlyError(err, 'Could not delete the game.'), err);
     } finally {
         okBtn.disabled    = false;
         okBtn.textContent = 'Confirm Delete';
