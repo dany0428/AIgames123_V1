@@ -237,7 +237,18 @@
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Game Name</label>
-          <input type="text" class="form-input" id="gameName">
+          <input type="text" class="form-input" id="gameName" maxlength="80">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description <span style="font-weight:normal;color:#888;">(optional)</span></label>
+          <textarea
+            class="form-input form-textarea"
+            id="gameDescription_upload"
+            rows="4"
+            maxlength="1000"
+            placeholder="Tell players how to play, what the goal is, controls, tips..."
+            style="resize:vertical;min-height:90px;font-family:inherit;"></textarea>
+          <p style="font-size:0.78rem; color:#666; margin-top:6px;">* Up to 1000 characters. Line breaks are preserved.</p>
         </div>
         <div class="form-group">
           <label class="form-label">Tags (click to select)</label>
@@ -281,7 +292,17 @@
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Game Name</label>
-          <input type="text" class="form-input" id="editGameName">
+          <input type="text" class="form-input" id="editGameName" maxlength="80">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description <span style="font-weight:normal;color:#888;">(optional)</span></label>
+          <textarea
+            class="form-input form-textarea"
+            id="editGameDescription"
+            rows="4"
+            maxlength="1000"
+            placeholder="Tell players how to play..."
+            style="resize:vertical;min-height:90px;font-family:inherit;"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Tags (click to select)</label>
@@ -305,6 +326,9 @@
           <button class="close-btn" id="closePlayer">&times;</button>
         </div>
       </div>
+
+      <!-- Game description — populated by openGame(), hidden when blank. -->
+      <div class="game-description" id="gameDescription" style="display:none;"></div>
 
       <div class="game-frame-container">
         <!-- Exit-pseudo-fullscreen floating button — only visible during pseudo-fullscreen -->
