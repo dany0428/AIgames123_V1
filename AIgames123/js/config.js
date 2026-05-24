@@ -134,7 +134,7 @@ function initDOMCache() {
         'profileNameInput', 'profileEmail', 'statTotalGames', 'statTotalViews',
         'publicProfileName', 'dpadOverlay',
         'fitBtn', 'exitFsFloatBtn',
-        'gameDescription',   // NEW: description block inside player modal
+        'gameDescription', 'gameDescriptionBody',   // NEW: description block + its inner body
     ];
     ids.forEach(id => { DOM[id] = document.getElementById(id); });
 }
