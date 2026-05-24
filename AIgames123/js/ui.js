@@ -332,7 +332,10 @@ function initPlayer() {
         }
     }
 
-    // Auto-scale based on iframe content width (works only for same-origin srcdoc games)
+    // Auto-scale based on iframe content dimensions — fits the game
+    // to the container by BOTH width and height. On mobile portrait,
+    // many games are designed for landscape and would otherwise overflow
+    // vertically; this picks the smaller scale factor of the two.
     function tryAutoScale() {
         const wrapper   = DOM.gameScaleWrapper;
         const frame     = DOM.gameFrame;
@@ -343,12 +346,23 @@ function initPlayer() {
             const doc = frame.contentDocument;
             if (!doc?.documentElement) return;
 
-            const contentW   = doc.documentElement.scrollWidth || doc.body?.scrollWidth || 0;
+            const contentW = doc.documentElement.scrollWidth  || doc.body?.scrollWidth  || 0;
+            const contentH = doc.documentElement.scrollHeight || doc.body?.scrollHeight || 0;
             const containerW = container.clientWidth;
+            const containerH = container.clientHeight;
 
-            if (contentW > containerW + 8) {
-                const scale = Math.max(0.3, containerW / contentW);
-                applyScale(parseFloat(scale.toFixed(3)));
+            // No content size yet — game is still bootstrapping
+            if (contentW < 50 || contentH < 50) return;
+
+            const widthScale  = containerW / contentW;
+            const heightScale = containerH / contentH;
+            // Use the smaller of the two so the game fits without overflow.
+            // Cap at 1× — never upscale (avoids blurry pixel-art games).
+            const scale = Math.min(widthScale, heightScale, 1);
+
+            // Only act if scaling is actually needed (>5% mismatch)
+            if (scale < 0.95) {
+                applyScale(parseFloat(Math.max(0.3, scale).toFixed(3)));
             }
         } catch {
             // cross-origin: cannot auto-measure, user can press the Fit button
@@ -358,6 +372,22 @@ function initPlayer() {
     DOM.gameFrame?.addEventListener('load', () => {
         // Slight delay so the game can finish its own DOM init first
         setTimeout(tryAutoScale, 400);
+    });
+
+    // Re-fit on orientation change / window resize. iOS Safari fires both
+    // `orientationchange` (legacy) and `resize` (modern) — we listen to
+    // resize alone since that covers all cases, but debounce so we don't
+    // thrash during the rotation animation.
+    let _resizeTimer = null;
+    window.addEventListener('resize', () => {
+        if (!DOM.playerModal?.classList.contains('active')) return;
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(() => {
+            // Reset scale first so the next measurement is against natural size,
+            // then re-apply auto-scale based on the new container dimensions.
+            applyScale(1);
+            tryAutoScale();
+        }, 250);
     });
 
     // Fit button cycle: 100% → 75% → 60% → 50% → 100%
@@ -379,6 +409,8 @@ function initPlayer() {
         modalOverlay?.classList.add('pseudo-fullscreen-overlay');
         if (fullscreenBtn)  fullscreenBtn.textContent    = 'Fullscreen';
         if (exitFsFloatBtn) exitFsFloatBtn.style.display = 'flex';
+        // Container size just changed dramatically — re-fit the game.
+        setTimeout(() => { applyScale(1); tryAutoScale(); }, 80);
     }
 
     function exitPseudoFullscreen() {
@@ -386,6 +418,7 @@ function initPlayer() {
         modalOverlay?.classList.remove('pseudo-fullscreen-overlay');
         if (fullscreenBtn)  fullscreenBtn.textContent    = 'Fullscreen';
         if (exitFsFloatBtn) exitFsFloatBtn.style.display = 'none';
+        setTimeout(() => { applyScale(1); tryAutoScale(); }, 80);
     }
 
     fullscreenBtn?.addEventListener('click', () => {
@@ -474,6 +507,35 @@ function initDpad() {
     const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
     if (!isTouch) return;
     DOM.dpadOverlay.classList.add('active');
+
+    // ════════════════════════════════════════════════════════
+    // Toggle button — lets the user dismiss the D-pad when they
+    // need to interact with the lower portion of the game. The
+    // toggle button itself stays visible so they can bring it back.
+    // Choice persists across the session via localStorage.
+    // ════════════════════════════════════════════════════════
+    const toggleBtn = document.getElementById('dpadToggleBtn');
+    if (toggleBtn) {
+        toggleBtn.classList.add('visible');
+
+        const STORAGE_KEY = 'dpadHidden';
+        let isHidden = false;
+        try { isHidden = localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) {}
+
+        const applyHidden = (hidden) => {
+            DOM.dpadOverlay.classList.toggle('hidden', hidden);
+            toggleBtn.textContent = hidden ? '🎮' : '✕';
+            toggleBtn.title       = hidden ? 'Show controller' : 'Hide controller';
+        };
+        applyHidden(isHidden);
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isHidden = !isHidden;
+            try { localStorage.setItem(STORAGE_KEY, isHidden ? '1' : '0'); } catch (_) {}
+            applyHidden(isHidden);
+        });
+    }
 
     function sendKey(type, key, code) {
         try {
