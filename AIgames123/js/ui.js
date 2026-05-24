@@ -615,31 +615,45 @@ function initDpad() {
     DOM.dpadOverlay.classList.add('active');
 
     // ════════════════════════════════════════════════════════
-    // Toggle button — lets the user dismiss the D-pad when they
-    // need to interact with the lower portion of the game. The
-    // toggle button itself stays visible so they can bring it back.
-    // Choice persists across the session via localStorage.
+    // Controller toggle button — cycles through three modes:
+    //   1. dpad      — show D-pad        (icon: 🎮 → next is joystick)
+    //   2. joystick  — show joystick     (icon: 🕹️ → next is hidden)
+    //   3. hidden    — controller hidden (icon: ⊘ → next is dpad)
+    // The user's choice persists across the session via localStorage.
     // ════════════════════════════════════════════════════════
     const toggleBtn = document.getElementById('dpadToggleBtn');
     if (toggleBtn) {
         toggleBtn.classList.add('visible');
 
-        const STORAGE_KEY = 'dpadHidden';
-        let isHidden = false;
-        try { isHidden = localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) {}
-
-        const applyHidden = (hidden) => {
-            DOM.dpadOverlay.classList.toggle('hidden', hidden);
-            toggleBtn.textContent = hidden ? '🎮' : '✕';
-            toggleBtn.title       = hidden ? 'Show controller' : 'Hide controller';
+        const STORAGE_KEY = 'controllerMode';
+        const MODES = ['dpad', 'joystick', 'hidden'];
+        const ICONS = { dpad: '🎮', joystick: '🕹️', hidden: '⊘' };
+        const LABELS = {
+            dpad:     'Controller: D-pad (tap for joystick)',
+            joystick: 'Controller: joystick (tap to hide)',
+            hidden:   'Controller hidden (tap to show D-pad)',
         };
-        applyHidden(isHidden);
+
+        let mode = 'dpad';
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (MODES.includes(saved)) mode = saved;
+        } catch (_) {}
+
+        const applyMode = (m) => {
+            DOM.dpadOverlay.classList.toggle('hidden',        m === 'hidden');
+            DOM.dpadOverlay.classList.toggle('show-joystick', m === 'joystick');
+            toggleBtn.textContent = ICONS[m];
+            toggleBtn.title       = LABELS[m];
+            toggleBtn.setAttribute('aria-label', LABELS[m]);
+        };
+        applyMode(mode);
 
         toggleBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            isHidden = !isHidden;
-            try { localStorage.setItem(STORAGE_KEY, isHidden ? '1' : '0'); } catch (_) {}
-            applyHidden(isHidden);
+            mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+            try { localStorage.setItem(STORAGE_KEY, mode); } catch (_) {}
+            applyMode(mode);
         });
     }
 
