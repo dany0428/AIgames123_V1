@@ -295,6 +295,14 @@ function initPlayer() {
 
     // Scale-adjust helper: when iframe content is wider than container,
     // scale down via CSS transform.
+    //
+    // Important: at scale = 1 we COMPLETELY clear the wrapper's and frame's
+    // inline styles by setting them to ''. This lets the stylesheet
+    // (`.game-scale-wrapper { width: 100%; height: 100% }` etc.) and any
+    // active CSS rules (like `:fullscreen { ... !important }`) take over
+    // unimpeded. Setting inline cssText to a string like 'width:100%' would
+    // create plain inline styles that fight the !important rules during
+    // fullscreen transitions.
     function applyScale(scale) {
         const wrapper   = DOM.gameScaleWrapper;
         const frame     = DOM.gameFrame;
@@ -304,8 +312,12 @@ function initPlayer() {
         currentScale = scale;
 
         if (scale >= 1) {
-            wrapper.style.cssText = 'width:100%; height:100%; overflow:hidden;';
-            frame.style.cssText   = 'width:100%; height:100%; border:none; background:#fff;';
+            // Hand sizing entirely back to CSS by clearing all inline styles
+            wrapper.removeAttribute('style');
+            frame.removeAttribute('style');
+            // Make sure the iframe is visible (closePlayerModal sets it to none
+            // when the modal closes, so we re-enable it whenever a game is shown)
+            frame.style.display = 'block';
             if (fitBtn) fitBtn.textContent = '⊡ Fit';
         } else {
             const containerW = container.clientWidth;
@@ -387,12 +399,18 @@ function initPlayer() {
 
     // Re-fit on orientation change / window resize. Debounce long enough
     // that fullscreen enter/exit (which fires `resize`) has time for the
-    // layout to settle before we measure.
+    // layout to settle before we measure. The dedicated fullscreenchange
+    // handler does the recovery on fullscreen exits, so we suppress this
+    // listener briefly around fullscreen transitions to avoid two
+    // competing rescales fighting each other.
     let _resizeTimer = null;
+    let _suppressResizeUntil = 0;
     window.addEventListener('resize', () => {
         if (!DOM.playerModal?.classList.contains('active')) return;
         // Don't re-scale while in native fullscreen — CSS handles sizing.
         if (document.fullscreenElement || document.webkitFullscreenElement) return;
+        // Skip if we just exited fullscreen — the dedicated handler is on it.
+        if (Date.now() < _suppressResizeUntil) return;
         clearTimeout(_resizeTimer);
         _resizeTimer = setTimeout(() => {
             applyScale(1);
@@ -458,32 +476,34 @@ function initPlayer() {
 
     exitFsFloatBtn?.addEventListener('click', exitPseudoFullscreen);
 
+    function recoverFromFullscreenExit() {
+        // Suppress the resize handler for a moment so it doesn't fight
+        // this recovery sequence (resize also fires on fullscreen exit).
+        _suppressResizeUntil = Date.now() + 1000;
+        // Clear inline styles immediately so the stylesheet rules can take
+        // over for sizing as the browser unwinds the fullscreen layout.
+        applyScale(1);
+        // Two frames + a buffer to let layout fully reflow.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            // Snap to clean state one more time after layout has settled.
+            applyScale(1);
+            // Only THEN consider auto-scaling. Skip if iframe content
+            // unavailable (cross-origin) or container is still mid-reflow.
+            setTimeout(tryAutoScale, 200);
+        }));
+    }
+
     document.addEventListener('fullscreenchange', () => {
         const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
         if (fullscreenBtn) {
             fullscreenBtn.textContent = inFs ? 'Exit FS' : 'Fullscreen';
         }
-        if (!inFs) {
-            // Exited fullscreen (typically via ESC). The browser's resize
-            // event also fires, but we explicitly reset here as well to
-            // guarantee the scale-wrapper's inline styles get cleared.
-            // Wait one frame so the layout has settled back to its modal
-            // dimensions, then snap to 1× and re-fit.
-            requestAnimationFrame(() => {
-                applyScale(1);
-                setTimeout(tryAutoScale, 80);
-            });
-        }
+        if (!inFs) recoverFromFullscreenExit();
     });
     // Safari/older WebKit uses the prefixed event name
     document.addEventListener('webkitfullscreenchange', () => {
         const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        if (!inFs) {
-            requestAnimationFrame(() => {
-                applyScale(1);
-                setTimeout(tryAutoScale, 80);
-            });
-        }
+        if (!inFs) recoverFromFullscreenExit();
     });
 
     // Close player — also revokes blob URLs from ZIP loader (memory leak fix)
