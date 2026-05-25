@@ -33,7 +33,7 @@
    image (rather than flush with the image's left edge). */
 .logo-tagline {
   margin-top: 2px;
-  padding-left: 28px;
+  padding-left: 30px;
   font-size: 0.7rem;
   font-weight: 400;
   color: #ffffff;
@@ -43,7 +43,7 @@
   pointer-events: none;
 }
 @media (max-width: 600px) {
-  .logo-tagline { font-size: 0.6rem; padding-left: 20px; }
+  .logo-tagline { font-size: 0.6rem; padding-left: 22px; }
 }
 
 .logo-img {
