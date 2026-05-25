@@ -13,32 +13,36 @@
 }
 
 /* ── Tagline strip (under navbar) ──
-   Subtle subtitle below the logo. Matches the navbar's solid dark
-   background so it reads as a continuation of the header rather than
-   a distinct band. White text, light weight, low-key. */
-.site-tagline {
-  background: #1a1025;
-  border-bottom: 1px solid #2a1f3a;
-  padding: 0.45rem 1.5rem;
-  text-align: center;
-}
-.tagline-text {
-  font-size: 0.82rem;
-  font-weight: 400;
-  color: #ffffff;
-  opacity: 0.7;
-  letter-spacing: 0.02em;
-}
-@media (max-width: 600px) {
-  .site-tagline { padding: 0.4rem 1rem; }
-  .tagline-text { font-size: 0.74rem; }
-}
+   Removed: tagline is now rendered inside .logo as .logo-tagline,
+   sitting flush beneath the logo image. See below in the .logo rule. */
 
 .logo {
   cursor: pointer;
   display: flex;
-  align-items: center;
+  /* Stack the image and the tagline vertically so the text sits
+     directly beneath the logo image (top-left corner of the navbar). */
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Tagline beneath the logo image — small, low-contrast white text.
+   Sits flush-left with the logo image; just enough breathing room
+   above to feel separate but still part of the brand area. */
+.logo-tagline {
+  margin-top: 2px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #ffffff;
+  opacity: 0.55;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .logo-tagline { font-size: 0.6rem; }
 }
 
 .logo-img {
