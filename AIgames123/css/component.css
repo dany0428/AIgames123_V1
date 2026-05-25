@@ -284,31 +284,43 @@
   overflow: hidden;
 }
 
-/* Native fullscreen (desktop): the browser sizes the fullscreen element
-   to the viewport, but our flex children need explicit sizing instructions
-   to fill that new space. Without these rules, the iframe stays at the
-   pre-fullscreen dimensions and the rest of the screen renders black. */
+/* Native fullscreen (desktop): when .game-frame-container goes fullscreen,
+   the browser sizes it to the entire viewport. Our nested wrapper and
+   iframe need to fill that new space, but JS may have left inline
+   width/height/transform values on them from the Fit auto-scale. The
+   `!important` rules below decisively override anything inline so the
+   game always fills the fullscreen viewport. */
 .game-frame-container:fullscreen,
 .game-frame-container:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 .game-frame-container:fullscreen .game-scale-wrapper,
 .game-frame-container:-webkit-full-screen .game-scale-wrapper {
   width: 100% !important;
   height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
   /* Reset any inline transform/sizing that JS applied while NOT in fullscreen. */
   transform: none !important;
+  flex-shrink: 1 !important;
+  overflow: hidden !important;
 }
 .game-frame-container:fullscreen iframe,
-.game-frame-container:-webkit-full-screen iframe {
+.game-frame-container:-webkit-full-screen iframe,
+.game-frame-container:fullscreen #gameFrame,
+.game-frame-container:-webkit-full-screen #gameFrame {
   width: 100% !important;
   height: 100% !important;
-  border: none;
-  background: #000;
+  display: block !important;
+  border: none !important;
+  background: #000 !important;
 }
 
 /* Floating exit-fullscreen button (shown only during pseudo-fullscreen on mobile) */
