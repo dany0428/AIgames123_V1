@@ -29,10 +29,11 @@
 }
 
 /* Tagline beneath the logo image — small, low-contrast white text.
-   Sits flush-left with the logo image; just enough breathing room
-   above to feel separate but still part of the brand area. */
+   Indented slightly so it sits roughly under the center of the logo
+   image (rather than flush with the image's left edge). */
 .logo-tagline {
   margin-top: 2px;
+  padding-left: 14px;
   font-size: 0.7rem;
   font-weight: 400;
   color: #ffffff;
@@ -42,7 +43,7 @@
   pointer-events: none;
 }
 @media (max-width: 600px) {
-  .logo-tagline { font-size: 0.6rem; }
+  .logo-tagline { font-size: 0.6rem; padding-left: 10px; }
 }
 
 .logo-img {
