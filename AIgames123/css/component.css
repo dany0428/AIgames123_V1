@@ -284,6 +284,33 @@
   overflow: hidden;
 }
 
+/* Native fullscreen (desktop): the browser sizes the fullscreen element
+   to the viewport, but our flex children need explicit sizing instructions
+   to fill that new space. Without these rules, the iframe stays at the
+   pre-fullscreen dimensions and the rest of the screen renders black. */
+.game-frame-container:fullscreen,
+.game-frame-container:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-frame-container:fullscreen .game-scale-wrapper,
+.game-frame-container:-webkit-full-screen .game-scale-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+  /* Reset any inline transform/sizing that JS applied while NOT in fullscreen. */
+  transform: none !important;
+}
+.game-frame-container:fullscreen iframe,
+.game-frame-container:-webkit-full-screen iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+  background: #000;
+}
+
 /* Floating exit-fullscreen button (shown only during pseudo-fullscreen on mobile) */
 .exit-fs-float-btn {
   display: none;
