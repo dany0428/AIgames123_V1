@@ -342,6 +342,15 @@ function initPlayer() {
         const container = wrapper?.parentElement;
         if (!wrapper || !frame || !container) return;
 
+        // When the container is in native fullscreen, CSS rules take over
+        // sizing the game to fill the viewport (see :fullscreen rules in
+        // component.css). Running our JS-based scaling here would fight
+        // those rules and cause the game to render as a tiny rectangle.
+        if (document.fullscreenElement === container ||
+            document.webkitFullscreenElement === container) {
+            return;
+        }
+
         try {
             const doc = frame.contentDocument;
             if (!doc?.documentElement) return;
@@ -353,6 +362,8 @@ function initPlayer() {
 
             // No content size yet — game is still bootstrapping
             if (contentW < 50 || contentH < 50) return;
+            // Defensive: container hasn't been laid out yet (mid-transition)
+            if (containerW < 50 || containerH < 50) return;
 
             const widthScale  = containerW / contentW;
             const heightScale = containerH / contentH;
@@ -374,20 +385,19 @@ function initPlayer() {
         setTimeout(tryAutoScale, 400);
     });
 
-    // Re-fit on orientation change / window resize. iOS Safari fires both
-    // `orientationchange` (legacy) and `resize` (modern) — we listen to
-    // resize alone since that covers all cases, but debounce so we don't
-    // thrash during the rotation animation.
+    // Re-fit on orientation change / window resize. Debounce long enough
+    // that fullscreen enter/exit (which fires `resize`) has time for the
+    // layout to settle before we measure.
     let _resizeTimer = null;
     window.addEventListener('resize', () => {
         if (!DOM.playerModal?.classList.contains('active')) return;
+        // Don't re-scale while in native fullscreen — CSS handles sizing.
+        if (document.fullscreenElement || document.webkitFullscreenElement) return;
         clearTimeout(_resizeTimer);
         _resizeTimer = setTimeout(() => {
-            // Reset scale first so the next measurement is against natural size,
-            // then re-apply auto-scale based on the new container dimensions.
             applyScale(1);
             tryAutoScale();
-        }, 250);
+        }, 300);
     });
 
     // Fit button cycle: 100% → 75% → 60% → 50% → 100%
@@ -428,8 +438,18 @@ function initPlayer() {
                 : enterPseudoFullscreen();
         } else {
             if (!document.fullscreenElement) {
+                // Reset any active CSS scale transform BEFORE entering
+                // fullscreen — the CSS :fullscreen rules will then take
+                // over sizing with a clean slate. Without this, the
+                // wrapper keeps inline width/height from the pre-FS
+                // container dimensions and renders as a tiny rectangle
+                // on a black fullscreen background.
+                applyScale(1);
                 const target = document.querySelector('.game-frame-container') || DOM.gameFrame;
-                (target.requestFullscreen || target.webkitRequestFullscreen)?.call(target);
+                const req = target.requestFullscreen || target.webkitRequestFullscreen;
+                req?.call(target).catch(err => {
+                    notify.error(friendlyError(err, 'Fullscreen failed.'), err);
+                });
             } else {
                 (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
             }
@@ -439,8 +459,30 @@ function initPlayer() {
     exitFsFloatBtn?.addEventListener('click', exitPseudoFullscreen);
 
     document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement && fullscreenBtn) {
-            fullscreenBtn.textContent = 'Fullscreen';
+        const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        if (fullscreenBtn) {
+            fullscreenBtn.textContent = inFs ? 'Exit FS' : 'Fullscreen';
+        }
+        if (!inFs) {
+            // Exited fullscreen (typically via ESC). The browser's resize
+            // event also fires, but we explicitly reset here as well to
+            // guarantee the scale-wrapper's inline styles get cleared.
+            // Wait one frame so the layout has settled back to its modal
+            // dimensions, then snap to 1× and re-fit.
+            requestAnimationFrame(() => {
+                applyScale(1);
+                setTimeout(tryAutoScale, 80);
+            });
+        }
+    });
+    // Safari/older WebKit uses the prefixed event name
+    document.addEventListener('webkitfullscreenchange', () => {
+        const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        if (!inFs) {
+            requestAnimationFrame(() => {
+                applyScale(1);
+                setTimeout(tryAutoScale, 80);
+            });
         }
     });
 
