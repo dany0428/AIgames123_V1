@@ -140,11 +140,19 @@ function initUploadModal() {
             const fileType = selectedFileType; // 'html' | 'zip'
             let gameUrl;
 
+            // cacheControl: 31536000 seconds = 1 year. Files keyed by
+            // `${timestamp}_${sanitizedName}` are immutable in practice
+            // (uploader can edit metadata but not replace the file), so
+            // browsers and Supabase's CDN can cache them indefinitely.
+            // This drastically cuts Storage egress: repeat plays of the
+            // same game by the same user hit cache, not the origin.
+            const STORAGE_CACHE = { cacheControl: '31536000', upsert: true };
+
             if (fileType === 'zip') {
                 // ZIP upload: stored as-is
                 const fileName = `${Date.now()}_${sanitizeName(file.name)}`;
                 const { error: uploadErr } = await supabaseClient.storage
-                    .from('game-files').upload(fileName, file, { contentType: 'application/zip', upsert: true });
+                    .from('game-files').upload(fileName, file, { ...STORAGE_CACHE, contentType: 'application/zip' });
                 if (uploadErr) throw uploadErr;
                 gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
             } else {
@@ -153,7 +161,7 @@ function initUploadModal() {
                 const blob     = new Blob([htmlText], { type: 'text/html; charset=utf-8' });
                 const fileName = `${Date.now()}_${sanitizeName(file.name)}`;
                 const { error: uploadErr } = await supabaseClient.storage
-                    .from('game-files').upload(fileName, blob, { contentType: 'text/html; charset=utf-8', upsert: true });
+                    .from('game-files').upload(fileName, blob, { ...STORAGE_CACHE, contentType: 'text/html; charset=utf-8' });
                 if (uploadErr) throw uploadErr;
                 gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
             }
@@ -163,7 +171,7 @@ function initUploadModal() {
             if (thumbFile) {
                 const thumbName = `${Date.now()}_thumb_${sanitizeName(thumbFile.name)}`;
                 const { error: thumbErr } = await supabaseClient.storage
-                    .from('game-files').upload(thumbName, thumbFile, { upsert: true });
+                    .from('game-files').upload(thumbName, thumbFile, STORAGE_CACHE);
                 if (thumbErr) throw thumbErr;
                 thumbUrl = supabaseClient.storage.from('game-files').getPublicUrl(thumbName).data.publicUrl;
             }
@@ -789,7 +797,11 @@ async function uploadAvatar(file) {
     const fileName = `avatars/${currentUser.id}_${Date.now()}.${ext}`;
 
     const { error: upErr } = await supabaseClient.storage
-        .from('game-files').upload(fileName, uploadFile, { upsert: true, contentType: uploadFile.type || 'image/webp' });
+        .from('game-files').upload(fileName, uploadFile, {
+            upsert: true,
+            contentType: uploadFile.type || 'image/webp',
+            cacheControl: '31536000',   // 1 year browser/CDN cache; new uploads use a fresh timestamped key
+        });
     if (upErr) throw upErr;
 
     const { data: { publicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
