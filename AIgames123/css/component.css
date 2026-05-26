@@ -1018,6 +1018,60 @@ button, .game-card, .genre-item, .tag-option,
 
 .auth-link:hover { color: #c4b5fd; }
 
+/* Terms / Privacy agreement checkbox on signup */
+.auth-consent {
+  margin-top: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+.auth-consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+  line-height: 1.45;
+}
+.auth-consent-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #3b2d5a;
+  border-radius: 4px;
+  background: #0f0a1a;
+  cursor: pointer;
+  position: relative;
+  top: 1px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.auth-consent-checkbox:hover { border-color: #8b5cf6; }
+.auth-consent-checkbox:checked {
+  border-color: #8b5cf6;
+  background: #7c3aed;
+}
+.auth-consent-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.auth-consent-text {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+.auth-consent-text a {
+  color: #a78bfa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.auth-consent-text a:hover { color: #c4b5fd; }
+
 #authModal .submit-btn { margin-top: 0.25rem; }
 
 @media (max-width: 640px) {
