@@ -16,10 +16,12 @@ const supabaseClient    = window.supabase.createClient(SUPABASE_URL, SUPABASE_AN
 // ════════════════════════════════════════════════════════
 
 const SECURITY = {
-    // File size caps (bytes)
-    MAX_GAME_FILE_BYTES:  50 * 1024 * 1024,   //  50 MB — html/zip games
-    MAX_THUMB_BYTES:       5 * 1024 * 1024,   //   5 MB — game thumbnails
-    MAX_AVATAR_BYTES:      2 * 1024 * 1024,   //   2 MB — profile avatars
+    // File size caps (bytes) — kept tight to control Supabase storage egress.
+    // Free tier has 5GB/month egress; aggressive caps + browser caching are
+    // how we stay within budget. Raise these only if egress is well-managed.
+    MAX_GAME_FILE_BYTES:  25 * 1024 * 1024,   //  25 MB — html/zip games
+    MAX_THUMB_BYTES:       2 * 1024 * 1024,   //   2 MB — game thumbnails (compressed to ~200KB before upload)
+    MAX_AVATAR_BYTES:      2 * 1024 * 1024,   //   2 MB — profile avatars (compressed to ~50KB before upload)
 
     // Game-file URL allowlist: file_url MUST be served from the project's
     // Supabase storage bucket. Rejects javascript:, data:, http:, and any
