@@ -154,7 +154,11 @@ function initUploadModal() {
                 const { error: uploadErr } = await supabaseClient.storage
                     .from('game-files').upload(fileName, file, { ...STORAGE_CACHE, contentType: 'application/zip' });
                 if (uploadErr) throw uploadErr;
-                gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
+                // Rewrite the Supabase storage URL to our CDN domain so all
+                // future loads go through the cache instead of origin.
+                gameUrl = toCdnUrl(
+                    supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl
+                );
             } else {
                 // HTML upload
                 const htmlText = await file.text();
@@ -163,7 +167,9 @@ function initUploadModal() {
                 const { error: uploadErr } = await supabaseClient.storage
                     .from('game-files').upload(fileName, blob, { ...STORAGE_CACHE, contentType: 'text/html; charset=utf-8' });
                 if (uploadErr) throw uploadErr;
-                gameUrl = supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl;
+                gameUrl = toCdnUrl(
+                    supabaseClient.storage.from('game-files').getPublicUrl(fileName).data.publicUrl
+                );
             }
 
             // Thumbnail
@@ -173,7 +179,9 @@ function initUploadModal() {
                 const { error: thumbErr } = await supabaseClient.storage
                     .from('game-files').upload(thumbName, thumbFile, STORAGE_CACHE);
                 if (thumbErr) throw thumbErr;
-                thumbUrl = supabaseClient.storage.from('game-files').getPublicUrl(thumbName).data.publicUrl;
+                thumbUrl = toCdnUrl(
+                    supabaseClient.storage.from('game-files').getPublicUrl(thumbName).data.publicUrl
+                );
             }
 
             const m = currentUser.user_metadata || {};
@@ -805,20 +813,21 @@ async function uploadAvatar(file) {
     if (upErr) throw upErr;
 
     const { data: { publicUrl } } = supabaseClient.storage.from('game-files').getPublicUrl(fileName);
+    const cdnUrl = toCdnUrl(publicUrl);
 
-    const { data, error: metaErr } = await supabaseClient.auth.updateUser({ data: { custom_avatar: publicUrl } });
+    const { data, error: metaErr } = await supabaseClient.auth.updateUser({ data: { custom_avatar: cdnUrl } });
     if (metaErr) throw metaErr;
 
-    if (DOM.profileAvatar) DOM.profileAvatar.src = publicUrl;
-    if (DOM.avatarPreview) DOM.avatarPreview.src = publicUrl;
+    if (DOM.profileAvatar) DOM.profileAvatar.src = cdnUrl;
+    if (DOM.avatarPreview) DOM.avatarPreview.src = cdnUrl;
 
     // Sync avatar on the user's games (background)
-    supabaseClient.from('games').update({ uploader_avatar: publicUrl })
+    supabaseClient.from('games').update({ uploader_avatar: cdnUrl })
         .eq('user_id', currentUser.id)
         .then(({ error }) => { if (error) console.warn('Avatar sync failed:', error.message); });
 
     updateAuthUI(data.user);
-    return publicUrl;
+    return cdnUrl;
 }
 
 function initProfileAvatar() {
