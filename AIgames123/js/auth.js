@@ -306,6 +306,13 @@ async function _handleEmailSignup() {
     const btn      = document.getElementById('emailSignupBtn');
 
     if (!email || !name || !password) { notify.warn('Please fill out all fields.'); return; }
+    // Terms/Privacy agreement is mandatory for new accounts (COPPA + legal protection).
+    // The checkbox is part of the signup form — gate the submission on it.
+    const agreeBox = document.getElementById('signupAgree');
+    if (agreeBox && !agreeBox.checked) {
+        notify.warn('Please confirm you are at least 13 and agree to the Terms & Privacy Policy.');
+        return;
+    }
     if (!SECURITY.EMAIL_REGEX.test(email)) {
         notify.warn('That email address looks malformed.'); return;
     }
