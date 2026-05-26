@@ -1,6 +1,6 @@
 // ── Supabase client ──
-const SUPABASE_URL      = 'https://bpaqjmwzdxdgitlwmamp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYXFqbXd6ZHhkZ2l0bHdtYW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyOTczMDMsImV4cCI6MjA4ODg3MzMwM30.7MVzlcoc3p46_b5jEn1aUr5LE2kF3EWlF89fqBH1MSM';
+const SUPABASE_URL      = 'https://shbfbsbbonepeskwpntg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNoYmZic2Jib25lcGVza3dwbnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjY0MjcsImV4cCI6MjA5NTM0MjQyN30.l29oaHQVqJXUXd3kaExyS4QEKN8ZUiaCfKo9z0rAtf4';
 const supabaseClient    = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     realtime: { enabled: false },   // realtime disabled → blocks WebSocket connections
     global:   { fetch: fetch.bind(globalThis) },
