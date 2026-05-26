@@ -223,6 +223,19 @@
             <label class="form-label">Confirm Password</label>
             <input type="password" class="form-input" id="signupPasswordConfirm" placeholder="Re-enter password" autocomplete="new-password">
           </div>
+          <!-- Required acknowledgement that the user has read and agrees to
+               the Terms of Service and Privacy Policy. Signup is blocked
+               unless this is checked (enforced in auth.js). -->
+          <div class="form-group auth-consent">
+            <label class="auth-consent-row">
+              <input type="checkbox" id="signupAgree" class="auth-consent-checkbox">
+              <span class="auth-consent-text">
+                I am at least 13 years old and agree to the
+                <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>
+                and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+              </span>
+            </label>
+          </div>
           <button class="submit-btn" id="emailSignupBtn" style="margin-bottom:0.75rem;">Sign Up</button>
           <p class="auth-hint">Already have an account? <button class="auth-link" data-switch="login">Login</button></p>
         </div>
@@ -438,6 +451,22 @@
       </div>
     </div>
   </div>
+
+  <!-- Site footer — minimal, just links to legal pages and a copyright.
+       Doesn't crowd the game grid; visible after the user scrolls past
+       all content (or immediately on small libraries). -->
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/terms">Terms</a>
+      <span class="footer-sep">·</span>
+      <a href="/privacy">Privacy</a>
+      <span class="footer-sep">·</span>
+      <a href="/dmca">DMCA</a>
+      <span class="footer-sep">·</span>
+      <a href="mailto:support@aigames123.com">Contact</a>
+    </div>
+    <div class="footer-copy">© 2026 AIgames123 · Independent personal project</div>
+  </footer>
 
   <script src="/js/config.js"></script>
   <script src="/js/auth.js"></script>
