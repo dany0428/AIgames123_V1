@@ -177,13 +177,25 @@ window.deleteGame = async (gameId, event) => {
 //  to the optimistic-UI behavior so the app keeps working.
 // ════════════════════════════════════
 
-window.handleUpvote = async (gameId, currentCount) => {
-    if (!currentUser) {
-        notify.warn('Please log in to upvote.');
-        window.openAuthModal?.('login');
-        return;
-    }
+// ════════════════════════════════════════════════════════
+//  Upvote handler
+//
+//  Two paths depending on auth state:
+//
+//  1. LOGGED-IN USERS → toggle_upvote RPC
+//     Server uses the game_upvotes table for cross-device dedup
+//     (one vote per user across all their devices). Source of truth.
+//
+//  2. ANONYMOUS USERS → anon_upvote RPC with delta ±1
+//     Server trusts the client's delta. Dedup is client-side via
+//     localStorage. Trivially bypassable (clear cookies / use another
+//     browser / use a bot), but acceptable for a casual games site.
+//
+//  Both paths share the same localStorage key `voted_<id>` so UI state
+//  is consistent and the user's vote persists across modal opens.
+// ════════════════════════════════════════════════════════
 
+window.handleUpvote = async (gameId, currentCount) => {
     const voteKey  = `voted_${gameId}`;
     const hasVoted = localStorage.getItem(voteKey) === 'up';
 
@@ -202,29 +214,56 @@ window.handleUpvote = async (gameId, currentCount) => {
     if (cached) cached.upvotes = nextCount;
 
     try {
-        const { data, error } = await supabaseClient
-            .rpc('toggle_upvote', { p_game_id: gameId });
+        let returnedCount = null;
 
-        if (error) {
-            // Fallback path: RPC missing → use old read-modify-write
-            // (still vulnerable to multi-vote bypass — migrate the SQL).
-            if (/function .*toggle_upvote.* does not exist/i.test(error.message)) {
-                console.warn('toggle_upvote RPC missing — falling back to legacy UPDATE. Apply the SQL migration to enforce one-vote-per-user.');
-                const { error: legacyErr } = await supabaseClient
-                    .from('games')
-                    .update({ upvotes: nextCount })
-                    .eq('id', gameId);
-                if (legacyErr) throw legacyErr;
-            } else {
+        if (currentUser) {
+            // Authenticated path — server-side dedup via game_upvotes table
+            const { data, error } = await supabaseClient
+                .rpc('toggle_upvote', { p_game_id: gameId });
+
+            if (error) {
+                if (/function .*toggle_upvote.* does not exist/i.test(error.message)) {
+                    console.warn('toggle_upvote RPC missing — falling back to legacy UPDATE.');
+                    const { error: legacyErr } = await supabaseClient
+                        .from('games').update({ upvotes: nextCount }).eq('id', gameId);
+                    if (legacyErr) throw legacyErr;
+                } else {
+                    throw error;
+                }
+            }
+            if (typeof data === 'number') returnedCount = data;
+
+        } else {
+            // Anonymous path — server applies the delta we send.
+            // localStorage is the only dedup; clearing it lets the user
+            // vote again, which is the intended trade-off for this design.
+            const delta = hasVoted ? -1 : 1;
+            const { data, error } = await supabaseClient
+                .rpc('anon_upvote', { p_game_id: gameId, p_delta: delta });
+
+            if (error) {
+                if (/function .*anon_upvote.* does not exist/i.test(error.message)) {
+                    notify.warn('Anonymous voting not yet enabled. Please log in.');
+                    throw error;
+                }
                 throw error;
             }
+            if (typeof data === 'number') returnedCount = data;
         }
 
         // Sync the badge with the authoritative count if RPC returned one
-        if (typeof data === 'number') {
-            if (DOM.upvoteCount) DOM.upvoteCount.textContent = data;
-            if (cached) cached.upvotes = data;
+        if (returnedCount !== null) {
+            if (DOM.upvoteCount) DOM.upvoteCount.textContent = returnedCount;
+            if (cached) cached.upvotes = returnedCount;
         }
+
+        // Keep the card's DOM data-upvotes attribute in sync too, so that
+        // closing the modal and reopening the same card picks up the fresh
+        // count (and so the optimistic delta isn't lost on page nav).
+        const finalCount = returnedCount !== null ? returnedCount : nextCount;
+        document
+            .querySelectorAll(`.game-card[data-id="${gameId}"]`)
+            .forEach(card => { card.dataset.upvotes = finalCount; });
 
         if (hasVoted) localStorage.removeItem(voteKey);
         else          localStorage.setItem(voteKey, 'up');
@@ -771,10 +810,19 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     }
 
     // Upvote button
-    if (DOM.upvoteCount) DOM.upvoteCount.textContent = upvotes;
+    // Stale-count fix: after the user upvotes, the card's data-upvotes
+    // attribute stays at the old value. If they close and reopen the same
+    // game, we'd otherwise display the stale count. cache._gameListCache
+    // is kept in sync by handleUpvote(), so prefer that when present.
+    let displayUpvotes = upvotes;
+    const cachedGame = cache._gameListCache?.find(g => String(g.id) === String(id));
+    if (cachedGame && typeof cachedGame.upvotes === 'number') {
+        displayUpvotes = cachedGame.upvotes;
+    }
+    if (DOM.upvoteCount) DOM.upvoteCount.textContent = displayUpvotes;
     if (DOM.upvoteBtn) {
         DOM.upvoteBtn.classList.toggle('voted', localStorage.getItem(`voted_${id}`) === 'up');
-        DOM.upvoteBtn.onclick = () => handleUpvote(id, upvotes);
+        DOM.upvoteBtn.onclick = () => handleUpvote(id, displayUpvotes);
     }
 
     // Delete button — only visible to owner
