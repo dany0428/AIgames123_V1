@@ -116,9 +116,11 @@ async function logAction(action, targetType, targetId, details = {}) {
 // ────────────────────────────────────
 
 async function loadStats() {
-    const [gRes, lRes] = await Promise.allSettled([
+    const [gRes, lRes, rRes] = await Promise.allSettled([
         supabaseClient.from('games').select('id, view_count, upvotes'),
         supabaseClient.from('admin_logs').select('id', { count: 'exact', head: true }),
+        supabaseClient.from('reports').select('id', { count: 'exact', head: true })
+            .eq('status', 'pending'),
     ]);
 
     if (gRes.status === 'fulfilled' && gRes.value.data) {
@@ -132,6 +134,17 @@ async function loadStats() {
 
     if (lRes.status === 'fulfilled') {
         document.getElementById('statLogs').textContent = (lRes.value.count ?? 0).toLocaleString();
+    }
+
+    // Open-reports count powers BOTH the stat card and the tab badge.
+    if (rRes.status === 'fulfilled') {
+        const n = rRes.value.count ?? 0;
+        document.getElementById('statReports').textContent = n.toLocaleString();
+        const badge = document.getElementById('reportsBadge');
+        if (badge) {
+            badge.textContent = n;
+            badge.style.display = n > 0 ? 'inline-block' : 'none';
+        }
     }
 }
 
@@ -384,12 +397,207 @@ async function loadLogs() {
 }
 
 // ────────────────────────────────────
-//  Tab switching — admins/logs load on first activation only
+//  Reports (moderation queue)
+// ────────────────────────────────────
+
+// Current filter selection — persists between manual refreshes
+let _reportStatusFilter = 'pending';
+
+const REASON_LABEL = {
+    copyright: 'Copyright',
+    adult:     'Adult',
+    violence:  'Violence',
+    spam:      'Spam',
+    other:     'Other',
+};
+
+async function loadReports() {
+    const tbody = document.getElementById('reportsTableBody');
+    const badge = document.getElementById('reportsCountBadge');
+    tbody.innerHTML = '<tr><td colspan="7" class="tbl-loading">Loading...</td></tr>';
+
+    // Build query — join the related game info so we can display thumbnail/name.
+    // PostgREST embedding syntax for joining.
+    let query = supabaseClient
+        .from('reports')
+        .select('id, game_id, reporter_id, reason, details, status, review_note, reviewed_at, created_at, games(id,name,thumbnail_url,uploader_name,file_url)')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+    if (_reportStatusFilter !== 'all') {
+        query = query.eq('status', _reportStatusFilter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="7" class="tbl-error">Load failed: ${esc(error.message)}</td></tr>`;
+        return;
+    }
+
+    const reports = data || [];
+    badge.textContent = `${reports.length} ${_reportStatusFilter === 'all' ? 'total' : _reportStatusFilter}`;
+
+    if (!reports.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="tbl-empty">No reports in this view.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = reports.map(r => {
+        const game = r.games || {};
+        const gameName    = esc(game.name || '(deleted game)');
+        const uploader    = esc(game.uploader_name || '-');
+        const thumb       = game.thumbnail_url
+            ? `<img src="${esc(game.thumbnail_url)}" alt="" loading="lazy">`
+            : `<div class="tbl-thumb-empty">🎮</div>`;
+        const reasonLabel = REASON_LABEL[r.reason] || esc(r.reason);
+        const details     = r.details ? esc(r.details) : '<em style="color:#475569;">(no details)</em>';
+        const reporterId  = esc((r.reporter_id || '').slice(0, 8)) + '…';
+        const date        = new Date(r.created_at).toLocaleString('en-US', {
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+        const status      = r.status;
+        const gameId      = r.game_id;
+
+        // Action buttons differ by status:
+        //   pending  → Mark Reviewed, Dismiss, Delete Game
+        //   reviewed → Dismiss, Delete Game
+        //   actioned/dismissed → (read-only) View Game
+        let actions = '';
+        if (status === 'pending' || status === 'reviewed') {
+            actions = `
+                <button class="report-action-btn" data-action="dismiss" data-report-id="${r.id}">Dismiss</button>
+                <button class="report-action-btn danger" data-action="delete-game" data-report-id="${r.id}" data-game-id="${gameId}" data-game-name="${gameName}">Delete Game</button>
+            `;
+            if (status === 'pending') {
+                actions = `<button class="report-action-btn success" data-action="reviewed" data-report-id="${r.id}">Mark Reviewed</button>` + actions;
+            }
+        } else if (game.id) {
+            actions = `<a class="report-action-btn" href="/?game=${gameId}" target="_blank" rel="noopener">View</a>`;
+        } else {
+            actions = '<span class="tbl-small">—</span>';
+        }
+
+        return `
+            <tr data-report-id="${r.id}">
+              <td class="tbl-date">${esc(date)}</td>
+              <td>
+                <div class="report-game-cell">
+                  ${thumb}
+                  <div class="report-game-info">
+                    <span class="report-game-info-name">${gameName}</span>
+                    <span class="report-game-info-uploader">by ${uploader}</span>
+                  </div>
+                </div>
+              </td>
+              <td><span class="report-reason-chip ${esc(r.reason)}">${esc(reasonLabel)}</span></td>
+              <td class="report-details-cell">${details}</td>
+              <td><code class="uid-code short">${reporterId}</code></td>
+              <td><span class="report-status-chip ${esc(status)}">${esc(status)}</span></td>
+              <td>
+                <div class="report-actions-cell">${actions}</div>
+              </td>
+            </tr>`;
+    }).join('');
+}
+
+// Event delegation for report action buttons + filter pills + refresh.
+// Single listener on tbody handles all the per-row buttons.
+function _initReportsEvents() {
+    const tbody = document.getElementById('reportsTableBody');
+    if (!tbody) return;
+
+    tbody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action   = btn.dataset.action;
+        const reportId = btn.dataset.reportId;
+        if (!reportId) return;
+
+        // Disable to prevent double-clicks
+        btn.disabled = true;
+        const original = btn.textContent;
+        btn.textContent = '…';
+
+        try {
+            if (action === 'reviewed' || action === 'dismiss') {
+                const newStatus = action === 'reviewed' ? 'reviewed' : 'dismissed';
+                const note      = action === 'dismiss'
+                    ? (prompt('Optional: reason for dismissing this report (leave blank to skip)') || null)
+                    : null;
+                const { error } = await supabaseClient.rpc('review_report', {
+                    report_id:  Number(reportId),
+                    new_status: newStatus,
+                    note,
+                });
+                if (error) throw error;
+                await Promise.all([loadReports(), loadStats()]);
+
+            } else if (action === 'delete-game') {
+                const gameId   = btn.dataset.gameId;
+                const gameName = btn.dataset.gameName;
+                if (!confirm(`Permanently DELETE the game "${gameName}"?\n\nThis cannot be undone. The report will be marked as "actioned".`)) {
+                    btn.disabled = false;
+                    btn.textContent = original;
+                    return;
+                }
+
+                // Delete the game (admin-delete RLS policy permits this)
+                const { error: delErr } = await supabaseClient
+                    .from('games').delete().eq('id', gameId);
+                if (delErr) throw delErr;
+
+                // Audit-log it (best-effort)
+                await supabaseClient.from('admin_logs').insert([{
+                    admin_id:    _adminUser.id,
+                    action:      'DELETE_GAME',
+                    target_type: 'game',
+                    target_id:   String(gameId),
+                    details:     { name: gameName, via_report: Number(reportId) },
+                }]);
+
+                // Mark report as actioned
+                const { error: rErr } = await supabaseClient.rpc('review_report', {
+                    report_id:  Number(reportId),
+                    new_status: 'actioned',
+                    note:       `Game deleted by admin: "${gameName}"`,
+                });
+                if (rErr) console.warn('review_report failed:', rErr.message);
+
+                await Promise.all([loadReports(), loadStats(), loadGames()]);
+            }
+        } catch (err) {
+            alert('Action failed: ' + (err.message || err));
+            btn.disabled = false;
+            btn.textContent = original;
+        }
+    });
+
+    // Filter pill clicks
+    document.getElementById('reportStatusFilter')?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.report-pill');
+        if (!pill) return;
+        document.querySelectorAll('.report-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        _reportStatusFilter = pill.dataset.status;
+        loadReports();
+    });
+
+    // Refresh button
+    document.getElementById('refreshReportsBtn')?.addEventListener('click', () => {
+        loadReports();
+        loadStats();
+    });
+}
+
+// ────────────────────────────────────
+//  Tab switching — admins/logs/reports load on first activation only
 // ────────────────────────────────────
 
 function _initTabs() {
-    let logsLoaded   = false;
-    let adminsLoaded = false;
+    let logsLoaded    = false;
+    let adminsLoaded  = false;
+    let reportsLoaded = false;
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -400,8 +608,9 @@ function _initTabs() {
             document.getElementById(`tab-${name}`).style.display = 'block';
 
             // lazy-load tab data on first entry
-            if (name === 'admins' && !adminsLoaded) { loadAdmins(); adminsLoaded = true; }
-            if (name === 'logs'   && !logsLoaded)   { loadLogs();   logsLoaded   = true; }
+            if (name === 'admins'  && !adminsLoaded)  { loadAdmins();  adminsLoaded  = true; }
+            if (name === 'logs'    && !logsLoaded)    { loadLogs();    logsLoaded    = true; }
+            if (name === 'reports' && !reportsLoaded) { loadReports(); reportsLoaded = true; }
         });
     });
 }
@@ -417,6 +626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     _initTabs();
     _initConfirmModal();
     _initGamesTableEvents();
+    _initReportsEvents();
 
     // Logout
     document.getElementById('adminLogoutBtn').addEventListener('click', async () => {

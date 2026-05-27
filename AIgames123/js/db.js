@@ -719,6 +719,18 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     // Always revoke any blobs from a previous game first
     _revokePlayerBlobUrls();
 
+    // Expose the current game's id globally so the report modal can
+    // pick it up when the user clicks the ⚠️ Report button.
+    window.currentPlayerGameId = id;
+
+    // Reset the report button to its default look — last game's
+    // "✓ Reported" state shouldn't carry over to the next game.
+    const reportBtnEl = document.getElementById('reportBtn');
+    if (reportBtnEl) {
+        reportBtnEl.classList.remove('reported');
+        reportBtnEl.textContent = '⚠️ Report';
+    }
+
     // Immediate UI update
     if (DOM.playerTitle)  DOM.playerTitle.textContent  = name;
     if (DOM.uploaderName) DOM.uploaderName.textContent = uploaderName;

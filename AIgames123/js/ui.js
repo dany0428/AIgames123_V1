@@ -885,3 +885,120 @@ function initProfileAvatar() {
         }
     });
 }
+
+
+// ════════════════════════════════════════════════════════
+//  Report game modal
+//
+//  Flow:
+//    1. User clicks ⚠️ Report in player footer
+//    2. If not logged in → notify + open login modal, abort
+//    3. Otherwise open the report modal pre-bound to the currently
+//       playing game's id (captured at moment of click)
+//    4. User picks a reason (radio) and optional details
+//    5. submit_report RPC is called server-side
+//    6. On success: button shows "Reported" state, modal closes
+// ════════════════════════════════════════════════════════
+
+// Tracks which game the modal currently targets. Set by the click
+// handler each time the modal is opened.
+let _reportTargetGameId = null;
+
+function initReport() {
+    const openBtn      = document.getElementById('reportBtn');
+    const modal        = document.getElementById('reportModal');
+    const closeBtn     = document.getElementById('closeReport');
+    const submitBtn    = document.getElementById('submitReportBtn');
+    const detailsInput = document.getElementById('reportDetails');
+    if (!openBtn || !modal || !submitBtn) return;
+
+    // Open: gate on auth + capture current game id
+    openBtn.addEventListener('click', () => {
+        if (!currentUser) {
+            notify.warn('Please log in to report a game.');
+            window.openAuthModal?.('login');
+            return;
+        }
+        // window.currentPlayerGameId is set in db.js openGame()
+        _reportTargetGameId = window.currentPlayerGameId || null;
+        if (!_reportTargetGameId) {
+            notify.error('Could not identify the game. Please reopen it and try again.');
+            return;
+        }
+
+        // Reset form
+        detailsInput.value = '';
+        modal.querySelectorAll('input[name="reportReason"]').forEach(r => { r.checked = false; });
+        submitBtn.disabled    = false;
+        submitBtn.textContent = 'Submit Report';
+        modal.classList.add('active');
+    });
+
+    // Close handlers
+    closeBtn?.addEventListener('click', () => modal.classList.remove('active'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+    });
+
+    // Submit
+    submitBtn.addEventListener('click', async () => {
+        if (!currentUser) { notify.warn('Please log in first.'); return; }
+        if (!_reportTargetGameId) { notify.error('Game id missing.'); return; }
+
+        const reason = modal.querySelector('input[name="reportReason"]:checked')?.value;
+        if (!reason) { notify.warn('Please pick a reason.'); return; }
+
+        const details = (detailsInput.value || '').trim();
+        if (details.length > 500) {
+            notify.warn('Details too long (max 500 characters).');
+            return;
+        }
+
+        submitBtn.disabled    = true;
+        submitBtn.textContent = 'Submitting...';
+        try {
+            const { error } = await supabaseClient.rpc('submit_report', {
+                game_id: _reportTargetGameId,
+                reason,
+                details: details || null,
+            });
+            if (error) throw error;
+
+            notify.success('Report submitted. Thank you — moderators will review it.', { duration: 4500 });
+            modal.classList.remove('active');
+
+            // Visually mark the report button so the user knows it was received.
+            // The server-side UNIQUE constraint also prevents duplicate open reports.
+            openBtn.classList.add('reported');
+            openBtn.textContent = '✓ Reported';
+        } catch (err) {
+            // Friendly mapping of the specific errors submit_report throws
+            const msg = err.message || '';
+            if (msg.includes('cannot report your own game')) {
+                notify.warn("You can't report your own game.");
+            } else if (msg.includes('already have a pending report')) {
+                notify.warn('You already have a pending report for this game.');
+                openBtn.classList.add('reported');
+                openBtn.textContent = '✓ Reported';
+                modal.classList.remove('active');
+            } else if (msg.includes('Login required')) {
+                notify.warn('Please log in to report a game.');
+            } else {
+                notify.error(friendlyError(err, 'Could not submit report.'), err);
+            }
+        } finally {
+            // Only re-enable if still visible (i.e., not closed by success path)
+            if (modal.classList.contains('active')) {
+                submitBtn.disabled    = false;
+                submitBtn.textContent = 'Submit Report';
+            }
+        }
+    });
+
+    // ESC to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+    });
+}
