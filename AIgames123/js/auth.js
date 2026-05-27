@@ -3,7 +3,7 @@
 // ════════════════════════════════════
 
 // Cached defaults to avoid re-creating large data URI strings
-const DEFAULT_AVATAR_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%233b2d5a'/%3E%3Ctext y='.9em' font-size='60' x='20'%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E";
+const DEFAULT_AVATAR_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%233b2d5a'/%3E%3Ctext x='50' y='50' font-size='55' text-anchor='middle' dominant-baseline='central'%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E";
 
 // Helper — resolves the best display name from user_metadata once
 function _resolveDisplayName(user) {
