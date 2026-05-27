@@ -958,9 +958,9 @@ function initReport() {
         submitBtn.textContent = 'Submitting...';
         try {
             const { error } = await supabaseClient.rpc('submit_report', {
-                game_id: _reportTargetGameId,
-                reason,
-                details: details || null,
+                p_game_id: _reportTargetGameId,
+                p_reason:  reason,
+                p_details: details || null,
             });
             if (error) throw error;
 
