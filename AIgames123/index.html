@@ -438,6 +438,9 @@
           <span class="uploader-name" id="uploaderName"></span>
         </div>
         <div class="vote-container">
+          <!-- Report button: opens the report modal. Visible to all but
+               openReportModal() will require login before submitting. -->
+          <button class="report-btn" id="reportBtn" title="Report this game" type="button">⚠️ Report</button>
           <button class="vote-btn upvote" id="upvoteBtn">👍 <span id="upvoteCount">0</span></button>
         </div>
       </div>
@@ -467,6 +470,84 @@
     </div>
     <div class="footer-copy">© 2026 AIgames123 · Independent personal project</div>
   </footer>
+
+  <!-- ════════════════════════════════════════════════════════
+       Report game modal — opens when user clicks ⚠️ Report.
+       Requires login to submit (gated client-side in ui.js and
+       enforced server-side by RLS + submit_report RPC).
+       ════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal report-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Report Game</h3>
+        <button class="close-btn" id="closeReport">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="report-intro" id="reportIntro">
+          Reports are reviewed by moderators. False or abusive reports may result in
+          action against your account. For copyright claims, please also email
+          <a href="mailto:support@aigames123.com">support@aigames123.com</a>
+          per our <a href="/dmca" target="_blank" rel="noopener">DMCA procedure</a>.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Reason</label>
+          <div class="report-reasons" id="reportReasons">
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="copyright">
+              <div class="report-reason-text">
+                <strong>Copyright / IP infringement</strong>
+                <small>Uses characters, art, music, or code without permission.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="adult">
+              <div class="report-reason-text">
+                <strong>Sexual / adult content</strong>
+                <small>Explicit, suggestive, or otherwise NSFW material.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="violence">
+              <div class="report-reason-text">
+                <strong>Graphic violence or hate</strong>
+                <small>Gore, self-harm promotion, hate speech, harassment.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="spam">
+              <div class="report-reason-text">
+                <strong>Spam, malware, or scam</strong>
+                <small>Phishing, advertising, broken games, duplicate uploads.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="other">
+              <div class="report-reason-text">
+                <strong>Other</strong>
+                <small>Please describe in the details box below.</small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Additional details <span style="font-weight:normal;color:#888;">(optional, max 500 chars)</span>
+          </label>
+          <textarea
+            class="form-input form-textarea"
+            id="reportDetails"
+            rows="3"
+            maxlength="500"
+            placeholder="Any extra context that helps moderators..."
+            style="resize:vertical;min-height:70px;font-family:inherit;"></textarea>
+        </div>
+
+        <button class="submit-btn" id="submitReportBtn">Submit Report</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/js/config.js"></script>
   <script src="/js/auth.js"></script>
