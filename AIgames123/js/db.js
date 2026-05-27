@@ -203,7 +203,7 @@ window.handleUpvote = async (gameId, currentCount) => {
 
     try {
         const { data, error } = await supabaseClient
-            .rpc('toggle_upvote', { game_id: gameId });
+            .rpc('toggle_upvote', { p_game_id: gameId });
 
         if (error) {
             // Fallback path: RPC missing → use old read-modify-write
@@ -816,7 +816,7 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     // RPC doesn't exist yet, falls back to the legacy UPDATE so the
     // page keeps working until the migration is applied.
     const incrementCall = supabaseClient
-        .rpc('increment_view_count', { game_id: id })
+        .rpc('increment_view_count', { p_game_id: id })
         .then(({ error }) => {
             if (error && /function .*increment_view_count.* does not exist/i.test(error.message)) {
                 return supabaseClient
