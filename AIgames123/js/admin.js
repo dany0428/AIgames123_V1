@@ -526,9 +526,9 @@ function _initReportsEvents() {
                     ? (prompt('Optional: reason for dismissing this report (leave blank to skip)') || null)
                     : null;
                 const { error } = await supabaseClient.rpc('review_report', {
-                    report_id:  Number(reportId),
-                    new_status: newStatus,
-                    note,
+                    p_report_id:  Number(reportId),
+                    p_new_status: newStatus,
+                    p_note:       note,
                 });
                 if (error) throw error;
                 await Promise.all([loadReports(), loadStats()]);
@@ -558,9 +558,9 @@ function _initReportsEvents() {
 
                 // Mark report as actioned
                 const { error: rErr } = await supabaseClient.rpc('review_report', {
-                    report_id:  Number(reportId),
-                    new_status: 'actioned',
-                    note:       `Game deleted by admin: "${gameName}"`,
+                    p_report_id:  Number(reportId),
+                    p_new_status: 'actioned',
+                    p_note:       `Game deleted by admin: "${gameName}"`,
                 });
                 if (rErr) console.warn('review_report failed:', rErr.message);
 
