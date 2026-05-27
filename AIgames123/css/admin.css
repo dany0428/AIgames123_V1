@@ -554,3 +554,161 @@ body {
   .panel-toolbar { gap: 0.5rem; }
   .admin-search { min-width: 150px; }
 }
+
+/* ════════════════════════════════════
+   ⚠️ REPORTS TAB
+   Specialized styling for the moderation queue.
+═══════════════════════════════════ */
+
+/* Counter badge next to the "Reports" tab text — shows pending count */
+.tab-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  background: #f59e0b;
+  color: #0a0812;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  vertical-align: middle;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Status filter pills (Pending / Reviewed / Actioned / Dismissed / All) */
+.report-filter-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.report-pill {
+  padding: 0.35rem 0.85rem;
+  background: transparent;
+  border: 1.5px solid #2d1f4a;
+  color: #94a3b8;
+  border-radius: 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.report-pill:hover {
+  border-color: #3b2d5a;
+  color: #c4b5fd;
+}
+.report-pill.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
+/* Reason chips inside report rows */
+.report-reason-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.report-reason-chip.copyright { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.4); }
+.report-reason-chip.adult     { background: rgba(236, 72, 153, 0.15); color: #f9a8d4; border: 1px solid rgba(236, 72, 153, 0.4); }
+.report-reason-chip.violence  { background: rgba(239, 68, 68, 0.15);  color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+.report-reason-chip.spam      { background: rgba(234, 179, 8, 0.15);  color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
+.report-reason-chip.other     { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+
+/* Status chips */
+.report-status-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.report-status-chip.pending   { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.report-status-chip.reviewed  { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.report-status-chip.actioned  { background: rgba(34, 197, 94, 0.2);  color: #86efac; }
+.report-status-chip.dismissed { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+/* Game info column — thumbnail + name + uploader compact */
+.report-game-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.report-game-cell img,
+.report-game-cell .tbl-thumb-empty {
+  width: 44px;
+  height: 32px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.report-game-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.report-game-info-name {
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.report-game-info-uploader {
+  color: #6b7280;
+  font-size: 0.72rem;
+}
+
+/* Details cell — truncate long text */
+.report-details-cell {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  max-width: 280px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+/* Action button group — small inline buttons */
+.report-actions-cell {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.report-action-btn {
+  padding: 4px 9px;
+  background: transparent;
+  border: 1.5px solid #3b2d5a;
+  color: #c4b5fd;
+  border-radius: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
+}
+.report-action-btn:hover { background: #3b2d5a; color: #fff; }
+.report-action-btn.danger {
+  border-color: #dc2626;
+  color: #f87171;
+}
+.report-action-btn.danger:hover { background: #dc2626; color: #fff; }
+.report-action-btn.success {
+  border-color: #16a34a;
+  color: #4ade80;
+}
+.report-action-btn.success:hover { background: #16a34a; color: #fff; }
+
+@media (max-width: 640px) {
+  .report-game-info-name { max-width: 120px; }
+}

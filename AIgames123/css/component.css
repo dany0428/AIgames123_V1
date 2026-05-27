@@ -571,6 +571,121 @@
 }
 
 /* ════════════════════════════════════
+   ⚠️ REPORT BUTTON & MODAL
+   The Report button sits in the player footer next to upvote.
+   Lower visual weight than upvote — it's a corrective action,
+   not a primary CTA. Becomes orange/red on hover to signal seriousness.
+   ════════════════════════════════════ */
+
+.report-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #3b2d5a;
+  background: rgba(0, 0, 0, 0.3);
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.report-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+.report-btn.reported {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  cursor: default;
+}
+.report-btn.reported:hover { background: rgba(245, 158, 11, 0.15); }
+
+/* Report modal — narrower than the upload modal since the form is short */
+.report-modal { max-width: 480px; }
+
+.report-intro {
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.3rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+.report-intro a { color: #fbbf24; text-decoration: underline; }
+
+.report-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.report-reason-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  background: #0f0a1a;
+  border: 1.5px solid #2a1f3a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.report-reason-row:hover {
+  border-color: #3b2d5a;
+  background: #14101f;
+}
+.report-reason-row input[type="radio"] {
+  accent-color: #8b5cf6;
+  margin-top: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+/* Selected state on the row when its radio is checked */
+.report-reason-row:has(input[type="radio"]:checked) {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.report-reason-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+}
+.report-reason-text strong {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.report-reason-text small {
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+#submitReportBtn { background: #dc2626; }
+#submitReportBtn:hover { background: #b91c1c; }
+#submitReportBtn:disabled {
+  background: #3b2d5a;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .report-btn { padding: 6px 10px; font-size: 0.76rem; }
+  .report-reason-row { padding: 0.6rem 0.7rem; }
+  .report-reason-text strong { font-size: 0.85rem; }
+  .report-reason-text small  { font-size: 0.74rem; }
+}
+
+/* ════════════════════════════════════
    📱 TOUCH OPTIMIZATIONS
 ════════════════════════════════════ */
 
