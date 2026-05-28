@@ -2,9 +2,7 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/sitemap.xml",   "destination": "/api/sitemap" },
-    { "source": "/profile",       "destination": "/index.html" },
-    { "source": "/user/(.*)",     "destination": "/index.html" },
-    { "source": "/game/(.*)",     "destination": "/index.html" }
+    { "source": "/(.*)",          "destination": "/index.html" }
   ],
   "headers": [
     {
