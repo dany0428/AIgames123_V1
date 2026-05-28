@@ -3,7 +3,10 @@
   "rewrites": [
     { "source": "/profile",       "destination": "/index.html" },
     { "source": "/user/:id",      "destination": "/index.html" },
-    { "source": "/user/:id/",     "destination": "/index.html" }
+    { "source": "/user/:id/",     "destination": "/index.html" },
+    { "source": "/game/:slug",    "destination": "/index.html" },
+    { "source": "/game/:slug/",   "destination": "/index.html" },
+    { "source": "/sitemap.xml",   "destination": "/api/sitemap" }
   ],
   "headers": [
     {

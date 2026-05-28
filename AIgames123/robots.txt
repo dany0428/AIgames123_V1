@@ -1,0 +1,26 @@
+# robots.txt for aigames123.com
+#
+# Allow search engines to crawl public content. Block private
+# pages (admin panel, auth modals) and any temporary artifacts.
+
+User-agent: *
+Allow: /
+
+# Don't index the admin panel
+Disallow: /internal
+Disallow: /internal/
+
+# Don't index profile pages — they're low-value for SEO and
+# can leak display names into search results. Personal profiles
+# also change too often to be stable canonical pages.
+Disallow: /profile
+Disallow: /user/
+
+# Don't index API/auth callback paths
+Disallow: /api/
+
+# Be polite — most crawlers honor this
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://aigames123.com/sitemap.xml
