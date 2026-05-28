@@ -79,6 +79,24 @@ function handleRoute() {
         const userName = params.get('name') || 'Gamer';
         history.replaceState({ page: 'user', userId, userName }, '', path + window.location.search);
         _renderPublicProfile(userId, userName);
+    } else if (path.startsWith('/game/')) {
+        // Game permalink format: /game/<id>-<slug> or /game/<id>
+        // Parse the leading numeric id (everything up to the first non-digit).
+        const slugPart = path.split('/game/')[1] || '';
+        const m = slugPart.match(/^(\d+)/);
+        if (m) {
+            const gameId = Number(m[1]);
+            // Render the main grid in the background, then open the player.
+            // openGameById() fetches metadata from Supabase since we only
+            // have the id from the URL.
+            _renderMain('');
+            // Wait one tick so DOM is ready before opening modal
+            setTimeout(() => window.openGameById?.(gameId), 0);
+        } else {
+            // Malformed URL — fall back to home
+            history.replaceState({ page: 'main', tag: '' }, '', '/');
+            _renderMain('');
+        }
     } else {
         history.replaceState({ page: 'main', tag }, '', tag ? `/?tag=${encodeURIComponent(tag)}` : '/');
         _renderMain(tag);
@@ -123,11 +141,22 @@ window._pushTagHistory = (tag) => {
 
 window.addEventListener('popstate', (e) => {
     const state = e.state;
-    if (!state) { _renderMain(''); return; }
+    if (!state) {
+        // No state — could be initial navigation or back to root
+        const path = window.location.pathname;
+        if (path.startsWith('/game/')) {
+            // User navigated forward to a /game/ URL — re-handle the route
+            handleRoute();
+        } else {
+            _renderMain('');
+        }
+        return;
+    }
     switch (state.page) {
         case 'main':    _renderMain(state.tag || '');                       break;
         case 'profile': _renderProfile();                                   break;
         case 'user':    _renderPublicProfile(state.userId, state.userName); break;
+        case 'game':    window.openGameById?.(state.id);                    break;
         default:        _renderMain('');
     }
 });

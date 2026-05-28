@@ -925,3 +925,154 @@ window.openEditModal = (gameId, name, tags, description, event) => {
     }
     document.getElementById('editModal').classList.add('active');
 };
+
+
+// ════════════════════════════════════════════════════════
+//  SEO helpers — slug generation, permalink push, meta tag updates
+//
+//  When a game is opened we:
+//    1. Push /game/<id>-<slug> to the URL bar (deep-linkable)
+//    2. Rewrite <title> and <meta> tags so social-share previews
+//       (Twitter/Discord/Slack/Reddit) show the actual game info
+//  When the player closes we restore the site defaults.
+// ════════════════════════════════════════════════════════
+
+// Stable, lowercase, ASCII-safe slug. Used in URL paths and the sitemap.
+// Must match the slugify logic in /api/sitemap.js exactly.
+function _slugify(name) {
+    return String(name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 60);
+}
+
+// Snapshot the homepage defaults so we can restore them when the modal closes.
+const _SEO_DEFAULTS = {
+    title:       document.title,
+    description: document.querySelector('meta[name="description"]')?.content || '',
+    ogTitle:     document.querySelector('meta[property="og:title"]')?.content || '',
+    ogDesc:      document.querySelector('meta[property="og:description"]')?.content || '',
+    ogUrl:       document.querySelector('meta[property="og:url"]')?.content || '',
+    ogImage:     document.querySelector('meta[property="og:image"]')?.content || '',
+    twTitle:     document.querySelector('meta[name="twitter:title"]')?.content || '',
+    twDesc:      document.querySelector('meta[name="twitter:description"]')?.content || '',
+    twImage:     document.querySelector('meta[name="twitter:image"]')?.content || '',
+    canonical:   document.querySelector('link[rel="canonical"]')?.href || '',
+};
+
+function _setMeta(selector, attr, value) {
+    const el = document.querySelector(selector);
+    if (el && value) el.setAttribute(attr, value);
+}
+
+// Apply game-specific meta. Description falls back to a generic line if
+// the game didn't supply one (most don't on first upload).
+function _applyGameMeta(game, gameUrl) {
+    const title = `${game.name} — AIgames123`;
+    const desc  = (game.description && game.description.trim())
+        ? game.description.trim().slice(0, 160)
+        : `Play "${game.name}" — an AI-generated game on AIgames123. Free, instant, in your browser.`;
+    const img   = game.thumbnail_url || _SEO_DEFAULTS.ogImage;
+
+    document.title = title;
+    _setMeta('meta[name="description"]',      'content', desc);
+    _setMeta('meta[property="og:title"]',     'content', title);
+    _setMeta('meta[property="og:description"]', 'content', desc);
+    _setMeta('meta[property="og:url"]',       'content', gameUrl);
+    _setMeta('meta[property="og:image"]',     'content', img);
+    _setMeta('meta[name="twitter:title"]',    'content', title);
+    _setMeta('meta[name="twitter:description"]', 'content', desc);
+    _setMeta('meta[name="twitter:image"]',    'content', img);
+    _setMeta('link[rel="canonical"]',         'href',    gameUrl);
+}
+
+// Restore the homepage defaults (called on modal close).
+function _restoreSiteMeta() {
+    document.title = _SEO_DEFAULTS.title;
+    _setMeta('meta[name="description"]',         'content', _SEO_DEFAULTS.description);
+    _setMeta('meta[property="og:title"]',        'content', _SEO_DEFAULTS.ogTitle);
+    _setMeta('meta[property="og:description"]',  'content', _SEO_DEFAULTS.ogDesc);
+    _setMeta('meta[property="og:url"]',          'content', _SEO_DEFAULTS.ogUrl);
+    _setMeta('meta[property="og:image"]',        'content', _SEO_DEFAULTS.ogImage);
+    _setMeta('meta[name="twitter:title"]',       'content', _SEO_DEFAULTS.twTitle);
+    _setMeta('meta[name="twitter:description"]', 'content', _SEO_DEFAULTS.twDesc);
+    _setMeta('meta[name="twitter:image"]',       'content', _SEO_DEFAULTS.twImage);
+    _setMeta('link[rel="canonical"]',            'href',    _SEO_DEFAULTS.canonical);
+}
+
+// Public helper: open a game by id only (used by /game/:slug routes).
+// Fetches the row from Supabase, then delegates to window.openGame().
+window.openGameById = async (id) => {
+    try {
+        const { data, error } = await supabaseClient
+            .from('games')
+            .select('*')
+            .eq('id', id)
+            .single();
+        if (error || !data) {
+            notify.warn('Game not found.');
+            return;
+        }
+        window.openGame(
+            data.id,
+            data.file_url,
+            data.name,
+            Number(data.view_count) || 0,
+            data.user_id || null,
+            data.uploader_name || 'Anonymous',
+            Number(data.upvotes) || 0,
+            data.uploader_avatar || '',
+            data.file_type || 'html',
+            data.description || '',
+        );
+    } catch (err) {
+        notify.error(friendlyError(err, 'Could not load that game.'), err);
+    }
+};
+
+// Hook into openGame: after it's called by anyone, update URL + meta.
+// We wrap rather than modify the original to keep the existing signature.
+const _originalOpenGame = window.openGame;
+window.openGame = function patchedOpenGame(id, url, name, viewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description) {
+    // Push permalink URL (only if we're not already at it — avoid history spam)
+    const slug = _slugify(name);
+    const targetPath = slug ? `/game/${id}-${slug}` : `/game/${id}`;
+    if (window.location.pathname !== targetPath) {
+        history.pushState({ page: 'game', id }, '', targetPath);
+    }
+    // Update meta tags for social sharing
+    _applyGameMeta(
+        { name, description, thumbnail_url: null },
+        `https://aigames123.com${targetPath}`,
+    );
+    // Delegate to the original implementation
+    return _originalOpenGame.call(this, id, url, name, viewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description);
+};
+
+// When the player modal closes, restore the site's default meta + URL.
+// We wire this onto the existing close logic by listening for clicks on
+// closePlayer + ESC key in app.js, but the simplest approach is to watch
+// the modal's class changes via MutationObserver.
+(function _watchPlayerModalForClose() {
+    const modal = document.getElementById('playerModal');
+    if (!modal) return;
+    let wasActive = modal.classList.contains('active');
+    const obs = new MutationObserver(() => {
+        const isActive = modal.classList.contains('active');
+        if (wasActive && !isActive) {
+            // Modal just closed
+            _restoreSiteMeta();
+            // Only pop back to home if we came from a /game/ URL via history nav.
+            // If user is on /game/123-xxx and closes the player, push them
+            // back to home so they aren't stuck on a deep-link with no game.
+            if (window.location.pathname.startsWith('/game/')) {
+                history.pushState({ page: 'main', tag: '' }, '', '/');
+            }
+        }
+        wasActive = isActive;
+    });
+    obs.observe(modal, { attributes: true, attributeFilter: ['class'] });
+})();
