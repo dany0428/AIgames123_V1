@@ -270,10 +270,32 @@ function initAuthModal() {
     closeBtn?.addEventListener('click', _closeAuthModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) _closeAuthModal(); });
 
-    // GitHub OAuth
-    document.getElementById('githubLoginBtn')?.addEventListener('click', () => {
-        supabaseClient.auth.signInWithOAuth({ provider: 'github' });
-    });
+    // ── OAuth handlers (login + signup for GitHub & Google) ──
+    //
+    // Shared helper: kicks off Supabase's OAuth redirect for the chosen
+    // provider. Supabase handles the entire flow — we just send the user
+    // away and they come back logged in.
+    //
+    // For the SIGN-UP side we also require the Terms-of-Service checkbox
+    // before kicking off the redirect. The user can't see the checkbox
+    // once they're at the provider's consent page, so we must enforce
+    // it here, same as we do for email signup.
+    const startOAuth = (provider) => {
+        supabaseClient.auth.signInWithOAuth({ provider });
+    };
+    const startOAuthSignup = (provider) => {
+        const agreeBox = document.getElementById('signupAgree');
+        if (agreeBox && !agreeBox.checked) {
+            notify.warn('Please confirm you are at least 13 and agree to the Terms & Privacy Policy.');
+            return;
+        }
+        startOAuth(provider);
+    };
+
+    document.getElementById('githubLoginBtn')?.addEventListener('click', () => startOAuth('github'));
+    document.getElementById('googleLoginBtn')?.addEventListener('click', () => startOAuth('google'));
+    document.getElementById('githubSignupBtn')?.addEventListener('click', () => startOAuthSignup('github'));
+    document.getElementById('googleSignupBtn')?.addEventListener('click', () => startOAuthSignup('google'));
 
     // Email login
     document.getElementById('emailLoginBtn')?.addEventListener('click', _handleEmailLogin);
