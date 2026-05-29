@@ -210,9 +210,19 @@ function updateAuthUI(user) {
 
         // During initial load we let handleRoute() do the first render
         // to avoid a duplicate fetchGames() call.
+        //
+        // Don't force-redirect to main if the user is currently on a
+        // PUBLIC route — /user/<id> (someone's profile) and /game/<id>
+        // (a game permalink) work fine without auth. Without this guard,
+        // Supabase's INITIAL_SESSION onAuthStateChange event fires right
+        // after bootstrap and wipes out the URL the visitor came in with.
         if (!_authInitializing) {
-            history.replaceState({ page: 'main', tag: '' }, '', '/');
-            _renderMain('');
+            const path = window.location.pathname;
+            const onPublicRoute = path.startsWith('/user/') || path.startsWith('/game/');
+            if (!onPublicRoute) {
+                history.replaceState({ page: 'main', tag: '' }, '', '/');
+                _renderMain('');
+            }
         }
     }
 
