@@ -1114,6 +1114,34 @@ button, .game-card, .genre-item, .tag-option,
   border-color: #8b5cf6;
 }
 
+/* Google login button — same shape as GitHub, but white surface with
+   colored Google logomark, matching Google's branding guidelines. */
+.google-login-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  border: 1.5px solid #dadce0;
+  border-radius: 8px;
+  color: #3c4043;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 0.6rem;
+}
+
+.google-login-btn:hover {
+  background: #f8f9fa;
+  border-color: #8b5cf6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
 .auth-hint {
   margin-top: 1rem;
   text-align: center;
