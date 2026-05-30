@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDpad();
     initJoystick();
     initReport();
+    initShare();
 
     // Auth modal (auth.js)
     initAuthModal();
