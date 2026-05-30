@@ -571,6 +571,113 @@
 }
 
 /* ════════════════════════════════════
+   🔗 SHARE BUTTON & MODAL
+   Same visual weight as the Report button — a neutral secondary
+   action in the player footer. Turns purple (brand) on hover.
+   ════════════════════════════════════ */
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #3b2d5a;
+  background: rgba(0, 0, 0, 0.3);
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.82rem;
+  line-height: 1;
+  transition: all 0.2s;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.share-btn:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.6);
+  color: #c4b5fd;
+}
+
+/* Share modal — compact */
+.share-modal { max-width: 440px; }
+
+.share-game-title {
+  font-size: 0.95rem;
+  color: #c4b5fd;
+  margin-bottom: 1.1rem;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* Copyable link field */
+.share-link-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.3rem;
+}
+.share-link-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  background: #0f0a1a;
+  border: 1.5px solid #3b2d5a;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-family: 'SF Mono', Monaco, Menlo, monospace;
+}
+.share-link-input:focus { outline: none; border-color: #8b5cf6; }
+
+.share-copy-btn {
+  flex-shrink: 0;
+  padding: 0.65rem 1.1rem;
+  background: #7c3aed;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+  touch-action: manipulation;
+}
+.share-copy-btn:hover { background: #6d28d9; }
+.share-copy-btn.copied { background: #16a34a; }
+
+/* Social platform buttons */
+.share-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.share-platform-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1.5px solid #3b2d5a;
+  background: rgba(0, 0, 0, 0.25);
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.18s;
+  touch-action: manipulation;
+}
+.share-platform-btn svg { flex-shrink: 0; }
+.share-twitter:hover  { background: #000;     border-color: #000;     color: #fff; }
+.share-reddit:hover   { background: #ff4500;  border-color: #ff4500;  color: #fff; }
+.share-facebook:hover { background: #1877f2;  border-color: #1877f2;  color: #fff; }
+
+@media (max-width: 640px) {
+  .share-btn { padding: 6px 10px; font-size: 0.76rem; }
+}
+
+/* ════════════════════════════════════
    ⚠️ REPORT BUTTON & MODAL
    The Report button sits in the player footer next to upvote.
    Lower visual weight than upvote — it's a corrective action,
