@@ -1002,3 +1002,96 @@ function initReport() {
         }
     });
 }
+
+
+// ════════════════════════════════════════════════════════
+//  Share game modal
+//
+//  Opens when the user clicks 🔗 Share in the player footer.
+//  No login required. The game's permalink is whatever is already
+//  in the URL bar — openGame() pushes /game/<id>-<slug> there — so
+//  we read window.location.href directly. The social buttons wrap
+//  that URL in each platform's share-intent endpoint.
+// ════════════════════════════════════════════════════════
+
+function initShare() {
+    const openBtn    = document.getElementById('shareBtn');
+    const modal      = document.getElementById('shareModal');
+    const closeBtn   = document.getElementById('closeShare');
+    const linkInput  = document.getElementById('shareLinkInput');
+    const copyBtn    = document.getElementById('shareCopyBtn');
+    const titleEl    = document.getElementById('shareGameTitle');
+    if (!openBtn || !modal) return;
+
+    const twitterA   = document.getElementById('shareTwitter');
+    const redditA    = document.getElementById('shareReddit');
+    const facebookA  = document.getElementById('shareFacebook');
+
+    openBtn.addEventListener('click', () => {
+        // The permalink is the current URL (openGame already pushed it).
+        // Fall back to building it from the game id if for some reason
+        // we're not on a /game/ URL yet.
+        let shareUrl = window.location.href;
+        if (!shareUrl.includes('/game/') && window.currentPlayerGameId) {
+            shareUrl = `${window.location.origin}/game/${window.currentPlayerGameId}`;
+        }
+
+        const gameName = DOM.playerTitle?.textContent?.trim() || 'this game';
+        const shareText = `Play "${gameName}" on AIgames123 🎮`;
+
+        titleEl.textContent = gameName;
+        linkInput.value = shareUrl;
+
+        // Build platform share-intent URLs
+        const encUrl  = encodeURIComponent(shareUrl);
+        const encText = encodeURIComponent(shareText);
+        twitterA.href  = `https://twitter.com/intent/tweet?text=${encText}&url=${encUrl}`;
+        redditA.href   = `https://www.reddit.com/submit?url=${encUrl}&title=${encText}`;
+        facebookA.href = `https://www.facebook.com/sharer/sharer.php?u=${encUrl}`;
+
+        // Reset copy button state
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+
+        modal.classList.add('active');
+    });
+
+    // Copy link to clipboard
+    copyBtn?.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(linkInput.value);
+            copyBtn.textContent = '✓ Copied';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        } catch {
+            // Fallback for older browsers / non-secure contexts: select the text
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                copyBtn.textContent = '✓ Copied';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch {
+                notify.warn('Could not copy. Please select and copy the link manually.');
+            }
+        }
+    });
+
+    // Close handlers
+    closeBtn?.addEventListener('click', () => modal.classList.remove('active'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+    });
+}
