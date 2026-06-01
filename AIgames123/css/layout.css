@@ -74,6 +74,16 @@
   flex-shrink: 0;
 }
 
+/* Logged-in username shown in the navbar. Cap its width and truncate
+   with an ellipsis so a long display name can't widen nav-right enough
+   to wrap the buttons onto a second row. */
+.nav-username {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .search-container {
   flex: 1;
   max-width: 400px;
@@ -247,9 +257,17 @@
 
   /* Buttons stay on the same row as the logo, pushed to the right. */
   .nav-right {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     gap: 0.4rem;
     margin-left: auto;
+    min-width: 0;
+  }
+
+  /* On mobile the username must give up space first so the buttons
+     don't wrap below. Cap it tighter than on desktop. */
+  .nav-username {
+    max-width: 90px;
+    flex-shrink: 1;
   }
 
   /* Search input on second row, full width */
@@ -262,12 +280,12 @@
 
   .logo { font-size: 1.05rem; }
 
-  /* The tagline is the widest part of the logo group. Allow it to be
-     as wide as it needs but not force the whole nav-left to grow past
-     what leaves room for the buttons. Truncate with ellipsis if the
-     screen is extremely narrow. */
+  /* The tagline is the widest part of the logo group. When logged in,
+     nav-right holds username + 2 buttons, so keep the tagline narrow
+     enough that the logo group yields space and the buttons never wrap
+     onto a second row. Truncates with an ellipsis if needed. */
   .logo-tagline {
-    max-width: 60vw;
+    max-width: 45vw;
     overflow: hidden;
     text-overflow: ellipsis;
   }
