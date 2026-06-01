@@ -43,7 +43,7 @@
   pointer-events: none;
 }
 @media (max-width: 600px) {
-  .logo-tagline { font-size: 0.6rem; padding-left: 22px; }
+  .logo-tagline { font-size: 0.6rem; padding-left: 4px; }
 }
 
 .logo-img {
@@ -228,14 +228,29 @@
 ════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* Navbar: two-line layout */
+  /* Navbar: logo + buttons on row 1, search on row 2.
+     nav-left is NOT flex:1 — that was pushing nav-right onto its own
+     line. Instead let nav-left take only the space it needs and let
+     nav-right sit beside it, with search wrapping to the second row. */
   .navbar {
     flex-wrap: wrap;
     padding: 0.6rem 1rem;
     gap: 0.5rem;
+    justify-content: space-between;
   }
 
-  .nav-left { flex: 1; }
+  /* Logo group takes its natural width; buttons sit to its right. */
+  .nav-left {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  /* Buttons stay on the same row as the logo, pushed to the right. */
+  .nav-right {
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    margin-left: auto;
+  }
 
   /* Search input on second row, full width */
   .search-container {
@@ -245,9 +260,17 @@
     margin: 0;
   }
 
-  .nav-right { gap: 0.4rem; }
-
   .logo { font-size: 1.05rem; }
+
+  /* The tagline is the widest part of the logo group. Allow it to be
+     as wide as it needs but not force the whole nav-left to grow past
+     what leaves room for the buttons. Truncate with ellipsis if the
+     screen is extremely narrow. */
+  .logo-tagline {
+    max-width: 60vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   .upload-btn { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
 
