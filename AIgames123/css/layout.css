@@ -74,6 +74,15 @@
   flex-shrink: 0;
 }
 
+/* Wrapper around the action buttons (Login / Upload / Logout). On
+   desktop it behaves like a normal inline button row; on mobile the
+   username stacks above it. */
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* Logged-in username shown in the navbar. Cap its width and truncate
    with an ellipsis so a long display name can't widen nav-right enough
    to wrap the buttons onto a second row. */
@@ -238,37 +247,45 @@
 ════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* Navbar: logo + buttons on row 1, search on row 2.
-     nav-left is NOT flex:1 — that was pushing nav-right onto its own
-     line. Instead let nav-left take only the space it needs and let
-     nav-right sit beside it, with search wrapping to the second row. */
+  /* Navbar mobile layout:
+       Row 1:  [logo + full tagline]            [nav-right]
+       Row 2:  [─────── search (full width) ───────]
+     nav-right stacks vertically — username on top, buttons below —
+     so a logged-in username never pushes the buttons onto a new row. */
   .navbar {
     flex-wrap: wrap;
     padding: 0.6rem 1rem;
     gap: 0.5rem;
     justify-content: space-between;
+    align-items: flex-start;
   }
 
-  /* Logo group takes its natural width; buttons sit to its right. */
+  /* Logo group takes its natural width; the tagline shows in full. */
   .nav-left {
     flex: 0 1 auto;
     min-width: 0;
   }
 
-  /* Buttons stay on the same row as the logo, pushed to the right. */
+  /* nav-right stacks vertically and hugs the right edge. */
   .nav-right {
-    flex: 0 1 auto;
-    gap: 0.4rem;
+    flex: 0 0 auto;
     margin-left: auto;
-    min-width: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
   }
 
-  /* On mobile the username must give up space first so the buttons
-     don't wrap below. Cap it tighter than on desktop. */
+  /* Username sits above the buttons, right-aligned. No width cap needed
+     now that it's on its own line. */
   .nav-username {
-    max-width: 90px;
-    flex-shrink: 1;
+    max-width: 50vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
   }
+
+  /* The two action buttons sit side by side beneath the username. */
+  .upload-btn { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
 
   /* Search input on second row, full width */
   .search-container {
@@ -280,17 +297,11 @@
 
   .logo { font-size: 1.05rem; }
 
-  /* The tagline is the widest part of the logo group. When logged in,
-     nav-right holds username + 2 buttons, so keep the tagline narrow
-     enough that the logo group yields space and the buttons never wrap
-     onto a second row. Truncates with an ellipsis if needed. */
+  /* Tagline shows in full under the logo — no truncation on mobile. */
   .logo-tagline {
-    max-width: 45vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: none;
+    white-space: normal;
   }
-
-  .upload-btn { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
 
   /* Game grid: fixed 2 columns */
   .game-grid {
