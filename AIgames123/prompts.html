@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prompts Behind the Games — AIgames123</title>
+  <meta name="description" content="See the exact AI prompts used to build games on AIgames123. Learn how ChatGPT, Gemini, and Claude were prompted to create each game — and try them yourself.">
+  <link rel="canonical" href="https://aigames123.com/prompts">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="Prompts Behind the Games — AIgames123">
+  <meta property="og:description" content="The exact AI prompts used to build games on AIgames123. Steal them and make your own.">
+  <meta property="og:url"         content="https://aigames123.com/prompts">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/prompts.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/prompts" class="active">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/dmca">DMCA</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>Prompts Behind the Games</h1>
+    <p class="legal-updated">Every game on AIgames123 started as a prompt.</p>
+
+    <p class="prompts-intro">
+      One of the most-asked questions we get is: <em>"How was this made?"</em>
+      So here it is — the actual prompts behind our games. Each game often
+      took a different AI tool, or a mix of several. Copy them, tweak them,
+      and build your own. If you make something cool, <a href="/">upload it</a>!
+    </p>
+
+    <!-- ════════════════════════════════════════════════
+         SpaceX IPO trading simulator
+         ════════════════════════════════════════════════ -->
+    <div class="game-prompt-section">
+      <div class="game-prompt-header">
+        <span class="game-prompt-emoji">🚀</span>
+        <h2 class="game-prompt-title">SpaceX IPO — Stock Trading Simulator</h2>
+      </div>
+      <p class="game-prompt-desc">
+        A real-time trading game where you buy and sell SpaceX shares as the
+        (fictional) stock swings through market phases, breaking-news events,
+        and hype cycles. Built as a single self-contained HTML file using
+        Chart.js for the live price chart and the Web Audio API for sound.
+      </p>
+      <div class="game-prompt-tags">
+        <span class="game-prompt-tag">single-file HTML</span>
+        <span class="game-prompt-tag">Chart.js</span>
+        <span class="game-prompt-tag">Web Audio API</span>
+        <span class="game-prompt-tag">simulation</span>
+      </div>
+
+      <!-- ChatGPT -->
+      <div class="prompt-block">
+        <div class="prompt-tool-header">
+          <span class="prompt-tool-name">
+            <span class="prompt-tool-badge chatgpt">G</span>
+            ChatGPT
+            <span class="prompt-tool-label">used for the core game loop</span>
+          </span>
+          <button class="prompt-copy-btn" data-target="prompt-chatgpt-spacex">Copy</button>
+        </div>
+        <div class="prompt-text" id="prompt-chatgpt-spacex">Build a complete single-file HTML stock trading game called "SpaceX IPO". Everything (HTML, CSS, JS) must be in ONE .html file with no external files except the Chart.js CDN.
+
+Core mechanics:
+- The player starts with $10,000 cash and 0 shares.
+- There is one fictional stock: SpaceX (ticker SPCX), starting at $50.
+- A live line chart (Chart.js) shows the last 60 price ticks, updating once per second.
+- Each tick, the price moves by a random walk: newPrice = price * (1 + drift + volatility * randomNormal()). Make drift and volatility change depending on the current "market phase" (see below).
+- Buy and Sell buttons trade 1, 10, or "Max" shares at the current price. Show the player's cash, shares held, and total net worth (cash + shares*price) updating live.
+
+Market phases (cycle through these, each lasting 20-40 ticks):
+- Accumulation (low volatility, slight up drift)
+- Bull run (high up drift)
+- Euphoria (very high volatility, prices spike)
+- Correction (sharp down drift)
+- Recovery (returns toward normal)
+Show the current phase name on screen.
+
+Win/lose: there's no hard end — it's an endless sandbox. Track and display the player's all-time peak net worth.
+
+Use a clean dark UI. Make the buy button green, sell button red. Keep all code in one file. Comment the tunable constants (starting cash, base volatility, tick rate) at the top in a CONFIG object so they're easy to adjust.</div>
+        <p class="prompt-note">
+          <strong>Why this works:</strong> Being explicit about "ONE file, no
+          external files except the CDN" prevents the model from splitting code
+          across files you can't host. Spelling out the exact price formula and
+          listing the phases by name gives reproducible, debuggable behavior
+          instead of vague "make it realistic."
+        </p>
+      </div>
+
+      <!-- Gemini -->
+      <div class="prompt-block">
+        <div class="prompt-tool-header">
+          <span class="prompt-tool-name">
+            <span class="prompt-tool-badge gemini">✦</span>
+            Gemini
+            <span class="prompt-tool-label">used for news events &amp; balancing</span>
+          </span>
+          <button class="prompt-copy-btn" data-target="prompt-gemini-spacex">Copy</button>
+        </div>
+        <div class="prompt-text" id="prompt-gemini-spacex">I have a single-file HTML stock trading game ("SpaceX IPO"). I want to add a random "breaking news" event system that nudges the price. Give me a self-contained JavaScript module I can paste into the existing file.
+
+Requirements:
+- Every 15-30 ticks (randomized), trigger one news event.
+- Each event has: a headline string, and a price multiplier applied over the next few ticks (e.g. +18%, -25%).
+- Mix of positive and negative events themed around a space company, e.g.:
+  - "Starship test flight nails the landing!" (big positive)
+  - "FAA grounds launches pending review" (negative)
+  - "New Starlink contract signed" (moderate positive)
+  - "Investor sells large stake" (moderate negative)
+  - "Mars colony teaser goes viral" (hype spike then partial reversal)
+- Show the headline as a toast/banner at the top for ~4 seconds when it fires.
+- Make sure events feel balanced over a long session — roughly net-neutral, so the game isn't trivially easy or impossible.
+
+Return only the JS, with a clear function I can call from my existing game loop like maybeTriggerNews(currentTick).</div>
+        <p class="prompt-note">
+          <strong>Why this works:</strong> Asking for "a module I can paste into
+          the existing file" with a named entry point (<code>maybeTriggerNews()</code>)
+          keeps new code from clashing with what ChatGPT already built. Listing
+          example headlines steers tone; asking for "net-neutral over a long
+          session" is a concrete balancing constraint the model can reason about.
+        </p>
+      </div>
+
+      <!-- Claude -->
+      <div class="prompt-block">
+        <div class="prompt-tool-header">
+          <span class="prompt-tool-name">
+            <span class="prompt-tool-badge claude">✻</span>
+            Claude
+            <span class="prompt-tool-label">used for polish, sound &amp; bug fixing</span>
+          </span>
+          <button class="prompt-copy-btn" data-target="prompt-claude-spacex">Copy</button>
+        </div>
+        <div class="prompt-text" id="prompt-claude-spacex">Here's my single-file SpaceX IPO trading game (pasted below). It works but feels flat. Help me polish it without breaking anything:
+
+1. Add sound using the Web Audio API only (no audio files) — a short "blip" on buy, a lower tone on sell, and a quick rising arpeggio when net worth hits a new all-time high. Keep it subtle and let the player mute it.
+
+2. Add small achievements that pop as toasts: first trade, first $100k net worth, survive a full Correction phase without selling, etc. Track them in localStorage so they persist.
+
+3. Add juice: animate the net-worth number when it changes (count up/down), flash the price green/red on each tick depending on direction, and add a subtle screen shake on big news events.
+
+4. Review the trading logic for bugs — especially: can the player buy with money they don't have? Can shares or cash go negative? Does "Max" buy round correctly?
+
+Please keep everything in the single HTML file, preserve the existing CONFIG object, and explain what you changed and why. Show me the full updated file.</div>
+        <p class="prompt-note">
+          <strong>Why this works:</strong> Pasting the existing code and saying
+          "without breaking anything" plus "preserve the CONFIG object" anchors
+          the changes to what already exists. Numbered, specific asks (Web Audio
+          only, persist in localStorage) are easy to verify, and explicitly
+          asking it to <em>review for bugs</em> — like negative balances — turns
+          the model into a code reviewer, not just a generator.
+        </p>
+      </div>
+    </div>
+
+    <!-- Closing tip -->
+    <div class="prompts-tip">
+      <strong>💡 The pattern:</strong> Notice the division of labor — one tool
+      scaffolds the core loop, another adds a self-contained feature, a third
+      polishes and hunts bugs. You don't have to use three tools, but breaking
+      a game into "core → features → polish" prompts tends to produce cleaner
+      results than asking for everything at once. Built something with these?
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">
+      Prompts are shared as creative inspiration. AI tools change over time, so
+      you may need to adapt wording for the current version of each model. The
+      AI tool names referenced are trademarks of their respective owners.
+    </p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+
+  <script>
+    // Copy-to-clipboard for each prompt block. Inline script is allowed
+    // by this page's CSP (script-src 'self' 'unsafe-inline').
+    document.querySelectorAll('.prompt-copy-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-target');
+        var el = document.getElementById(targetId);
+        if (!el) return;
+        var text = el.textContent;
+        var done = function () {
+          btn.textContent = '✓ Copied';
+          btn.classList.add('copied');
+          setTimeout(function () {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {
+            fallbackCopy(el, done);
+          });
+        } else {
+          fallbackCopy(el, done);
+        }
+      });
+    });
+
+    function fallbackCopy(el, done) {
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      sel.removeAllRanges();
+    }
+  </script>
+</body>
+</html>
