@@ -3,147 +3,675 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Terms of Service — AIgames123</title>
-  <meta name="description" content="AIgames123 Terms of Service. Rules for uploading and playing AI-generated games on our platform.">
-  <link rel="canonical" href="https://aigames123.com/terms">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- ════════════════════════════════════════════════════════
+       Security headers (backup — primary copies are in vercel.json).
+       The meta tag form is honored by the browser when serving
+       statically (e.g. during local dev) where HTTP headers
+       aren't applied. Some directives (frame-ancestors, HSTS,
+       X-Frame-Options) ONLY work via real headers, hence vercel.json.
+
+       NOTE on CSP relaxations:
+       The `srcdoc` iframe used to load user-uploaded games INHERITS
+       the parent page's CSP (per HTML spec). User games legitimately
+       use inline <script>, inline event handlers, eval (Unity/Godot
+       wasm loaders), Google Fonts, etc. So script-src and style-src
+       have to permit those, otherwise no third-party game loads.
+       Defense-in-depth that REMAINS effective:
+         - object-src 'none'      (no <object>/<embed>/Flash plugins)
+         - base-uri 'self'        (game cannot retarget app's <base>)
+         - frame-ancestors 'self' (clickjacking protection)
+         - frame-src 'self' blob: (game cannot embed arbitrary iframes)
+         - upgrade-insecure-requests (no http:// resources)
+         - The iframe sandbox (no allow-same-origin) is what truly
+           isolates games from the parent app; CSP is a secondary layer.
+       ════════════════════════════════════════════════════════ -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https://shbfbsbbonepeskwpntg.supabase.co wss://shbfbsbbonepeskwpntg.supabase.co https:; frame-src 'self' blob:; media-src 'self' blob: data: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+
+  <!-- ════════════════════════════════════════════════════════
+       SEO meta tags
+       Defaults below describe the homepage. For game-specific
+       pages, db.js dynamically rewrites <title>, the description,
+       and the og:* / twitter:* tags so that links shared to social
+       platforms show the actual game's name + thumbnail.
+       ════════════════════════════════════════════════════════ -->
+  <title>AIgames123 — Play AI-Generated Games Free Online</title>
+  <meta name="description" content="Play AI-generated games for free in your browser. Instant play, no install, no signup. Discover wild HTML and ZIP games built with Claude, GPT, and other AI tools.">
+  <meta name="keywords" content="AI games, AI-generated games, browser games, free games, HTML games, indie games, AI art games, claude games, GPT games">
+  <meta name="author" content="AIgames123">
+  <link rel="canonical" href="https://aigames123.com/">
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord, Slack) -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="AIgames123 — Play AI-Generated Games Free Online">
+  <meta property="og:description" content="Play AI-generated games for free in your browser. Instant play, no install, no signup.">
+  <meta property="og:url"         content="https://aigames123.com/">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta property="og:image:type"  content="image/jpeg">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt"   content="AIgames123 — Play AI-generated games free online">
+  <meta property="og:locale"      content="en_US">
+
+  <!-- Twitter Card (X) -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="AIgames123 — Play AI-Generated Games Free Online">
+  <meta name="twitter:description" content="Play AI-generated games for free in your browser. Instant play, no install.">
+  <meta name="twitter:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:image:alt"   content="AIgames123 — Play AI-generated games free online">
+
+  <!-- JSON-LD structured data: declares this as a WebSite to Google,
+       enabling sitelinks search box in search results once the site
+       has enough authority. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AIgames123",
+    "url": "https://aigames123.com/",
+    "description": "Play AI-generated games for free in your browser. Instant play, no install.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://aigames123.com/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
   <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/component.css">
+
+  <!-- ════════════════════════════════════════════════════════
+       CDN scripts pinned to specific versions (required for SRI).
+       SECURITY HARDENING TODO (do this in your deploy pipeline):
+         1. Generate SRI hashes locally with:
+              curl -sL "<URL>" | openssl dgst -sha384 -binary | openssl base64 -A
+         2. Add to each <script>:  integrity="sha384-..." crossorigin="anonymous"
+         3. The CSP above can then be tightened with 'strict-dynamic'.
+       Without SRI, a compromised jsDelivr could serve malicious code.
+       ════════════════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <nav class="legal-nav">
-    <a href="/" class="legal-home">← AIgames123</a>
-    <div class="legal-nav-links">
-      <a href="/terms" class="active">Terms</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/dmca">DMCA</a>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>Genres / Categories</h3>
+      <button class="close-btn" id="closeSidebar">&times;</button>
+    </div>
+    <ul class="genre-list" id="genreList"></ul>
+  </aside>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="hamburger" id="menuBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </div>
+      <div class="logo" id="homeLogo">
+        <img src="/images/logo.png" alt="AIgames123" class="logo-img">
+        <!-- Tagline sits directly under the logo image, top-left.
+             Subtle white text that reads like a continuation of the banner. -->
+        <span class="logo-tagline">Upload your own AI-generated games</span>
+      </div>
+    </div>
+
+    <div class="search-container" id="searchContainer">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search games...">
+    </div>
+
+    <div class="nav-right">
+      <div id="userInfo" class="nav-username" style="display:none; color:#a78bfa; font-weight:bold; cursor:pointer;" title="View my profile"></div>
+      <div class="nav-buttons">
+        <!-- loginBtn now opens the auth modal -->
+        <button class="upload-btn" id="loginBtn" style="background:#24292e;">Login / Sign Up</button>
+        <button class="upload-btn" id="uploadBtn" style="display:none;">Upload</button>
+        <button class="upload-btn" id="logoutBtn" style="display:none; background:#3b2d5a;">Logout</button>
+      </div>
     </div>
   </nav>
 
-  <main class="legal-container">
-    <h1>Terms of Service</h1>
-    <p class="legal-updated">Last updated: May 24, 2026</p>
-
-    <p>Welcome to AIgames123 (the "Service", "we", "us", "our"). The Service is a free, community-driven archive where users can upload and play AI-generated games. By accessing or using the Service, you agree to be bound by these Terms of Service ("Terms"). If you do not agree, please do not use the Service.</p>
-
-    <h2>1. Eligibility</h2>
-    <p>You must be at least <strong>13 years old</strong> to use the Service. By using the Service, you represent that you are 13 or older. If you are under 18, you confirm that you have permission from a parent or legal guardian to use the Service.</p>
-    <p>If we learn that we have collected information from a child under 13, we will delete it as required by the Children's Online Privacy Protection Act (COPPA).</p>
-
-    <h2>2. Accounts</h2>
-    <p>You may browse and play games without an account. To upload games or interact with content (upvote, edit, delete your own games), you must create an account. You are responsible for:</p>
-    <ul>
-      <li>Maintaining the confidentiality of your login credentials</li>
-      <li>All activity that occurs under your account</li>
-      <li>Notifying us immediately if you suspect unauthorized access</li>
-    </ul>
-    <p>We may suspend or terminate accounts that violate these Terms.</p>
-
-    <h2>3. User Content</h2>
-    <p>"User Content" means any games, descriptions, thumbnails, display names, profile pictures, and other materials you upload to the Service.</p>
-
-    <h3>3.1 Your responsibilities</h3>
-    <p>You are solely responsible for your User Content. By uploading, you represent and warrant that:</p>
-    <ul>
-      <li>You own all rights to the content, or have full permission from the rights-holder to upload and share it</li>
-      <li>The content does not infringe any third party's copyright, trademark, publicity, or other rights</li>
-      <li>The content complies with these Terms and all applicable laws</li>
-    </ul>
-
-    <h3>3.2 License you grant us</h3>
-    <p>By uploading User Content, you grant us a worldwide, non-exclusive, royalty-free license to host, store, reproduce, display, and distribute that content for the sole purpose of operating and improving the Service. This license ends when you delete your content, except where we are required to retain copies for legal or backup purposes.</p>
-    <p>You retain ownership of your content. We do not claim ownership of anything you upload.</p>
-
-    <h3>3.3 Prohibited content</h3>
-    <p>You may NOT upload, create, or share content that:</p>
-    <ul>
-      <li>Infringes copyrights, trademarks, or other intellectual property rights (including unauthorized use of game characters, sprites, music, or assets from existing commercial games)</li>
-      <li>Contains sexually explicit material, pornography, or sexually suggestive content involving anyone who appears under 18</li>
-      <li>Depicts or promotes graphic violence, gore, self-harm, or suicide</li>
-      <li>Promotes hate speech, harassment, discrimination, or threats against any individual or group based on race, ethnicity, religion, gender, sexual orientation, disability, or other protected characteristics</li>
-      <li>Contains malware, viruses, exploits, cryptocurrency miners, or any code intended to harm users or systems</li>
-      <li>Phishes for credentials, impersonates other people or services, or facilitates fraud</li>
-      <li>Violates any applicable U.S., state, or local law</li>
-      <li>Spams, advertises commercial products, or repeatedly posts low-quality / duplicate content</li>
-    </ul>
-    <p>We reserve the right (but have no obligation) to remove any content that violates these rules, with or without notice.</p>
-
-    <h2>4. AI-Generated Content</h2>
-    <p>The Service is intended for games that are partially or fully created using AI tools (such as large language models, image generators, or AI code assistants). You agree that:</p>
-    <ul>
-      <li>You will not upload content generated in violation of the terms of service of the AI tool used</li>
-      <li>You will not pass off third-party AI-generated content as your own when prohibited by the underlying model's license</li>
-      <li>You acknowledge that AI tools may inadvertently reproduce copyrighted material from training data; you remain responsible for the legality of what you publish</li>
-    </ul>
-
-    <h2>5. Acceptable Use</h2>
-    <p>You agree not to:</p>
-    <ul>
-      <li>Attempt to gain unauthorized access to other users' accounts or to our infrastructure</li>
-      <li>Probe, scan, or test the vulnerability of the Service without our written permission</li>
-      <li>Use the Service to send spam, malware, or unsolicited communications</li>
-      <li>Scrape, copy, or systematically extract content from the Service except as permitted by `robots.txt`</li>
-      <li>Use automated means (bots, scripts) to upload content, manipulate upvotes, or inflate metrics</li>
-      <li>Reverse-engineer, decompile, or attempt to extract source code from the Service except as permitted by law</li>
-      <li>Interfere with other users' ability to use the Service</li>
-    </ul>
-
-    <h2>6. Intellectual Property of the Service</h2>
-    <p>The Service itself — including its name, design, code, logos, and overall presentation — is owned by the Service's operator and is protected by copyright and other intellectual property laws. You may not copy or reuse these elements without permission.</p>
-
-    <h2>7. DMCA Copyright Policy</h2>
-    <p>We respect intellectual property rights and respond to valid DMCA takedown notices. See our <a href="/dmca">DMCA Notice & Takedown Procedure</a> for details on how to submit a copyright complaint.</p>
-    <p>Repeat infringers will have their accounts terminated in accordance with the DMCA's repeat-infringer policy.</p>
-
-    <h2>8. Privacy</h2>
-    <p>Our <a href="/privacy">Privacy Policy</a> explains what information we collect and how we use it. By using the Service, you consent to that data handling.</p>
-
-    <h2>9. Disclaimers</h2>
-    <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.</p>
-    <p>We make no warranty that:</p>
-    <ul>
-      <li>The Service will be uninterrupted, secure, or error-free</li>
-      <li>User-uploaded games are safe, accurate, or free of malware (we make reasonable efforts but cannot guarantee)</li>
-      <li>Any content uploaded by users is lawful, accurate, or non-infringing</li>
-    </ul>
-    <p>You play user-uploaded games at your own risk. Although games run inside a sandboxed iframe, we cannot guarantee that all sandbox protections will be effective in every case.</p>
-
-    <h2>10. Limitation of Liability</h2>
-    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL WE BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE.</p>
-    <p>Our total cumulative liability to you for all claims relating to the Service shall not exceed one hundred U.S. dollars ($100).</p>
-
-    <h2>11. Indemnification</h2>
-    <p>You agree to indemnify and hold harmless the Service's operator from any claims, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising from:</p>
-    <ul>
-      <li>Your use of the Service</li>
-      <li>Your User Content</li>
-      <li>Your violation of these Terms</li>
-      <li>Your violation of any third-party right, including any intellectual property right</li>
-    </ul>
-
-    <h2>12. Termination</h2>
-    <p>We may suspend or terminate your access to the Service at any time, with or without cause, with or without notice. You may stop using the Service at any time. Sections that by their nature should survive termination (e.g., ownership, indemnification, limitations of liability) will survive.</p>
-
-    <h2>13. Changes to These Terms</h2>
-    <p>We may modify these Terms at any time. Material changes will be reflected by updating the "Last updated" date at the top of this page. Continued use of the Service after changes constitutes acceptance of the updated Terms. If you do not agree to the new Terms, stop using the Service.</p>
-
-    <h2>14. Governing Law</h2>
-    <p>These Terms are governed by the laws of the United States and, where applicable, the State of California, without regard to conflict-of-laws principles. Any disputes arising from these Terms or the Service shall be resolved in the state or federal courts located in California, and you consent to personal jurisdiction in those courts.</p>
-
-    <h2>15. Contact</h2>
-    <p>Questions about these Terms? Reach out to the operator at <a href="mailto:support@aigames123.com">support@aigames123.com</a>.</p>
-
-    <hr class="legal-divider">
-    <p class="legal-footer-note">
-      AIgames123 is operated as an independent personal project. The site has no corporate entity, and references to "we" or "us" refer to the project's individual operator.
-    </p>
+  <!-- Main view -->
+  <main class="main-content" id="mainContent">
+    <div class="section-header">
+      <h2 class="section-title" id="sectionTitle">Popular Games</h2>
+      <select class="sort-dropdown" id="sortDropdown">
+        <option value="view_count">👁️ Most Viewed</option>
+        <option value="upvotes">👍 Most Upvoted</option>
+        <option value="created_at">🕐 Newest</option>
+      </select>
+    </div>
+    <div class="game-grid" id="gameGrid"></div>
   </main>
 
-  <footer class="legal-footer">
-    <a href="/">Home</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
-    <p>© 2026 AIgames123</p>
+  <!-- My profile view -->
+  <main class="main-content" id="profileContent" style="display:none;">
+    <div class="profile-header-card">
+      <div class="profile-avatar-container" id="avatarUploadTrigger" title="Click to change profile picture">
+        <img id="profileAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%233b2d5a'/%3E%3Ctext x='50' y='50' font-size='55' text-anchor='middle' dominant-baseline='central'%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E" alt="Profile Avatar" class="profile-avatar">
+        <div class="avatar-edit-overlay">Change photo</div>
+        <input type="file" id="avatarFileInputHeader" accept="image/*" style="display:none;">
+      </div>
+      <div class="profile-info-summary">
+        <h2 id="profileDisplayName" class="profile-display-name">Gamer</h2>
+        <p class="profile-email" id="profileEmail">user@example.com</p>
+        <div class="profile-stats">
+          <div class="stat-box">
+            <span class="stat-value" id="statTotalGames">0</span>
+            <span class="stat-label">Games Uploaded</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value" id="statTotalViews">0</span>
+            <span class="stat-label">Total Views</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-settings-card">
+      <h3 class="settings-title">⚙️ Profile Settings</h3>
+      <div class="form-group">
+        <label class="form-label">Profile Picture</label>
+        <div class="avatar-upload-row">
+          <img id="avatarPreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%233b2d5a'/%3E%3Ctext x='50' y='50' font-size='55' text-anchor='middle' dominant-baseline='central'%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E" alt="Preview" class="avatar-preview">
+          <div class="avatar-upload-actions">
+            <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+            <button class="upload-btn" id="avatarPickBtn" style="background:#3b2d5a;">Choose Photo</button>
+            <button class="upload-btn" id="saveAvatarBtn">Save</button>
+          </div>
+        </div>
+        <p style="font-size:0.8rem; color:#a78bfa; margin-top:8px;">* Once saved, this picture will also appear next to your games.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <div style="display:flex; gap:10px; max-width:400px; flex-wrap:wrap;">
+          <input type="text" class="form-input" id="profileNameInput" placeholder="Enter new display name" style="flex:1; min-width:150px;">
+          <button class="upload-btn" id="saveProfileBtn">Save</button>
+        </div>
+        <p style="font-size:0.8rem; color:#a78bfa; margin-top:8px;">* This will be permanent.</p>
+      </div>
+      <!-- Password change (email users only) -->
+      <div class="form-group" id="changePasswordSection" style="display:none;">
+        <label class="form-label">Change Password</label>
+        <div style="display:flex; flex-direction:column; gap:8px; max-width:400px;">
+          <input type="password" class="form-input" id="newPasswordInput" placeholder="New password (min. 8 characters)">
+          <input type="password" class="form-input" id="newPasswordConfirm" placeholder="Confirm new password">
+          <button class="upload-btn" id="changePasswordBtn" style="align-self:flex-start;">Change</button>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top:3rem;">My Uploaded Games</h2>
+    <div class="game-grid" id="myGameGrid"></div>
+  </main>
+
+  <!-- Public profile view -->
+  <main class="main-content" id="publicProfileContent" style="display:none;">
+    <div class="profile-header-card" style="margin-bottom:2rem;">
+      <div class="profile-info-summary">
+        <h2 id="publicProfileName" class="profile-display-name">Gamer</h2>
+        <p class="profile-email">Games uploaded by this user.</p>
+      </div>
+    </div>
+    <div class="game-grid" id="publicGameGrid"></div>
+  </main>
+
+  <!-- ════ Login / Sign-Up modal ════ -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">AI Games Arcade 🎮</h3>
+        <button class="close-btn" id="closeAuth">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Tabs -->
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Login</button>
+          <button class="auth-tab" data-tab="signup">Sign Up</button>
+        </div>
+
+        <!-- Login panel -->
+        <div class="auth-panel" id="loginPanel">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="loginEmail" placeholder="email@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="loginPassword" placeholder="Password" autocomplete="current-password">
+          </div>
+          <button class="submit-btn" id="emailLoginBtn" style="margin-bottom:0.75rem;">Login with Email</button>
+          <div class="auth-divider"><span>OR</span></div>
+          <button class="github-login-btn" id="githubLoginBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>
+            Continue with GitHub
+          </button>
+          <button class="google-login-btn" id="googleLoginBtn">
+            <!-- Official Google "G" mark — multi-colored, per Google branding guidelines -->
+            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continue with Google
+          </button>
+          <p class="auth-hint">Don't have an account? <button class="auth-link" data-switch="signup">Sign Up</button></p>
+        </div>
+
+        <!-- Sign-Up panel -->
+        <div class="auth-panel" id="signupPanel" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="signupEmail" placeholder="email@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Name</label>
+            <input type="text" class="form-input" id="signupName" placeholder="Name shown on your games" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="signupPassword" placeholder="Min. 8 characters" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <input type="password" class="form-input" id="signupPasswordConfirm" placeholder="Re-enter password" autocomplete="new-password">
+          </div>
+          <!-- Required acknowledgement that the user has read and agrees to
+               the Terms of Service and Privacy Policy. Signup is blocked
+               unless this is checked (enforced in auth.js). -->
+          <div class="form-group auth-consent">
+            <label class="auth-consent-row">
+              <input type="checkbox" id="signupAgree" class="auth-consent-checkbox">
+              <span class="auth-consent-text">
+                I am at least 13 years old and agree to the
+                <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>
+                and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+              </span>
+            </label>
+          </div>
+          <button class="submit-btn" id="emailSignupBtn" style="margin-bottom:0.75rem;">Sign Up</button>
+          <div class="auth-divider"><span>OR</span></div>
+          <button class="github-login-btn" id="githubSignupBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>
+            Sign up with GitHub
+          </button>
+          <button class="google-login-btn" id="googleSignupBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign up with Google
+          </button>
+          <p class="auth-hint">Already have an account? <button class="auth-link" data-switch="login">Login</button></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload modal -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload Your Game</h3>
+        <button class="close-btn" id="closeUpload">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Game Name</label>
+          <input type="text" class="form-input" id="gameName" maxlength="80">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description <span style="font-weight:normal;color:#888;">(optional)</span></label>
+          <textarea
+            class="form-input form-textarea"
+            id="gameDescription_upload"
+            rows="4"
+            maxlength="1000"
+            placeholder="Tell players how to play, what the goal is, controls, tips..."
+            style="resize:vertical;min-height:90px;font-family:inherit;"></textarea>
+          <p style="font-size:0.78rem; color:#666; margin-top:6px;">* Up to 1000 characters. Line breaks are preserved.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (click to select)</label>
+          <div class="tag-selector" id="tagSelector"></div>
+          <p style="font-size:0.78rem; color:#666; margin-top:8px;">* Multiple selections allowed</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Game Thumbnail</label>
+          <div class="file-input-wrapper">
+            <input type="file" id="thumbnailFileInput" accept="image/*">
+            <div class="file-name" id="thumbnailFileName">Select a file</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Game File</label>
+          <div class="file-type-tabs" id="fileTypeTabs">
+            <button type="button" class="file-type-tab active" data-type="html">HTML</button>
+            <button type="button" class="file-type-tab" data-type="zip">ZIP</button>
+          </div>
+          <div class="file-input-wrapper">
+            <input type="file" id="gameFileInput" accept=".html">
+            <div class="file-name" id="gameFileName">Select a file</div>
+          </div>
+          <p class="file-type-hint" id="fileTypeHint" style="font-size:0.78rem;color:#a78bfa;margin-top:6px;">
+            · HTML: Single-file games<br>
+            · ZIP: index.html + assets bundle (Godot, Unity WebGL, etc.)
+          </p>
+        </div>
+        <button class="submit-btn" id="submitGame">Launch Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit game info modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Game Info</h3>
+        <button class="close-btn" id="closeEdit">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Game Name</label>
+          <input type="text" class="form-input" id="editGameName" maxlength="80">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description <span style="font-weight:normal;color:#888;">(optional)</span></label>
+          <textarea
+            class="form-input form-textarea"
+            id="editGameDescription"
+            rows="4"
+            maxlength="1000"
+            placeholder="Tell players how to play..."
+            style="resize:vertical;min-height:90px;font-family:inherit;"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags (click to select)</label>
+          <div class="tag-selector" id="editTagSelector"></div>
+          <p style="font-size:0.78rem; color:#666; margin-top:8px;">* Multiple selections allowed</p>
+        </div>
+        <button class="submit-btn" id="submitEditGame">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game player modal -->
+  <div class="modal-overlay" id="playerModal">
+    <div class="modal player-modal">
+      <div class="player-header">
+        <h3 class="player-title" id="playerTitle">Game Title</h3>
+        <div class="header-actions">
+          <button class="delete-game-btn" id="deleteGameBtn" style="display:none;">Delete</button>
+          <button class="fit-btn" id="fitBtn" title="Fit to screen">⊡ Fit</button>
+          <button class="fullscreen-btn" id="fullscreenBtn">Fullscreen</button>
+          <button class="close-btn" id="closePlayer">&times;</button>
+        </div>
+      </div>
+
+
+      <div class="game-frame-container">
+        <!-- Exit-pseudo-fullscreen floating button — only visible during pseudo-fullscreen -->
+        <button class="exit-fs-float-btn" id="exitFsFloatBtn">✕ Exit Fullscreen</button>
+
+        <div class="game-scale-wrapper" id="gameScaleWrapper">
+          <!-- ════════════════════════════════════════════════════════
+               SANDBOX TRADE-OFF (informed decision, see notes below):
+
+               `allow-same-origin` is RESTORED here because user-uploaded
+               games rely on localStorage / sessionStorage / IndexedDB
+               for high scores, save states, etc. Without it, attempting
+               to read `localStorage` from inside a srcdoc iframe throws
+               a SecurityError, breaking most casual games.
+
+               ⚠️ SECURITY IMPACT — what we are accepting:
+               With `allow-scripts` + `allow-same-origin` together on a
+               srcdoc iframe, the iframe inherits the EMBEDDING app's
+               origin. That means user-uploaded game JS could in theory:
+                 - read parent localStorage (Supabase session tokens)
+                 - read parent document.cookie
+                 - call window.parent.* and reach into the app DOM
+
+               🛡️ MITIGATIONS in place:
+                 1. The app does not store any sensitive long-lived
+                    secret in localStorage outside of the Supabase auth
+                    session — and the Supabase anon key is already
+                    public (it's the same key shipped in the bundle).
+                 2. The game iframe is loaded via `srcdoc`, not via a
+                    cross-origin src, so we have control over the bytes
+                    handed to the browser.
+                 3. The CSP frame-ancestors / X-Frame-Options prevent
+                    OTHER sites from embedding us (clickjacking).
+                 4. file_url is validated by `assertSafeGameUrl()` and
+                    by the DB CHECK constraint to live only inside the
+                    Supabase storage bucket.
+
+               🚧 RECOMMENDED LONG-TERM FIX:
+               Host games on a separate origin (e.g. games.aigames123.com
+               via a second Vercel project). Then `allow-same-origin`
+               only grants the game its OWN sub-domain origin, which
+               is naturally isolated from the parent app's cookies and
+               localStorage by the browser's same-origin policy.
+               ════════════════════════════════════════════════════════ -->
+          <iframe id="gameFrame"
+            sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-modals allow-forms allow-popups"
+            allowfullscreen frameborder="0"></iframe>
+        </div>
+        <div id="placeholder" class="game-placeholder"><p>Loading game...</p></div>
+
+        <div class="dpad-overlay" id="dpadOverlay">
+          <!-- Left-side controller: D-pad OR joystick.
+               JS swaps which one is visible via .show-joystick / .show-dpad
+               classes on the parent. Only one renders at a time, so they
+               occupy the same slot regardless of which mode is active. -->
+          <div class="controller-left">
+            <div class="dpad-wrap">
+              <div class="dpad-container">
+                <button class="dpad-btn dpad-up"    data-key="ArrowUp"    data-code="ArrowUp">▲</button>
+                <button class="dpad-btn dpad-left"  data-key="ArrowLeft"  data-code="ArrowLeft">◀</button>
+                <div class="dpad-center"></div>
+                <button class="dpad-btn dpad-right" data-key="ArrowRight" data-code="ArrowRight">▶</button>
+                <button class="dpad-btn dpad-down"  data-key="ArrowDown"  data-code="ArrowDown">▼</button>
+              </div>
+            </div>
+            <div class="joystick-wrap" id="joystickWrap">
+              <div class="joystick-base" id="joystickBase">
+                <div class="joystick-stick" id="joystickStick"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dpad-actions-wrap">
+            <button class="dpad-action" data-key=" "      data-code="Space">Jump</button>
+            <button class="dpad-action" data-key="Enter"  data-code="Enter">OK</button>
+            <button class="dpad-action" data-key="Escape" data-code="Escape">ESC</button>
+          </div>
+        </div>
+
+        <!-- Floating D-pad toggle (mobile-only).
+             Lets the user dismiss the controller to reach the lower part of
+             the game when it's not needed. JS toggles `.hidden` on the
+             dpad-overlay and updates this button's icon. -->
+        <button class="dpad-toggle-btn" id="dpadToggleBtn" type="button" aria-label="Toggle on-screen controller" title="Toggle controller">🎮</button>
+      </div>
+
+      <div class="game-footer">
+        <div class="uploader-profile" id="uploaderProfileBtn" title="View this user's profile">
+          <div class="uploader-avatar">
+            <img id="uploaderAvatarImg" class="uploader-avatar-img" style="display:none;">
+            <span id="uploaderAvatarFallback">👤</span>
+          </div>
+          <span class="uploader-name" id="uploaderName"></span>
+        </div>
+        <div class="vote-container">
+          <!-- Share button: opens a small popup with social-share links. -->
+          <button class="share-btn" id="shareBtn" title="Share this game" type="button">🔗 Share</button>
+          <!-- Report button: opens the report modal. Visible to all but
+               openReportModal() will require login before submitting. -->
+          <button class="report-btn" id="reportBtn" title="Report this game" type="button">⚠️ Report</button>
+          <button class="vote-btn upvote" id="upvoteBtn">👍 <span id="upvoteCount">0</span></button>
+        </div>
+      </div>
+
+      <!-- Game description — appears below the uploader/vote footer.
+           The label is always visible. The body is populated by
+           openGame() and the whole block hides when there's no text. -->
+      <div class="game-description" id="gameDescription" style="display:none;">
+        <div class="game-description-label">Description</div>
+        <div class="game-description-body" id="gameDescriptionBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site footer — minimal, just links to legal pages and a copyright.
+       Doesn't crowd the game grid; visible after the user scrolls past
+       all content (or immediately on small libraries). -->
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/prompts">Prompts</a>
+      <span class="footer-sep">·</span>
+      <a href="/terms">Terms</a>
+      <span class="footer-sep">·</span>
+      <a href="/privacy">Privacy</a>
+      <span class="footer-sep">·</span>
+      <a href="/dmca">DMCA</a>
+      <span class="footer-sep">·</span>
+      <a href="mailto:support@aigames123.com">Contact</a>
+    </div>
+    <div class="footer-copy">© 2026 AIgames123 · Independent personal project</div>
   </footer>
+
+  <!-- ════════════════════════════════════════════════════════
+       Report game modal — opens when user clicks ⚠️ Report.
+       Requires login to submit (gated client-side in ui.js and
+       enforced server-side by RLS + submit_report RPC).
+       ════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal report-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Report Game</h3>
+        <button class="close-btn" id="closeReport">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="report-intro" id="reportIntro">
+          Reports are reviewed by moderators. False or abusive reports may result in
+          action against your account. For copyright claims, please also email
+          <a href="mailto:support@aigames123.com">support@aigames123.com</a>
+          per our <a href="/dmca" target="_blank" rel="noopener">DMCA procedure</a>.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Reason</label>
+          <div class="report-reasons" id="reportReasons">
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="copyright">
+              <div class="report-reason-text">
+                <strong>Copyright / IP infringement</strong>
+                <small>Uses characters, art, music, or code without permission.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="adult">
+              <div class="report-reason-text">
+                <strong>Sexual / adult content</strong>
+                <small>Explicit, suggestive, or otherwise NSFW material.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="violence">
+              <div class="report-reason-text">
+                <strong>Graphic violence or hate</strong>
+                <small>Gore, self-harm promotion, hate speech, harassment.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="spam">
+              <div class="report-reason-text">
+                <strong>Spam, malware, or scam</strong>
+                <small>Phishing, advertising, broken games, duplicate uploads.</small>
+              </div>
+            </label>
+            <label class="report-reason-row">
+              <input type="radio" name="reportReason" value="other">
+              <div class="report-reason-text">
+                <strong>Other</strong>
+                <small>Please describe in the details box below.</small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Additional details <span style="font-weight:normal;color:#888;">(optional, max 500 chars)</span>
+          </label>
+          <textarea
+            class="form-input form-textarea"
+            id="reportDetails"
+            rows="3"
+            maxlength="500"
+            placeholder="Any extra context that helps moderators..."
+            style="resize:vertical;min-height:70px;font-family:inherit;"></textarea>
+        </div>
+
+        <button class="submit-btn" id="submitReportBtn">Submit Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       Share game modal — opens when user clicks 🔗 Share.
+       No login required. Each game has a permalink (/game/<id>-<slug>)
+       that these buttons share to social platforms.
+       ════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="shareModal">
+    <div class="modal share-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔗 Share Game</h3>
+        <button class="close-btn" id="closeShare">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="share-game-title" id="shareGameTitle"></p>
+
+        <!-- Copyable link field -->
+        <div class="share-link-row">
+          <input type="text" id="shareLinkInput" class="share-link-input" readonly>
+          <button class="share-copy-btn" id="shareCopyBtn">Copy</button>
+        </div>
+
+        <!-- Social platform buttons -->
+        <div class="share-buttons">
+          <a class="share-platform-btn share-twitter" id="shareTwitter" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            X / Twitter
+          </a>
+          <a class="share-platform-btn share-reddit" id="shareReddit" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+            Reddit
+          </a>
+          <a class="share-platform-btn share-facebook" id="shareFacebook" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Facebook
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/db.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>
