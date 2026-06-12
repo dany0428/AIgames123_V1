@@ -16,6 +16,7 @@
 // but Bing/DuckDuckGo still consider; harmless to include.
 const STATIC_ROUTES = [
     { path: '/',        priority: 1.0, changefreq: 'daily'   },
+    { path: '/prompts', priority: 0.6, changefreq: 'weekly'  },
     { path: '/terms',   priority: 0.3, changefreq: 'monthly' },
     { path: '/privacy', priority: 0.3, changefreq: 'monthly' },
     { path: '/dmca',    priority: 0.3, changefreq: 'monthly' },
