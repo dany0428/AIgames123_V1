@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>The 30-Minute AI Game Challenge: From Idea to Playable | AIgames123</title>
+  <meta name="description" content="Can you go from blank page to finished, playable browser game in 30 minutes using AI? Yes — here's the exact process, with a timer-based workflow and common traps to avoid.">
+  <link rel="canonical" href="https://aigames123.com/blog/30-minute-ai-game-challenge">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="The 30-Minute AI Game Challenge: From Idea to Playable">
+  <meta property="og:description" content="Go from blank page to finished, playable browser game in 30 minutes using AI — here's the exact process.">
+  <meta property="og:url"         content="https://aigames123.com/blog/30-minute-ai-game-challenge">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="The 30-Minute AI Game Challenge: From Idea to Playable">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "The 30-Minute AI Game Challenge: From Idea to Playable",
+    "description": "Go from blank page to finished, playable browser game in 30 minutes using AI.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-14",
+    "mainEntityOfPage": "https://aigames123.com/blog/30-minute-ai-game-challenge"
+  }
+  </script>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>The 30-Minute AI Game Challenge: From Idea to Playable</h1>
+    <div class="article-meta">
+      <span class="article-tag">Challenge</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>8 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        Here's a challenge: set a timer for 30 minutes and build a complete, playable
+        browser game from scratch using AI. No prior code, no assets, no extended
+        planning session. Just you, an AI tool, and half an hour.
+      </p>
+      <p>
+        It sounds ambitious, but it's genuinely achievable — and the constraint makes
+        you a better creator. When you only have 30 minutes, you stop overthinking and
+        start doing. Here's the exact process to make it work.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>The 30-minute breakdown</h3>
+        <ul>
+          <li>Minutes 0–5: pick your idea and write your first prompt</li>
+          <li>Minutes 5–15: get the core game working</li>
+          <li>Minutes 15–25: fix bugs and add one polish feature</li>
+          <li>Minutes 25–30: test on mobile and publish</li>
+        </ul>
+      </div>
+
+      <h2>Minutes 0–5: Decide and write your first prompt</h2>
+      <p>
+        The biggest time-killer in this challenge is indecision. So before you start the
+        clock, have a shortlist of three game ideas ready. When the timer starts, pick
+        one — the simplest one — and spend five minutes writing a specific first prompt.
+      </p>
+      <p>
+        Choose something with a well-understood core loop: a dodge game, a clicker, a
+        falling-block game. Resist the urge to add features in the prompt — your goal
+        right now is a <em>working skeleton</em>, not a finished game. The key elements
+        of a good 5-minute prompt:
+      </p>
+      <ul>
+        <li>State it's a single HTML file with no external assets</li>
+        <li>Name the genre and theme</li>
+        <li>Describe the one core mechanic and the win/lose condition</li>
+        <li>Ask for a score display and a restart button</li>
+      </ul>
+      <p>That's it. Four things. Everything else can come later.</p>
+
+      <h2>Minutes 5–15: Get the core working</h2>
+      <p>
+        Paste your prompt into your AI tool, get the output, save it as
+        <code>game.html</code>, and open it. Then spend the next ten minutes in a
+        tight loop:
+      </p>
+      <ol>
+        <li>Play for 30 seconds</li>
+        <li>Note the one most important thing that's wrong</li>
+        <li>Describe it as a symptom and ask for the fix</li>
+        <li>Replace the file and test again</li>
+      </ol>
+      <p>
+        Focus only on things that make the game <em>unplayable</em>: crashes, missing
+        controls, the restart button not working. Don't fix cosmetic issues yet. The goal
+        at the 15-minute mark is a game that can be played from start to game-over and
+        restarted cleanly.
+      </p>
+
+      <div class="article-callout">
+        <strong>The one-fix-at-a-time rule:</strong> Only describe one problem per
+        message. Asking for five fixes at once usually produces code that fixes two and
+        breaks two others. Serial single fixes are faster than batched ones.
+      </div>
+
+      <h2>Minutes 15–25: One polish feature</h2>
+      <p>
+        With a working game, you now have ten minutes to add one — exactly one — polish
+        feature. This is deliberately constraining. Pick the single thing that would make
+        the biggest difference to someone playing it for the first time. Usually that's
+        one of:
+      </p>
+      <ul>
+        <li>A satisfying sound effect on the key action (score, crash, win)</li>
+        <li>A personal best high score saved across sessions</li>
+        <li>A smooth difficulty ramp if it currently spikes too fast</li>
+        <li>Mobile touch controls if you want phone players</li>
+      </ul>
+      <p>
+        One feature, done well, beats five features done roughly. Ask for it specifically,
+        get the updated file, and test it. If it breaks something, revert to your saved
+        working version from minute 15.
+      </p>
+
+      <h2>Minutes 25–30: Test and publish</h2>
+      <p>
+        Open the game on your phone. Can you play it? If there's a glaring mobile issue —
+        the canvas doesn't fit, there are no touch controls — and you have time, add a
+        quick fix. If not, note it for version two.
+      </p>
+      <p>
+        Then publish. Upload it to AIgames123, give it a title and a one-sentence
+        description, and hit submit. You now have a live, shareable game at a permanent
+        URL that anyone can play in seconds.
+      </p>
+      <p>
+        The publish step is non-negotiable. A game sitting in your downloads folder
+        doesn't exist. A game with a link you can share to a friend does.
+      </p>
+
+      <h2>What the time constraint teaches you</h2>
+      <p>
+        Beyond the game itself, the 30-minute challenge trains a skill that transfers to
+        every creative project: the ability to ship something small and real instead of
+        endlessly planning something large and perfect. Most unfinished games die not
+        from lack of talent but from scope creep — the desire to add one more feature
+        before sharing. A hard deadline kills that impulse.
+      </p>
+      <p>
+        Try it once, upload the result, and you'll find that starting the second game is
+        much easier than starting the first. The constraint becomes a habit.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>Start the clock only after you've picked your idea.</li>
+          <li>Minutes 5–15: get a working skeleton, fix only unplayable bugs.</li>
+          <li>Minutes 15–25: add exactly one polish feature.</li>
+          <li>Minutes 25–30: test on phone, then publish.</li>
+          <li>The goal is a live, shareable game — not a perfect one.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="article-cta">
+      <h3>Clock's ticking.</h3>
+      <p>Build it, then upload it to AIgames123 — the whole thing takes 30 minutes.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">This challenge format reflects our own experience. Results vary by game complexity and AI tool.</p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>

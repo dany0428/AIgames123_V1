@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>How to Add a High Score Leaderboard to Your Browser Game | AIgames123</title>
+  <meta name="description" content="A leaderboard turns a solo game into a competition. Here's how to add a local high score table using localStorage, with prompts for AI tools and tips on global leaderboards.">
+  <link rel="canonical" href="https://aigames123.com/blog/add-high-score-leaderboard">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="How to Add a High Score Leaderboard to Your Browser Game">
+  <meta property="og:description" content="Add a local high score table using localStorage — turns a solo game into a competition.">
+  <meta property="og:url"         content="https://aigames123.com/blog/add-high-score-leaderboard">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="How to Add a High Score Leaderboard to Your Browser Game">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Add a High Score Leaderboard to Your Browser Game",
+    "description": "Add a local high score table using localStorage — turns a solo game into a competition.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-14",
+    "mainEntityOfPage": "https://aigames123.com/blog/add-high-score-leaderboard"
+  }
+  </script>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>How to Add a High Score Leaderboard to Your Browser Game</h1>
+    <div class="article-meta">
+      <span class="article-tag">Tutorial</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>9 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        A high score table transforms a game from a solo experience into a tiny
+        competition — even if it's just the player competing with themselves across
+        sessions, or a family sharing one device. "I scored 4,200 — can you beat it?"
+        is one of the most natural things to say about a game, and a leaderboard makes
+        that conversation happen. Here's how to add one, from a simple personal best
+        to a top-ten local table.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>What you'll learn</h3>
+        <ul>
+          <li>The simplest version: just save the personal best</li>
+          <li>A local top-10 table with player initials</li>
+          <li>How to show it on the game over screen</li>
+          <li>When a global leaderboard makes sense (and when it doesn't)</li>
+        </ul>
+      </div>
+
+      <h2>Start simple: just the personal best</h2>
+      <p>
+        Before building a full leaderboard, make sure you're at least saving the
+        personal best. This is the minimum viable version and the most impactful:
+        showing the current score next to the all-time best on the game over screen
+        creates immediate motivation to try again.
+      </p>
+      <pre><code>Add a personal best high score. Save it in localStorage
+with a prefixed key (e.g. "myGame_highScore"). On game
+over, compare the current score to the saved best. If it's
+higher, update the save and show a "New record! 🎉"
+celebration. Always show both "Your score: X" and
+"Best: Y" on the game over screen.</code></pre>
+
+      <h2>A local top-10 table</h2>
+      <p>
+        The next step is a proper table — the top 10 scores saved on the device, each
+        with player initials. This is perfect for games played by multiple people on the
+        same device (a family computer, a tablet), and it gives solo players a ranked
+        history to compete against.
+      </p>
+      <pre><code>Add a local top-10 high score leaderboard using localStorage.
+
+When a game ends:
+1. Ask the player to enter 2-3 initials (a short text input
+   on the game over screen, defaulting to "AAA").
+2. Add their score to the list, sort descending, keep the
+   top 10, and save to localStorage as JSON.
+
+Show the leaderboard table on the game over screen with
+rank, initials, and score. Highlight the player's new entry
+if it made the top 10. Add a "Leaderboard" button on the
+main screen to view it any time. Include a "Clear scores"
+option. Keep everything in one HTML file.</code></pre>
+
+      <h2>Make the game over screen count</h2>
+      <p>
+        The game over screen is your highest-leverage moment for retention — the player
+        just finished a run and is deciding whether to try again. A well-designed game
+        over screen should show:
+      </p>
+      <ul>
+        <li>The current score, large and prominent</li>
+        <li>Their personal best and whether they beat it</li>
+        <li>Their rank on the local leaderboard if they made it</li>
+        <li>A big, obvious "Play Again" button reachable in one tap</li>
+        <li>The leaderboard table, scrollable if needed</li>
+      </ul>
+
+      <div class="article-callout">
+        <strong>Design tip:</strong> Don't bury the leaderboard behind a menu. Showing
+        it automatically on the game over screen — with the player's new entry
+        highlighted — creates a natural "I need to beat that" reaction every time.
+      </div>
+
+      <h2>When to think about a global leaderboard</h2>
+      <p>
+        A global leaderboard (where scores from all players worldwide are compared)
+        sounds appealing, but it's a significant step up in complexity. You need a
+        server to store scores, protection against cheating (anyone can submit any
+        number they want), and ongoing maintenance. For most small browser games, a
+        local leaderboard is plenty.
+      </p>
+      <p>
+        If you do want to try a global one, services like
+        <strong>Supabase</strong> (which is what AIgames123 is built on) can store
+        scores in a database that any player can read and write to. The tricky part is
+        anti-cheat — at minimum, validate that scores fall within a plausible range
+        server-side. This is a fun challenge for a more advanced build, but start with
+        local first.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>Start with just the personal best — it's high-impact and simple.</li>
+          <li>A local top-10 table with initials is great for shared devices.</li>
+          <li>Show the leaderboard on the game over screen, not behind a menu.</li>
+          <li>Global leaderboards are fun but complex — local is usually enough.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="article-cta">
+      <h3>Ready to compete?</h3>
+      <p>Upload your game to AIgames123 and let players around the world try to beat it.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">Code samples provided as-is for learning. Tool names are trademarks of their respective owners.</p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>
