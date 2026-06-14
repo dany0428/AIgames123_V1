@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>How to Fix the Most Common Bugs in AI-Generated Games | AIgames123</title>
+  <meta name="description" content="AI-generated game not working? Here are the most common bugs in AI-made browser games — broken restarts, blank screens, silent audio — and exactly how to fix them.">
+  <link rel="canonical" href="https://aigames123.com/blog/fix-common-bugs-ai-games">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="How to Fix the Most Common Bugs in AI-Generated Games">
+  <meta property="og:description" content="The most common bugs in AI-made browser games and exactly how to fix them.">
+  <meta property="og:url"         content="https://aigames123.com/blog/fix-common-bugs-ai-games">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="How to Fix the Most Common Bugs in AI-Generated Games">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Fix the Most Common Bugs in AI-Generated Games",
+    "description": "The most common bugs in AI-made browser games and exactly how to fix them.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-11",
+    "mainEntityOfPage": "https://aigames123.com/blog/fix-common-bugs-ai-games"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>How to Fix the Most Common Bugs in AI-Generated Games</h1>
+    <div class="article-meta">
+      <span class="article-tag">Troubleshooting</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>10 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        When you make a game with AI, most of the time it just works. But sometimes you
+        get a blank screen, a game that won't restart properly, or controls that feel
+        wrong — and if you don't code, it's not obvious what to do. The good news is
+        that AI-generated games tend to break in a handful of predictable ways, and each
+        has a reliable fix you can request in plain English. Here's a field guide to the
+        most common ones.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>Bugs we'll cover</h3>
+        <ul>
+          <li>Blank or black screen</li>
+          <li>Game won't restart correctly</li>
+          <li>Controls don't work (or do the wrong thing)</li>
+          <li>No sound</li>
+          <li>Broken on mobile</li>
+          <li>The "it worked, then I asked for a change and it broke" problem</li>
+        </ul>
+      </div>
+
+      <h2>First: open the developer console</h2>
+      <p>
+        Before fixing anything, learn this one trick — it's the single most useful
+        debugging skill for non-coders. Press <strong>F12</strong> in your browser (or
+        right-click the page and choose "Inspect"), then click the <strong>Console</strong>
+        tab. If your game has an error, you'll usually see a red message here. You don't
+        need to understand it — you just need to copy it and paste it to your AI tool.
+        A pasted error message is the fastest way to a fix.
+      </p>
+
+      <h2>Bug 1: Blank or black screen</h2>
+      <p>
+        You open the game and nothing appears. This is almost always a JavaScript error
+        that stopped the game before it could draw anything. Open the console (F12) and
+        you'll likely see a red error.
+      </p>
+      <p>
+        <strong>The fix:</strong> copy the red error text and paste it with a prompt
+        like: <em>"My game shows a blank screen. The browser console shows this error:
+        [paste]. Please fix it and give me the full corrected file."</em> If there's no
+        error in the console, the issue might be that the drawing code runs before the
+        page is ready — ask: <em>"The canvas is blank. Make sure the game only starts
+        after the page and canvas have fully loaded."</em>
+      </p>
+
+      <h2>Bug 2: The game won't restart correctly</h2>
+      <p>
+        This is the single most common bug in AI-generated games. The game plays fine
+        the first time, but after "Game Over," restarting does something weird —
+        the score doesn't reset, the speed keeps the old value, enemies pile up, or it
+        crashes outright. The cause is that restarting doesn't fully reset the game's
+        state; leftover values and timers from the previous round "leak" into the new one.
+      </p>
+      <p>
+        <strong>The fix:</strong> <em>"When I restart after Game Over, the previous
+        game's state leaks into the new one (the score/speed/enemies don't reset
+        properly). Please make restart fully reset ALL game state and clear any running
+        timers or animation loops before starting fresh. Show the full corrected file."</em>
+        Mentioning "clear any running timers or animation loops" is key — duplicate game
+        loops are a frequent culprit.
+      </p>
+
+      <div class="article-callout">
+        <strong>Prevent it up front:</strong> When you first build a game, add this to
+        your prompt: <em>"Make sure restarting fully resets all state and doesn't create
+        duplicate game loops."</em> It saves you from fixing this later.
+      </div>
+
+      <h2>Bug 3: Controls don't work or do the wrong thing</h2>
+      <p>
+        The left arrow moves you right, the jump button does nothing, or keypresses feel
+        laggy. These are usually simple wiring mistakes.
+      </p>
+      <p>
+        <strong>The fix:</strong> describe the exact mismatch: <em>"When I press the
+        left arrow key, the player moves right instead of left, and the up arrow does
+        nothing. Please fix the controls so arrows move in the matching direction and up
+        makes the player jump."</em> If input feels laggy, add: <em>"Movement only
+        happens on each keypress, not while the key is held. Make movement smooth while
+        a key is held down."</em>
+      </p>
+
+      <h2>Bug 4: No sound</h2>
+      <p>
+        You asked for sound but hear nothing. Ninety percent of the time, this is the
+        browser's autoplay protection: browsers block audio until the player interacts
+        with the page.
+      </p>
+      <p>
+        <strong>The fix:</strong> <em>"The game has no sound. I think the audio context
+        is blocked until the user interacts. Please resume/create the audio context on
+        the first click or key press so sound works."</em> If you want to learn more
+        about how game audio works, see our guide on
+        <a href="/blog/add-sound-web-audio-api">adding sound with the Web Audio API</a>.
+      </p>
+
+      <h2>Bug 5: Broken on mobile</h2>
+      <p>
+        The game works on your computer but is unplayable on a phone — usually because
+        it only listens for keyboard and mouse, which phones don't have, or because the
+        layout doesn't fit the screen.
+      </p>
+      <p>
+        <strong>The fix:</strong> <em>"The game works on desktop but not on mobile. Add
+        touch controls (tap and/or swipe) that mirror the keyboard controls, and make
+        the canvas scale to fit the screen on phones. Keep everything in one file."</em>
+        For action games, you might add: <em>"Add on-screen touch buttons for movement
+        and actions, visible only on touch devices."</em>
+      </p>
+
+      <h2>Bug 6: "It worked, then I asked for a change and it broke"</h2>
+      <p>
+        You had a working game, asked for one new feature, and now something else is
+        broken. This happens when a change has unintended ripple effects.
+      </p>
+      <p>
+        <strong>The fix:</strong> first, go back to the version that worked (this is why
+        it's worth saving a copy of each working version). Then make the request more
+        surgical: <em>"Here is my working game. Add ONLY [feature], and do not change
+        any other behavior. Keep everything else exactly as it is."</em> Being explicit
+        about "don't change anything else" dramatically reduces collateral damage. And
+        always ask for the full file back so you can swap it cleanly.
+      </p>
+
+      <div class="article-callout">
+        <strong>Save your working versions:</strong> Every time your game reaches a state
+        that works, save a copy of the file (e.g. <code>game-v1.html</code>,
+        <code>game-v2.html</code>). If a later change breaks things, you can always
+        return to the last good version. This one habit will save you hours.
+      </div>
+
+      <h2>The universal debugging prompt</h2>
+      <p>
+        When you're not sure what's wrong, this general-purpose prompt works
+        surprisingly often:
+      </p>
+      <pre><code>Here is my game (full file below). The problem: [describe
+exactly what you see vs. what you expect]. The browser
+console shows: [paste any red errors, or "no errors"].
+
+Please find and fix the issue, keep everything in one HTML
+file, don't change unrelated behavior, and show me the
+full corrected file.</code></pre>
+      <p>
+        The pattern — what you see, what you expect, any console errors, "don't change
+        unrelated behavior," "full file" — gives the AI everything it needs to fix the
+        problem cleanly.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>Learn to open the console (F12) and paste errors — it's the fastest path to a fix.</li>
+          <li>Broken restarts are the #1 AI game bug; ask for a full state reset and cleared timers.</li>
+          <li>No sound is usually the browser blocking audio until first interaction.</li>
+          <li>For mobile, ask for touch controls and a scaling canvas.</li>
+          <li>Save working versions, and make fixes surgical ("change only this").</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="article-cta">
+      <h3>Got your game working?</h3>
+      <p>Upload it to AIgames123 for free — it's playable instantly, on any device.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">
+      This guide reflects our own experience debugging AI-generated games. Tool behavior
+      changes over time, so adapt specific wording as needed.
+    </p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>

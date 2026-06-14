@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>5 Game Ideas You Can Build with AI in an Afternoon | AIgames123</title>
+  <meta name="description" content="Stuck for ideas? Here are 5 simple but fun game concepts you can build with AI tools like ChatGPT or Claude in a single afternoon — with starter prompts for each.">
+  <link rel="canonical" href="https://aigames123.com/blog/game-ideas-build-with-ai">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="5 Game Ideas You Can Build with AI in an Afternoon">
+  <meta property="og:description" content="5 simple but fun game concepts you can build with AI tools in a single afternoon, with starter prompts.">
+  <meta property="og:url"         content="https://aigames123.com/blog/game-ideas-build-with-ai">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="5 Game Ideas You Can Build with AI in an Afternoon">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "5 Game Ideas You Can Build with AI in an Afternoon",
+    "description": "5 simple but fun game concepts you can build with AI tools in a single afternoon, with starter prompts.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-12",
+    "mainEntityOfPage": "https://aigames123.com/blog/game-ideas-build-with-ai"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>5 Game Ideas You Can Build with AI in an Afternoon</h1>
+    <div class="article-meta">
+      <span class="article-tag">Ideas</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>8 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        The hardest part of making a game is often just deciding what to make. With AI
+        tools, the building is fast — but a blank page can still stop you cold. So here
+        are five concrete game ideas that are simple enough to finish in an afternoon,
+        fun enough to be worth playing, and well-suited to being a single self-contained
+        web file. Each comes with a starter prompt you can adapt.
+      </p>
+      <p>
+        These all share a few traits that make them AI-friendly: clear rules, no need
+        for custom artwork, and mechanics the AI already understands well. Pick one that
+        appeals to you and start there.
+      </p>
+
+      <h2>1. Reaction-time test</h2>
+      <p>
+        Dead simple, surprisingly addictive. The screen waits a random amount of time,
+        then changes color — and you tap as fast as you can. It shows your reaction time
+        in milliseconds and tracks your best score. People love comparing scores, which
+        makes it naturally shareable.
+      </p>
+      <pre><code>Build a single-file HTML reaction-time game. Show a "Wait
+for green..." screen. After a random 2-5 seconds, the screen
+turns green and the player must click as fast as possible.
+Show their reaction time in milliseconds and track the best
+time. If they click too early, show "Too soon!" and reset.
+Clean, big, mobile-friendly UI.</code></pre>
+
+      <h2>2. Idle / clicker game</h2>
+      <p>
+        Click to earn points, spend points on upgrades that earn points automatically,
+        watch the numbers grow. It sounds trivial, but the "just one more upgrade" loop
+        is genuinely compelling. Pick any theme — a cookie factory, a space colony, a
+        coffee shop — and the mechanics stay the same.
+      </p>
+      <pre><code>Build a single-file HTML idle/clicker game themed around
+[a coffee shop]. Clicking the main button earns 1 coin.
+Add 3 upgrades the player can buy with coins that
+automatically generate coins per second (increasing prices).
+Show coins, coins-per-second, and the upgrades. Save progress
+in localStorage so it persists. Satisfying number animations.</code></pre>
+
+      <h2>3. Top-down survival game</h2>
+      <p>
+        Move around with the arrow keys, avoid (or shoot) enemies that spawn faster over
+        time, survive as long as you can. This is a forgiving format — even a basic
+        version is fun, and you can layer on power-ups and weapons later.
+      </p>
+      <pre><code>Build a single-file HTML top-down survival game. The player
+is a dot that moves with arrow keys (and touch drag on
+mobile). Enemies spawn from the edges and chase the player,
+spawning faster over time. Survive as long as possible; one
+touch ends the game. Show a survival timer and best time.
+Dark neon style on canvas.</code></pre>
+
+      <h2>4. Word or trivia game</h2>
+      <p>
+        A guessing game, a word scramble, or a quick trivia quiz. These rely on content
+        more than mechanics, so they're a nice change of pace — and the AI can generate
+        the word list or questions for you as part of the build.
+      </p>
+      <pre><code>Build a single-file HTML word-scramble game. Show a scrambled
+word and let the player type their guess. Include a built-in
+list of 30 common words. Track score and streak, give a hint
+button that reveals one letter, and move to the next word on
+a correct guess. Friendly, colorful UI.</code></pre>
+
+      <h2>5. Tiny tycoon / simulator</h2>
+      <p>
+        Run a small business or system: set a price, watch demand respond, try to
+        maximize profit over a number of days. It's a step up in complexity but deeply
+        satisfying, and it shows off how much logic AI can handle in one file.
+      </p>
+      <pre><code>Build a single-file HTML lemonade-stand tycoon game. Each
+"day" the player sets a price per cup. Demand depends on
+price and a random weather factor (hot days = more demand).
+Show daily profit and total profit over 14 days. Display a
+simple chart of daily sales. The goal is to maximize total
+profit. Clean UI, works on mobile.</code></pre>
+
+      <div class="article-callout">
+        <strong>Tip:</strong> Don't try to make all five at once. Pick the one that
+        sounds most fun to <em>you</em> — your enthusiasm will show in how much you
+        polish it. Once it works, our
+        <a href="/blog/add-sound-web-audio-api">sound guide</a> and
+        <a href="/blog/prompt-engineering-for-games">prompt techniques</a> will help you
+        take it from "works" to "genuinely good."
+      </div>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>The best beginner games have clear rules and need no custom art.</li>
+          <li>Reaction tests and clicker games are the fastest wins.</li>
+          <li>Survival and tycoon games offer more depth when you're ready.</li>
+          <li>Start from a prompt, get it working, then polish one step at a time.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="article-cta">
+      <h3>Built one this afternoon?</h3>
+      <p>Upload it to AIgames123 for free and let people play it instantly.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">
+      Starter prompts are provided as inspiration; adapt them to your favorite AI tool.
+      Tool names are trademarks of their respective owners.
+    </p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>

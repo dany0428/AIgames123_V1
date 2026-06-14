@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>How to Make Your Browser Game Mobile-Friendly | AIgames123</title>
+  <meta name="description" content="Most players are on phones. Here's how to make your browser game work great on mobile — touch controls, screen scaling, and the prompts to get AI to do it for you.">
+  <link rel="canonical" href="https://aigames123.com/blog/make-browser-game-mobile-friendly">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="How to Make Your Browser Game Mobile-Friendly">
+  <meta property="og:description" content="How to make your browser game work great on mobile — touch controls, screen scaling, and AI prompts.">
+  <meta property="og:url"         content="https://aigames123.com/blog/make-browser-game-mobile-friendly">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="How to Make Your Browser Game Mobile-Friendly">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Make Your Browser Game Mobile-Friendly",
+    "description": "How to make your browser game work great on mobile — touch controls, screen scaling, and AI prompts.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-12",
+    "mainEntityOfPage": "https://aigames123.com/blog/make-browser-game-mobile-friendly"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>How to Make Your Browser Game Mobile-Friendly</h1>
+    <div class="article-meta">
+      <span class="article-tag">Tutorial</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>9 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        Here's a statistic that should shape how you build games: most people who play
+        browser games are on a phone. If your game only works with a keyboard and mouse,
+        you're locking out the majority of your potential players before they even start.
+        The good news is that making a browser game mobile-friendly comes down to three
+        things — touch controls, screen scaling, and a few mobile-specific tweaks — and
+        an AI tool can handle all of them if you ask correctly.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>What you'll learn</h3>
+        <ul>
+          <li>Why mobile-first matters for browser games</li>
+          <li>How to add touch controls that mirror keyboard input</li>
+          <li>How to make the game scale to any screen size</li>
+          <li>Mobile gotchas: scrolling, zooming, and tiny tap targets</li>
+        </ul>
+      </div>
+
+      <h2>The three pillars of a mobile-friendly game</h2>
+      <p>
+        Almost every mobile problem falls into one of three buckets: the player can't
+        control it (no touch input), it doesn't fit the screen (no scaling), or it
+        behaves weirdly when touched (zoom and scroll interference). Fix all three and
+        your game will feel native on a phone.
+      </p>
+
+      <h2>1. Touch controls</h2>
+      <p>
+        Phones have no arrow keys or mouse. You need touch input that does the same job.
+        There are two common approaches depending on your game:
+      </p>
+      <h3>On-screen buttons</h3>
+      <p>
+        For games with discrete actions (move left, move right, jump, shoot), add visible
+        on-screen buttons. They should appear only on touch devices so they don't clutter
+        the desktop view.
+      </p>
+      <h3>Swipe and drag</h3>
+      <p>
+        For games where you steer something (a snake, a ship, a paddle), dragging your
+        finger or swiping often feels better than buttons. The player touches and the
+        object follows.
+      </p>
+      <p>
+        Either way, the prompt to add this is straightforward:
+      </p>
+      <pre><code>Add mobile touch controls that mirror the keyboard controls.
+On touch devices, show on-screen buttons for [left/right/jump].
+Make the buttons large enough to tap easily (at least 48px),
+and hide them on desktop. The keyboard controls should still
+work on desktop. Keep everything in one HTML file.</code></pre>
+
+      <h2>2. Screen scaling</h2>
+      <p>
+        A game designed for a wide desktop window will overflow or shrink awkwardly on a
+        narrow phone screen. You want the game to scale to fit whatever screen it's on,
+        while keeping its proportions. For canvas games, this means resizing the canvas
+        to the available space.
+      </p>
+      <pre><code>Make the game canvas scale to fit the screen on any device,
+keeping its aspect ratio, and re-scale correctly when the
+phone is rotated or the window is resized. The game should
+fill the screen without horizontal scrolling on mobile.</code></pre>
+      <p>
+        Also make sure your page has the viewport meta tag in the <code>&lt;head&gt;</code>
+        (most AI tools include it, but check):
+      </p>
+      <pre><code>&lt;meta name="viewport" content="width=device-width,
+initial-scale=1.0, viewport-fit=cover"&gt;</code></pre>
+
+      <h2>3. Mobile gotchas</h2>
+      <p>
+        A few small things trip up almost every browser game on mobile. Tell the AI to
+        handle them explicitly:
+      </p>
+      <ul>
+        <li><strong>Accidental zoom:</strong> double-tapping or pinching can zoom the page mid-game. Ask to disable double-tap zoom on the game area.</li>
+        <li><strong>Page scrolling:</strong> swiping to control the game can accidentally scroll the whole page. Ask to prevent the page from scrolling while playing.</li>
+        <li><strong>Tap target size:</strong> buttons that are easy to click with a mouse can be too small for a thumb. Aim for at least 48×48 pixels.</li>
+        <li><strong>Tap highlight:</strong> phones show a grey flash when you tap. Ask to remove the tap highlight on game controls for a cleaner feel.</li>
+      </ul>
+      <pre><code>Make the game behave well on mobile: prevent the page from
+scrolling or zooming while playing, remove the grey tap-
+highlight on buttons, and make all touch targets at least
+48px. Don't let game swipes scroll the page.</code></pre>
+
+      <div class="article-callout">
+        <strong>Test it for real:</strong> Open your game on an actual phone, not just a
+        resized browser window. Things like tap accuracy, button reach, and scroll
+        behavior only reveal themselves on a real device. If you publish on AIgames123,
+        you can pull the game up on your phone in seconds to test.
+      </div>
+
+      <h2>One prompt to rule them all</h2>
+      <p>
+        If you'd rather handle mobile in a single pass once your game works on desktop,
+        combine everything:
+      </p>
+      <pre><code>Make this game fully mobile-friendly without changing
+desktop behavior:
+1. Add touch controls mirroring the keyboard (on-screen
+   buttons on touch devices, hidden on desktop, 48px+).
+2. Scale the canvas to fit any screen, keeping aspect ratio,
+   and handle rotation/resize.
+3. Prevent page zoom and scroll while playing, and remove the
+   tap-highlight.
+Keep everything in one HTML file and show me the full file.</code></pre>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>Most browser-game players are on phones — build for them.</li>
+          <li>Add touch controls (buttons or swipe) that mirror the keyboard.</li>
+          <li>Scale the canvas to fit any screen and handle rotation.</li>
+          <li>Prevent zoom/scroll interference and use 48px+ tap targets.</li>
+          <li>Always test on a real device.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="article-cta">
+      <h3>Game ready for every device?</h3>
+      <p>Upload it to AIgames123 — players can jump in instantly on phone or desktop.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">
+      This guide reflects our own experience. Adapt prompt wording for your AI tool of
+      choice. Tool names are trademarks of their respective owners.
+    </p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>
