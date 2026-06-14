@@ -186,6 +186,24 @@
   color: #a78bfa;
 }
 
+/* Static nav links at the bottom of the sidebar (About / Blog / Prompts) */
+.sidebar-links {
+  margin-top: 2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid #3b2d5a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.sidebar-links a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.sidebar-links a:hover { color: #fff; }
+
 /* ── Profile ── */
 .profile-header-card {
   background: linear-gradient(135deg, #2d1f4a, #1a1025);
