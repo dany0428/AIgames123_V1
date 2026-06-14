@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>How to Make a Game with ChatGPT or Claude (No Coding Required) | AIgames123</title>
+  <meta name="description" content="A complete beginner's guide to making a playable browser game using ChatGPT or Claude — no programming experience needed. From your first prompt to a finished game.">
+  <link rel="canonical" href="https://aigames123.com/blog/how-to-make-a-game-with-chatgpt-claude">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="How to Make a Game with ChatGPT or Claude (No Coding Required)">
+  <meta property="og:description" content="A complete beginner's guide to making a playable browser game using AI — no programming experience needed.">
+  <meta property="og:url"         content="https://aigames123.com/blog/how-to-make-a-game-with-chatgpt-claude">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="How to Make a Game with ChatGPT or Claude (No Coding Required)">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Make a Game with ChatGPT or Claude (No Coding Required)",
+    "description": "A complete beginner's guide to making a playable browser game using ChatGPT or Claude — no programming experience needed.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-01",
+    "mainEntityOfPage": "https://aigames123.com/blog/how-to-make-a-game-with-chatgpt-claude"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>How to Make a Game with ChatGPT or Claude (No Coding Required)</h1>
+    <div class="article-meta">
+      <span class="article-tag">Tutorial</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>12 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        A few years ago, making a video game meant learning a programming language,
+        wrestling with a game engine, and spending weeks before you had anything
+        playable. Today, you can describe a game in plain English and have a working,
+        playable version in your browser within minutes. The tools that make this
+        possible — large language models like ChatGPT, Claude, and Gemini — can write
+        complete, self-contained games as a single file you can open in any browser.
+      </p>
+      <p>
+        This guide walks you through the entire process, start to finish, with zero
+        programming experience assumed. By the end, you'll know how to go from a vague
+        idea to a finished game you can share with the world.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>What you'll learn</h3>
+        <ul>
+          <li>How to pick a game idea that AI handles well</li>
+          <li>The exact prompt structure that produces working games</li>
+          <li>How to test your game and describe bugs so the AI can fix them</li>
+          <li>How to add sound, polish, and difficulty</li>
+          <li>How to publish your finished game for free</li>
+        </ul>
+      </div>
+
+      <h2>Step 1: Choose the right kind of game</h2>
+      <p>
+        Not all games are equally easy for AI to build. The sweet spot is a game that's
+        simple in structure but fun to play — the kind of thing that fits in a single
+        file with no external images or sound files. Great starting points include:
+      </p>
+      <ul>
+        <li><strong>Arcade classics</strong> — Snake, Breakout, Pong, Flappy-Bird-style games. These have well-understood mechanics the AI knows inside out.</li>
+        <li><strong>Idle / clicker games</strong> — click to earn points, buy upgrades, watch numbers grow. Simple logic, surprisingly addictive.</li>
+        <li><strong>Top-down shooters or survival games</strong> — move around, avoid or shoot enemies, survive as long as possible.</li>
+        <li><strong>Simulators</strong> — a stock-trading game, a tiny tycoon game, a physics sandbox.</li>
+      </ul>
+      <p>
+        Avoid, at least for your first attempt, anything that needs lots of custom
+        artwork, 3D models, multiplayer networking, or large amounts of game content
+        (like a story-driven RPG). Those are possible, but they're a steep first climb.
+      </p>
+
+      <h2>Step 2: Write your first prompt</h2>
+      <p>
+        The single biggest factor in whether you get a working game is how you ask.
+        Vague prompts ("make me a cool game") produce vague, often broken results.
+        Specific prompts produce specific, working games. Here's a structure that
+        reliably works:
+      </p>
+      <pre><code>Build a complete, single-file HTML game called "[NAME]".
+Put all the HTML, CSS, and JavaScript in ONE .html file
+with no external files.
+
+The game is: [one-sentence description].
+
+Core mechanics:
+- [how the player controls it]
+- [what the goal is]
+- [how the player wins or loses]
+- [how difficulty increases over time]
+
+Visual style: [dark/colorful/minimal], use the HTML canvas.
+Add a score display and a restart button.
+Keep all code in one file so it runs by just opening it.</code></pre>
+      <p>
+        Notice what this does. It specifies the <strong>output format</strong> (one
+        file, no external dependencies), the <strong>mechanics</strong> (controls,
+        goal, win/lose), and the <strong>look</strong>. The more of these blanks you
+        fill in concretely, the better your result. Let's see a real example:
+      </p>
+      <pre><code>Build a complete, single-file HTML game called "Asteroid Dodge".
+Put all HTML, CSS, and JavaScript in ONE .html file.
+
+The game is: a spaceship dodging falling asteroids.
+
+Core mechanics:
+- Player moves the ship left/right with arrow keys
+  (and touch/drag on mobile).
+- Asteroids fall from the top at increasing speed.
+- The player scores 1 point for each asteroid dodged.
+- One collision ends the game.
+- Asteroids spawn faster the longer you survive.
+
+Visual style: dark space background with stars, neon ship.
+Use the HTML canvas. Show the score at the top and a
+"Game Over - Restart" button when the player loses.
+Keep everything in one file.</code></pre>
+
+      <h2>Step 3: Test it and describe what's wrong</h2>
+      <p>
+        The AI will give you a block of code. To run it, copy everything into a plain
+        text file and save it with an <code>.html</code> extension (for example,
+        <code>asteroid-dodge.html</code>). Double-click the file and it opens in your
+        browser — that's your game.
+      </p>
+      <p>
+        It might be perfect. More often, something's slightly off: the controls feel
+        wrong, the difficulty spikes too fast, or a button doesn't work. This is
+        normal, and fixing it is easy <em>if you describe the problem like a symptom,
+        not a solution.</em> Compare:
+      </p>
+      <ul>
+        <li><strong>Weak:</strong> "It's broken, fix it."</li>
+        <li><strong>Strong:</strong> "When I press the left arrow, the ship moves right instead of left. Also the game is too hard — asteroids fall too fast from the very start. Make the first 10 seconds easier."</li>
+      </ul>
+      <p>
+        Give the AI the specific behavior you see versus the behavior you want. If you
+        can, paste the exact error message (open your browser's developer console with
+        F12 to find errors). The AI is excellent at fixing clearly described bugs.
+      </p>
+
+      <div class="article-callout">
+        <strong>Pro tip:</strong> Always ask the AI to "return the full updated file"
+        when fixing bugs, rather than just the changed lines. As a non-coder, it's much
+        easier to replace the whole file than to figure out where a snippet goes.
+      </div>
+
+      <h2>Step 4: Add polish and personality</h2>
+      <p>
+        Once the core game works, this is where it gets fun. You can layer on polish
+        with follow-up prompts, one feature at a time. Some high-impact additions:
+      </p>
+      <h3>Sound</h3>
+      <p>
+        Ask for sound using the Web Audio API specifically — that way no audio files
+        are needed and everything stays in one file:
+      </p>
+      <pre><code>Add sound effects using only the Web Audio API (no audio
+files): a short beep when scoring, a crash sound on
+collision. Add a mute button.</code></pre>
+      <h3>Juice</h3>
+      <p>
+        "Juice" is game-designer slang for the small touches that make a game feel
+        alive — screen shake, particles, flashing colors, smooth animations. Try:
+        <em>"Add a brief screen shake and a particle burst when the ship crashes, and
+        make the score number pop when it increases."</em>
+      </p>
+      <h3>Difficulty and balance</h3>
+      <p>
+        If your game is too easy or too hard, describe the curve you want:
+        <em>"The game gets too hard around 30 seconds. Make the difficulty ramp more
+        gradual, and add a brief speed-up every 15 seconds instead of constantly."</em>
+      </p>
+
+      <h2>Step 5: Use more than one AI tool</h2>
+      <p>
+        A trick experienced creators use: different AI tools have different strengths,
+        so you can split the work. One common workflow is to use one tool to scaffold
+        the core game loop, another to add a self-contained feature (like a power-up
+        system), and a third to polish and hunt for bugs. You don't have to do this —
+        a single tool can build a whole game — but breaking the work into
+        "core → features → polish" tends to produce cleaner results than asking for
+        everything at once. You can see real examples of this multi-tool approach on
+        our <a href="/prompts">Prompts page</a>.
+      </p>
+
+      <h2>Step 6: Publish your game</h2>
+      <p>
+        Once you've got a game you're proud of, don't let it disappear into your
+        downloads folder. The whole point of a game is for people to play it. Because
+        your game is a single self-contained HTML file, publishing it is simple — you
+        just need somewhere to host it.
+      </p>
+      <p>
+        That's exactly what AIgames123 is for. You can upload your <code>.html</code>
+        file for free, and it becomes instantly playable by anyone with a browser, on
+        desktop or mobile. No build steps, no app store, no cost. Other people can play
+        it, upvote it, and you can share a direct link to it anywhere.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>Start with a simple, single-file game concept (arcade, idle, shooter, simulator).</li>
+          <li>Write specific prompts: state the format, mechanics, win/lose, and visual style.</li>
+          <li>Describe bugs as symptoms ("X happens, I want Y") and ask for the full updated file.</li>
+          <li>Add sound (Web Audio API), juice, and difficulty tuning one prompt at a time.</li>
+          <li>Publish it so people can actually play it.</li>
+        </ul>
+      </div>
+
+      <p>
+        The barrier to making games has never been lower. The only thing between you
+        and a finished, playable game is a clear idea and a few good prompts. Pick a
+        simple concept, open your favorite AI tool, and start building — you might be
+        surprised how quickly you have something genuinely fun.
+      </p>
+    </div>
+
+    <div class="article-cta">
+      <h3>Built a game? Let people play it.</h3>
+      <p>Upload your AI-made game to AIgames123 for free — it's playable instantly.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">
+      This guide reflects our own experience making games with AI tools. The tools
+      evolve quickly, so you may need to adapt specific wording for the current version
+      of each model. Tool names are trademarks of their respective owners.
+    </p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>

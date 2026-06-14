@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prompt Engineering for Games: 7 Techniques That Actually Work | AIgames123</title>
+  <meta name="description" content="Why do some AI prompts produce broken games and others nail it? 7 concrete prompt-engineering techniques to get working, fun games from ChatGPT, Claude, and Gemini.">
+  <link rel="canonical" href="https://aigames123.com/blog/prompt-engineering-for-games">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%237c3aed'/><text y='.9em' font-size='80' x='10'>🎮</text></svg>">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <meta property="og:type"        content="article">
+  <meta property="og:site_name"   content="AIgames123">
+  <meta property="og:title"       content="Prompt Engineering for Games: 7 Techniques That Actually Work">
+  <meta property="og:description" content="7 concrete prompt-engineering techniques to get working, fun games from AI tools.">
+  <meta property="og:url"         content="https://aigames123.com/blog/prompt-engineering-for-games">
+  <meta property="og:image"       content="https://aigames123.com/images/og-default.jpg">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="Prompt Engineering for Games: 7 Techniques That Actually Work">
+  <meta name="twitter:image"      content="https://aigames123.com/images/og-default.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Prompt Engineering for Games: 7 Techniques That Actually Work",
+    "description": "7 concrete prompt-engineering techniques to get working, fun games from AI tools like ChatGPT, Claude, and Gemini.",
+    "author": { "@type": "Organization", "name": "AIgames123" },
+    "publisher": { "@type": "Organization", "name": "AIgames123" },
+    "datePublished": "2026-06-01",
+    "mainEntityOfPage": "https://aigames123.com/blog/prompt-engineering-for-games"
+  }
+  </script>
+
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/legal.css">
+  <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+  <nav class="legal-nav">
+    <a href="/" class="legal-home">← AIgames123</a>
+    <div class="legal-nav-links">
+      <a href="/about">About</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="/prompts">Prompts</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+  </nav>
+
+  <main class="legal-container">
+    <h1>Prompt Engineering for Games: 7 Techniques That Actually Work</h1>
+    <div class="article-meta">
+      <span class="article-tag">Guide</span>
+      <span class="dot">·</span>
+      <span>June 2026</span>
+      <span class="dot">·</span>
+      <span>10 min read</span>
+    </div>
+
+    <div class="article-body">
+      <p>
+        If you've tried making a game with AI, you've probably experienced both
+        extremes: sometimes the model produces a polished, working game on the first
+        try, and sometimes it hands you a broken mess that won't even run. The
+        difference usually isn't luck — it's the prompt. Here are seven techniques
+        that reliably move you from the second outcome to the first.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>The 7 techniques at a glance</h3>
+        <ul>
+          <li>Lock down the output format</li>
+          <li>Specify mechanics like a spec, not a vibe</li>
+          <li>Give it numbers</li>
+          <li>Split the work across prompts</li>
+          <li>Ask for a CONFIG block</li>
+          <li>Describe bugs as symptoms</li>
+          <li>Make the AI a reviewer, not just a writer</li>
+        </ul>
+      </div>
+
+      <h2>1. Lock down the output format first</h2>
+      <p>
+        The most common reason an AI-generated game won't run is that the model splits
+        the code across multiple files, or references images and sound files that don't
+        exist. You can prevent almost all of this with one sentence at the top of your
+        prompt:
+      </p>
+      <pre><code>Build a complete game in ONE single .html file. Put all
+HTML, CSS, and JavaScript inline in that one file. Do not
+reference any external files, images, or audio.</code></pre>
+      <p>
+        This constraint forces the model to generate self-contained graphics (using the
+        HTML canvas or CSS) and self-contained sound (using the Web Audio API). The
+        result is a file you can open and play immediately, with nothing missing.
+      </p>
+
+      <h2>2. Specify mechanics like a spec, not a vibe</h2>
+      <p>
+        "Make a fun platformer" is a vibe. The AI has to guess what you mean, and it
+        will guess differently every time. Instead, describe the mechanics as a short
+        specification:
+      </p>
+      <pre><code>Mechanics:
+- Player controls a character with left/right arrows
+  and spacebar to jump.
+- Gravity pulls the player down constantly.
+- The goal is to reach the flag on the right side.
+- Falling off the bottom of the screen restarts the level.
+- There are 3 moving platforms the player must time jumps onto.</code></pre>
+      <p>
+        Each line removes a decision the model would otherwise make randomly. The more
+        decisions you make for it, the closer the result matches what's in your head.
+      </p>
+
+      <h2>3. Give it numbers</h2>
+      <p>
+        AI models are great at following concrete numbers and bad at guessing "the
+        right amount" of something. Wherever a quantity matters, state it. Instead of
+        "the enemies should be challenging," say "spawn one enemy every 2 seconds,
+        increasing to one every 0.5 seconds after 60 seconds." Instead of "give the
+        player some health," say "the player starts with 3 lives." Numbers make the
+        game's behavior predictable and easy to tune later.
+      </p>
+
+      <div class="article-callout">
+        <strong>Why this matters:</strong> Concrete numbers also make debugging
+        easier. If you say "asteroids fall at speed 5" and they're too fast, you can
+        ask for "speed 3" — a precise change instead of a vague "make it slower" that
+        the model might overcorrect.
+      </div>
+
+      <h2>4. Split the work across prompts</h2>
+      <p>
+        Trying to get a complete, polished game in a single prompt often produces a
+        tangled result where fixing one thing breaks another. A more reliable approach
+        is to build in layers:
+      </p>
+      <ul>
+        <li><strong>Prompt 1 — Core loop:</strong> Get the basic game working: movement, the main goal, win/lose conditions.</li>
+        <li><strong>Prompt 2 — Features:</strong> Add one self-contained system at a time (power-ups, a scoring combo, a news-event system).</li>
+        <li><strong>Prompt 3 — Polish:</strong> Sound, animations, particle effects, difficulty tuning.</li>
+      </ul>
+      <p>
+        When you add a feature, ask for it as a module that plugs into what already
+        exists — for example, "give me a function I can call from my existing game loop
+        named <code>spawnPowerUp()</code>." This keeps new code from clashing with the
+        old. Some creators even use different AI tools for different layers; you can see
+        that approach in action on our <a href="/prompts">Prompts page</a>.
+      </p>
+
+      <h2>5. Ask for a CONFIG block</h2>
+      <p>
+        This single technique will save you enormous frustration. Ask the model to put
+        all the tunable values — speeds, spawn rates, starting score, colors — into a
+        clearly commented configuration object at the top of the code:
+      </p>
+      <pre><code>Put all tunable constants (player speed, enemy spawn rate,
+starting lives, colors) in a CONFIG object at the very top
+of the script, with a comment on each one.</code></pre>
+      <p>
+        Now, when you want to make the game easier, faster, or a different color, you
+        (or the AI) can change one obvious value instead of hunting through the whole
+        program. It also makes follow-up prompts cleaner: "in the CONFIG, change
+        enemySpeed from 5 to 3."
+      </p>
+
+      <h2>6. Describe bugs as symptoms, not solutions</h2>
+      <p>
+        When something's wrong, resist the urge to guess at the cause. You're not the
+        programmer — the AI is. Your job is to be a really good QA tester. Describe
+        exactly what you see versus what you expect:
+      </p>
+      <ul>
+        <li><strong>Instead of:</strong> "The collision detection variable is wrong."</li>
+        <li><strong>Say:</strong> "When my ship clearly touches an asteroid, nothing happens — the game doesn't end. It only ends when I'm a little past the asteroid."</li>
+      </ul>
+      <p>
+        If your browser shows an error, paste it in. Press F12 to open the developer
+        console, reproduce the bug, and copy any red error text. A pasted error message
+        is the single most useful thing you can give an AI for debugging.
+      </p>
+
+      <h2>7. Make the AI a reviewer, not just a writer</h2>
+      <p>
+        Models will happily generate code, but they'll also happily review it if you
+        ask. After your game works, prompt it to audit its own work for the bugs that
+        commonly sneak into games:
+      </p>
+      <pre><code>Review this game's logic for bugs. Specifically check:
+- Can any score, health, or money value go negative?
+- Does the game reset cleanly when restarted, or do old
+  values/timers leak into the new game?
+- Can the player trigger multiple actions at once in a way
+  that breaks things?
+Show me the full corrected file and explain what you fixed.</code></pre>
+      <p>
+        The "does it reset cleanly on restart" check is especially valuable — a huge
+        fraction of AI-generated games have a bug where restarting doesn't fully reset
+        the state, causing weird behavior or crashes on the second play. Asking the
+        model to specifically look for it catches the problem before your players do.
+      </p>
+
+      <h2>Putting it together</h2>
+      <p>
+        None of these techniques is complicated, and you don't need all seven every
+        time. But together they form a reliable workflow: lock the format, spec the
+        mechanics with numbers, build in layers with a CONFIG block, and treat bugs as
+        symptoms you report to an AI that doubles as your code reviewer. Do that, and
+        the gap between "broken mess" and "actually fun game" mostly disappears.
+      </p>
+
+      <div class="article-takeaways">
+        <h3>Key takeaways</h3>
+        <ul>
+          <li>One file, no external assets — state it up front.</li>
+          <li>Describe mechanics as a spec, with concrete numbers.</li>
+          <li>Build core → features → polish across separate prompts.</li>
+          <li>A CONFIG block makes everything tunable later.</li>
+          <li>Report bugs as symptoms and paste real error messages.</li>
+          <li>Ask the AI to review its own code for reset and edge-case bugs.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="article-cta">
+      <h3>Ready to put these to work?</h3>
+      <p>Build a game with these techniques, then upload it to the arcade for free.</p>
+      <a href="/">Upload your game →</a>
+    </div>
+
+    <hr class="legal-divider">
+    <p class="legal-footer-note">
+      This guide reflects our own experience making games with AI tools. The tools
+      evolve quickly, so you may need to adapt specific wording. Tool names are
+      trademarks of their respective owners.
+    </p>
+  </main>
+
+  <footer class="legal-footer">
+    <a href="/">Home</a> · <a href="/about">About</a> · <a href="/blog">Blog</a> · <a href="/prompts">Prompts</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/dmca">DMCA</a>
+    <p>© 2026 AIgames123</p>
+  </footer>
+</body>
+</html>
