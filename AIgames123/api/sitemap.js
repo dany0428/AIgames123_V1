@@ -16,6 +16,18 @@
 // but Bing/DuckDuckGo still consider; harmless to include.
 const STATIC_ROUTES = [
     { path: '/',        priority: 1.0, changefreq: 'daily'   },
+    { path: '/about',   priority: 0.6, changefreq: 'monthly' },
+    { path: '/blog',    priority: 0.7, changefreq: 'weekly'  },
+    { path: '/blog/how-to-make-a-game-with-chatgpt-claude', priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/prompt-engineering-for-games',           priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/chatgpt-vs-claude-vs-gemini-games',      priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/fix-common-bugs-ai-games',               priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/add-sound-web-audio-api',                priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/free-browser-games-no-download',         priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/game-ideas-build-with-ai',               priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/make-browser-game-mobile-friendly',      priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/what-makes-a-game-fun',                  priority: 0.8, changefreq: 'monthly' },
+    { path: '/blog/how-to-share-your-game',                 priority: 0.8, changefreq: 'monthly' },
     { path: '/prompts', priority: 0.6, changefreq: 'weekly'  },
     { path: '/terms',   priority: 0.3, changefreq: 'monthly' },
     { path: '/privacy', priority: 0.3, changefreq: 'monthly' },
