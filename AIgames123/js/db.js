@@ -215,9 +215,12 @@ window.handleUpvote = async (gameId, currentCount) => {
 
     try {
         let returnedCount = null;
+        let serverVoted   = null;   // logged-in: server's authoritative voted state
 
         if (currentUser) {
-            // Authenticated path — server-side dedup via game_upvotes table
+            // Authenticated path — server-side dedup via game_upvotes table.
+            // toggle_upvote now returns { count, voted } so we can sync the
+            // UI and localStorage to the server's truth rather than guessing.
             const { data, error } = await supabaseClient
                 .rpc('toggle_upvote', { p_game_id: gameId });
 
@@ -231,7 +234,15 @@ window.handleUpvote = async (gameId, currentCount) => {
                     throw error;
                 }
             }
-            if (typeof data === 'number') returnedCount = data;
+
+            // New shape: { count, voted }. Tolerate the old integer-only
+            // shape too, in case the migration hasn't been applied yet.
+            if (data && typeof data === 'object') {
+                if (typeof data.count === 'number') returnedCount = data.count;
+                if (typeof data.voted === 'boolean') serverVoted = data.voted;
+            } else if (typeof data === 'number') {
+                returnedCount = data;
+            }
 
         } else {
             // Anonymous path — server applies the delta we send.
@@ -257,6 +268,12 @@ window.handleUpvote = async (gameId, currentCount) => {
             if (cached) cached.upvotes = returnedCount;
         }
 
+        // For logged-in users, the server told us the true resulting vote
+        // state — sync the button highlight and localStorage to it, fixing
+        // any drift between this device and the server's game_upvotes table.
+        const effectiveVoted = (serverVoted !== null) ? serverVoted : !hasVoted;
+        if (DOM.upvoteBtn) DOM.upvoteBtn.classList.toggle('voted', effectiveVoted);
+
         // Keep the card's DOM data-upvotes attribute in sync too, so that
         // closing the modal and reopening the same card picks up the fresh
         // count (and so the optimistic delta isn't lost on page nav).
@@ -265,8 +282,12 @@ window.handleUpvote = async (gameId, currentCount) => {
             .querySelectorAll(`.game-card[data-id="${gameId}"]`)
             .forEach(card => { card.dataset.upvotes = finalCount; });
 
-        if (hasVoted) localStorage.removeItem(voteKey);
-        else          localStorage.setItem(voteKey, 'up');
+        // Re-bind the click handler with the now-correct count so a second
+        // click toggles from the right baseline.
+        if (DOM.upvoteBtn) DOM.upvoteBtn.onclick = () => handleUpvote(gameId, finalCount);
+
+        if (effectiveVoted) localStorage.setItem(voteKey, 'up');
+        else                localStorage.removeItem(voteKey);
     } catch (err) {
         // Rollback UI
         if (DOM.upvoteCount) DOM.upvoteCount.textContent = currentCount;
@@ -656,6 +677,7 @@ function _initGridDelegation(grid, isProfile) {
             d.uploaderAvatar || '',
             d.fileType || 'html',
             d.description || '',
+            d.needsCamera === '1',
         );
     });
 
@@ -731,6 +753,7 @@ function renderGames(gameList, targetGrid, isProfile = false) {
                  data-description="${description}"
                  data-file-type="${fileType}"
                  data-view-count="${viewCount}"
+                 data-needs-camera="${game.needs_camera ? '1' : '0'}"
                  data-upvotes="${safeUpvotes}">
                 <div class="game-thumbnail">
                     ${thumbnailContent}
@@ -754,9 +777,18 @@ function renderGames(gameList, targetGrid, isProfile = false) {
 //  Open game modal
 // ════════════════════════════════════
 
-window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description) => {
+window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description, needsCamera) => {
     // Always revoke any blobs from a previous game first
     _revokePlayerBlobUrls();
+
+    // Reset the game iframe's permission delegation every time. By default
+    // a game gets NO camera/mic access — the `allow` attribute is empty.
+    // Only a camera-flagged game, AFTER the visitor consents, gets an
+    // `allow` that delegates the camera (and mic/motion). This guarantees
+    // an ordinary game's iframe can never reach the camera even though the
+    // site-level Permissions-Policy permits 'self'.
+    if (DOM.gameFrame) DOM.gameFrame.removeAttribute('allow');
+    if (DOM.cameraConsent) DOM.cameraConsent.style.display = 'none';
 
     // Expose the current game's id globally so the report modal can
     // pick it up when the user clicks the ⚠️ Report button.
@@ -821,8 +853,25 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
     }
     if (DOM.upvoteCount) DOM.upvoteCount.textContent = displayUpvotes;
     if (DOM.upvoteBtn) {
+        // Show localStorage's guess immediately for snappy UI...
         DOM.upvoteBtn.classList.toggle('voted', localStorage.getItem(`voted_${id}`) === 'up');
         DOM.upvoteBtn.onclick = () => handleUpvote(id, displayUpvotes);
+
+        // ...then, for logged-in users, correct the highlight from the
+        // server's game_upvotes table (the real source of truth), since
+        // localStorage can be stale across devices/sessions.
+        if (currentUser) {
+            supabaseClient
+                .rpc('has_upvoted', { p_game_id: id })
+                .then(({ data, error }) => {
+                    if (error || typeof data !== 'boolean') return; // ignore if RPC missing
+                    // Only act if the player is still viewing this same game.
+                    if (String(window.currentPlayerGameId) !== String(id)) return;
+                    DOM.upvoteBtn.classList.toggle('voted', data);
+                    if (data) localStorage.setItem(`voted_${id}`, 'up');
+                    else      localStorage.removeItem(`voted_${id}`);
+                });
+        }
     }
 
     // Delete button — only visible to owner
@@ -856,6 +905,64 @@ window.openGame = async (id, url, name, currentViewCount, uploaderId, uploaderNa
         console.error('Blocked game load:', err.message, url);
         return;
     }
+
+    // ════════════════════════════════════════════════════════
+    // Camera-flagged games: gate behind explicit consent.
+    //
+    // If this game declares needs_camera, we DON'T load it yet. We show
+    // the consent overlay; only when the visitor clicks "Allow" do we
+    // delegate the camera to the iframe (via the `allow` attribute) and
+    // proceed to load. Declining closes the player. This makes camera
+    // access opt-in per game and per visit.
+    // ════════════════════════════════════════════════════════
+    const _doLoad = () => _loadGameIntoFrame(id, url, name, currentViewCount, fileType, viewportMeta);
+
+    if (needsCamera && DOM.cameraConsent) {
+        const nameSpan = document.getElementById('cameraConsentGameName');
+        if (nameSpan) nameSpan.textContent = name;
+
+        // Show the gate; keep the iframe hidden behind it.
+        DOM.cameraConsent.style.display = 'flex';
+
+        const allowBtn = document.getElementById('cameraConsentAllow');
+        const denyBtn  = document.getElementById('cameraConsentDeny');
+
+        // Fresh handlers each open (avoid stacking listeners).
+        const onAllow = () => {
+            cleanup();
+            DOM.cameraConsent.style.display = 'none';
+            // Delegate camera/mic/motion to the game iframe, scoped to
+            // same-origin (srcdoc is same-origin). Set ONLY now, after consent.
+            DOM.gameFrame.setAttribute(
+                'allow',
+                "camera 'self'; microphone 'self'; gyroscope 'self'; accelerometer 'self'; fullscreen 'self'"
+            );
+            _doLoad();
+        };
+        const onDeny = () => {
+            cleanup();
+            DOM.cameraConsent.style.display = 'none';
+            closePlayerModal();
+        };
+        function cleanup() {
+            allowBtn?.removeEventListener('click', onAllow);
+            denyBtn?.removeEventListener('click', onDeny);
+        }
+        allowBtn?.addEventListener('click', onAllow);
+        denyBtn?.addEventListener('click', onDeny);
+        return; // wait for the user's choice
+    }
+
+    // Normal (non-camera) game: load immediately, no camera delegation.
+    await _doLoad();
+};
+
+// ════════════════════════════════════════════════════════
+// Loads a validated game URL into the player iframe. Split out of
+// openGame so it can run immediately for normal games, or after the
+// camera-consent gate for camera games.
+// ════════════════════════════════════════════════════════
+async function _loadGameIntoFrame(id, url, name, currentViewCount, fileType, viewportMeta) {
 
     // View-count update + game-file fetch in parallel.
     // Uses the `increment_view_count` RPC for an atomic SQL-side
@@ -1027,6 +1134,7 @@ window.openGameById = async (id) => {
             data.uploader_avatar || '',
             data.file_type || 'html',
             data.description || '',
+            data.needs_camera === true,
         );
     } catch (err) {
         notify.error(friendlyError(err, 'Could not load that game.'), err);
@@ -1036,7 +1144,7 @@ window.openGameById = async (id) => {
 // Hook into openGame: after it's called by anyone, update URL + meta.
 // We wrap rather than modify the original to keep the existing signature.
 const _originalOpenGame = window.openGame;
-window.openGame = function patchedOpenGame(id, url, name, viewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description) {
+window.openGame = function patchedOpenGame(id, url, name, viewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description, needsCamera) {
     // Push permalink URL (only if we're not already at it — avoid history spam)
     const slug = _slugify(name);
     const targetPath = slug ? `/game/${id}-${slug}` : `/game/${id}`;
@@ -1049,7 +1157,7 @@ window.openGame = function patchedOpenGame(id, url, name, viewCount, uploaderId,
         `https://aigames123.com${targetPath}`,
     );
     // Delegate to the original implementation
-    return _originalOpenGame.call(this, id, url, name, viewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description);
+    return _originalOpenGame.call(this, id, url, name, viewCount, uploaderId, uploaderName, upvotes, uploaderAvatar, fileType, description, needsCamera);
 };
 
 // When the player modal closes, restore the site's default meta + URL.
